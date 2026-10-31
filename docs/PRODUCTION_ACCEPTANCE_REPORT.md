@@ -77,7 +77,7 @@ behavior**.
 | Existing Worker retained | **PASS — configuration target** | `wrangler.jsonc` names `azkar-sadaqa` and preserves `workers.dev`. |
 | Static asset source | **PASS — local dry run** | Wrangler reads `./build/web`; it does not point at source `web/`. |
 | Deep-link fallback configuration | **PASS — local preview** | Workers Static Assets uses `single-page-application`; local navigation paths returned the index. |
-| GitHub workflow | **PREPARED, NOT RUN** | Main-only workflow pins Flutter/Wrangler, requires tests, and uses the `production` environment. GitHub environment protection/secrets are not configured here. |
+| GitHub workflow | **PREPARED, NOT RUN** | Main-only workflow pins Flutter/Wrangler, requires tests, and uses the `production` environment. Its deploy job is skipped until `AZKAR_AUTH_SCHEMA_VERIFIED=true`; GitHub environment protection/secrets are not configured here. |
 | Existing Cloudflare Workers Build connection | **BLOCKED — manual change** | Must be disconnected/disabled before activating Actions to prevent a duplicate and incorrect deployment. |
 | Production API token / secrets | **NOT CONFIGURED** | No credentials were requested or added. |
 | Production deployment and smoke test | **NOT RUN** | Must wait for explicit approval. |

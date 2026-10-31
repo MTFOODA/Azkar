@@ -98,6 +98,11 @@ The workflow is
    compiled Web application.
 5. Uses Wrangler 4.156.0 and `wrangler.jsonc` to deploy the existing Worker.
 
+The deployment job is skipped unless the production environment variable
+`AZKAR_AUTH_SCHEMA_VERIFIED` is exactly `true`; it remains false until the live
+provisioning and RLS acceptance checks are complete. After those checks, set
+the variable and dispatch the workflow on `main` or push an approved update.
+
 The workflow grants `GITHUB_TOKEN` read-only `contents` permission. It does not
 deploy preview branches or run on pull requests. The production environment
 must have required reviewers configured; merely naming an environment does

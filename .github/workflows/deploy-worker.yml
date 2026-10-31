@@ -43,7 +43,7 @@ jobs:
 
   deploy:
     name: Build and deploy production Worker
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.AZKAR_AUTH_SCHEMA_VERIFIED == 'true'
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 45

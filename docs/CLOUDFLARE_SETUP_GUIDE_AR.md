@@ -35,6 +35,7 @@ Cloudflare دليل إن الموقع اتنشر صح.
 4. أضف **Environment variable** باسم `AZKAR_AUTH_SCHEMA_VERIFIED` وقيمته
    `false` حالياً. ما تغيّروش لـ`true` إلا بعد اختبار إنتاج معتمد يثبت
    provisioning وعزل المالكين وسياسات RLS.
+   وظيفة النشر هتفضل **skipped** لحد ما القيمة تبقى `true` بعد التحقق.
 5. ما تضيفش `PUBLIC_BASE_URL` كـCloudflare runtime variable؛ Flutter محتاجه
    وقت الـbuild، والـworkflow بيحقنه بقيمة الـWorker الصحيحة.
 
@@ -74,7 +75,8 @@ Cloudflare دليل إن الموقع اتنشر صح.
 `config/production.example.json` إلى `config/production.json`، واملأ رابط
 Supabase ومفتاح publishable المعتمدين محلياً فقط. خلي
 `AZKAR_AUTH_SCHEMA_VERIFIED` = `false` لحد ما اختبار RLS يتوافق عليه. سكربت
-الإنتاج هيرفض البناء لحد التحقق المطلوب؛ ماتغيّرش القيمة لتخطي الفحص.
+الإنتاج هيرفض البناء، ووظيفة النشر هتفضل skipped، لحد التحقق المطلوب؛
+ماتغيّرش القيمة لتخطي الفحص.
 
 ```powershell
 flutter analyze
@@ -97,6 +99,9 @@ npx.cmd --yes wrangler@4.156.0 dev --local --ip 127.0.0.1 --port 8787
 4. بعد الموافقة، اتأكد إن الـworkflow عمل Flutter release build ونشر
    `build/web` للـWorker `azkar-sadaqa`.
 5. راجع مخرجات Wrangler ثم اختبر رابط الإنتاج و`/m/<slug>` مباشرةً.
+
+قبل اكتمال اختبارات Supabase المعتمدة، المتوقع إن وظيفة النشر تفضل skipped؛
+بعدها فقط غيّر المتغير إلى `true` وأعد تشغيل workflow على `main`.
 
 الـworkflow لا يشغّل على الفروع أو Pull Requests، ومش هيعمل deploy لو التحليل
 أو الاختبارات أو إعداد الإنتاج فشل. سكربت `deploy_cloudflare.ps1` يفضل مسار
