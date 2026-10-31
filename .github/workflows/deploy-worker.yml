@@ -1,0 +1,85 @@
+name: Deploy AZKAR Worker
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azkar-production-worker
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Analyze and test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+          cache-key: azkar-flutter-3.47.7
+          pub-cache-key: azkar-pub
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  deploy:
+    name: Build and deploy production Worker
+    if: github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+          cache-key: azkar-flutter-3.47.7
+          pub-cache-key: azkar-pub
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Write production build configuration
+        shell: pwsh
+        env:
+          AZKAR_SUPABASE_URL: ${{ secrets.AZKAR_SUPABASE_URL }}
+          AZKAR_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.AZKAR_SUPABASE_PUBLISHABLE_KEY }}
+          AZKAR_AUTH_SCHEMA_VERIFIED: ${{ vars.AZKAR_AUTH_SCHEMA_VERIFIED }}
+        run: ./scripts/write_production_config.ps1
+
+      - name: Build and validate Flutter Web
+        shell: pwsh
+        run: ./scripts/build_web_production.ps1
+
+      - name: Deploy existing Worker
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.156.0
+          command: deploy --config wrangler.jsonc

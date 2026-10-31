@@ -67,7 +67,9 @@ $validPublicUrl = [Uri]::TryCreate(
     [string]::IsNullOrEmpty($publicUri.Query) -and
     [string]::IsNullOrEmpty($publicUri.Fragment) -and
     ($publicUri.AbsolutePath -eq '/' -or
-        [string]::IsNullOrEmpty($publicUri.AbsolutePath))
+        [string]::IsNullOrEmpty($publicUri.AbsolutePath)) -and
+    $publicUri.GetLeftPart([UriPartial]::Authority) -eq
+        'https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev'
 
 $problems = New-Object System.Collections.Generic.List[string]
 if (-not $validSupabaseUrl) {
@@ -83,7 +85,7 @@ if ([string]$config.AZKAR_AUTH_SCHEMA_VERIFIED -ne 'true') {
     $problems.Add('AZKAR_AUTH_SCHEMA_VERIFIED must be true only after production schema, provisioning, and RLS verification.')
 }
 if (-not $validPublicUrl) {
-    $problems.Add('PUBLIC_BASE_URL must be the final HTTPS site origin without a path, query, or fragment.')
+    $problems.Add('PUBLIC_BASE_URL must be https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev without a path, query, or fragment.')
 }
 if ($problems.Count -gt 0) {
     throw ('Production configuration is not ready: ' + ($problems -join ' '))
@@ -99,11 +101,27 @@ if ($LASTEXITCODE -ne 0) {
 $buildDirectory = Join-Path $projectRoot 'build\web'
 $indexPath = Join-Path $buildDirectory 'index.html'
 $bootstrapPath = Join-Path $buildDirectory 'flutter_bootstrap.js'
+$applicationPath = Join-Path $buildDirectory 'main.dart.js'
+$manifestPath = Join-Path $buildDirectory 'manifest.json'
+$iconPath = Join-Path $buildDirectory 'icons\Icon-512.png'
+$assetManifestPath = Join-Path $buildDirectory 'assets\AssetManifest.bin.json'
+$arabicFontPath = Join-Path $buildDirectory 'assets\assets\fonts\amiri\Amiri-Regular.ttf'
 if (-not (Test-Path -LiteralPath $indexPath -PathType Leaf)) {
     throw 'The build completed without build/web/index.html.'
 }
 if (-not (Test-Path -LiteralPath $bootstrapPath -PathType Leaf)) {
     throw 'The build is missing build/web/flutter_bootstrap.js.'
+}
+foreach ($requiredPath in @(
+    $applicationPath,
+    $manifestPath,
+    $iconPath,
+    $assetManifestPath,
+    $arabicFontPath
+)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw 'The Flutter Web output is incomplete: compiled application, manifest, icon, asset manifest, or Arabic font is missing.'
+    }
 }
 
 $indexHtml = [IO.File]::ReadAllText($indexPath)
@@ -112,9 +130,6 @@ if ($indexHtml -notmatch '<base href="/">') {
 }
 if ($indexHtml -notmatch '__AZKAR_PUBLIC_BASE_URL__') {
     throw 'The public metadata URL placeholder is missing from the built index.html.'
-}
-if (Test-Path -LiteralPath (Join-Path $buildDirectory '404.html')) {
-    throw 'A top-level 404.html disables Cloudflare Pages automatic SPA fallback. Remove or review it before deployment.'
 }
 
 $publicBaseUrl = $publicUri.GetLeftPart([UriPartial]::Authority)
@@ -128,5 +143,14 @@ if ($indexHtml.Contains('__AZKAR_PUBLIC_BASE_URL__')) {
     throw 'The public metadata URL was not fully generated.'
 }
 
-Write-Output 'Cloudflare Pages SPA fallback is enabled by the absence of a top-level 404.html.'
-Write-Output ('Production Web output: ' + $buildDirectory)
+$compiledApplication = [IO.File]::ReadAllText($applicationPath)
+if (-not $compiledApplication.Contains($publicBaseUrl)) {
+    throw 'The compiled Flutter application does not contain the configured public site origin.'
+}
+if ($indexHtml -match 'pages\.dev|localhost|127\.0\.0\.1') {
+    throw 'The generated Web metadata contains a non-production hostname.'
+}
+
+Write-Output 'Validated compiled Flutter application, bootstrap, manifest, icon, asset manifest, Arabic font, and production URL.'
+Write-Output 'Cloudflare Workers Static Assets will apply SPA fallback using wrangler.jsonc.'
+Write-Output ('Production Worker assets: ' + $buildDirectory)

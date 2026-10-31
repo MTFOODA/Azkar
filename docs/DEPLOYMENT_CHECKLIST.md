@@ -1,59 +1,65 @@
-# AZKAR Cloudflare Pages Deployment Checklist
+# AZKAR Cloudflare Workers Production Checklist
 
-## Before deployment
+## Before enabling deployment
 
-- [ ] Confirm the hosting mode with the project owner. Direct Upload cannot be
-      converted to Git integration in place.
-- [ ] Confirm the production Supabase project and approved release plan.
-- [ ] Verify `SUPABASE_URL` and anon/publishable key in local
-      `config/production.json`; never use a service-role key.
-- [ ] Confirm `AZKAR_DEMO_MODE` is `false`.
-- [ ] Set `AZKAR_AUTH_SCHEMA_VERIFIED` to `true` only after schema,
-      provisioning trigger, and RLS acceptance checks pass.
-- [ ] Set `PUBLIC_BASE_URL` to the final HTTPS Pages origin.
-- [ ] Review the checked-in policies and run anonymous/draft and
-      cross-owner RLS acceptance checks using approved test accounts.
-- [ ] Run `flutter analyze` and `flutter test`.
-- [ ] Build with `scripts/build_web_production.ps1`.
-- [ ] Verify `build/web/index.html`, Flutter bootstrap, metadata hostname, and
-      absence of a top-level `404.html`.
-- [ ] Preview with `wrangler pages dev build\web --port 8788`.
-- [ ] Confirm `/`, `/login`, `/register`, `/reset-password`, `/m/<slug>`,
-      direct navigation, browser refresh, and back/forward.
-- [ ] Confirm an unpublished page does not expose page/content data.
-- [ ] Confirm no private key or service credential is present in build output.
-- [ ] Confirm share URLs use the configured public hostname.
+- [ ] Confirm the existing Worker is `azkar-sadaqa`; do not create a replacement.
+- [ ] Keep the production hostname
+      `https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev`.
+- [ ] Confirm Cloudflare Workers Static Assets is the hosting mode; Pages
+      commands and `pages.dev` hostnames are not used.
+- [ ] Review `wrangler.jsonc`; its Worker name must match and its assets
+      directory must be `build/web`.
+- [ ] Disconnect or disable the existing Cloudflare Workers Build connection
+      before enabling GitHub Actions, preventing duplicate production deploys.
+- [ ] Configure the GitHub `production` environment with required reviewers.
+- [ ] Add only the required Supabase and Cloudflare Environment secrets.
+- [ ] Keep `AZKAR_AUTH_SCHEMA_VERIFIED=false` until production RLS, provisioning,
+      and tenant-isolation checks are approved and complete.
+- [ ] In Supabase Auth URL Configuration, preserve existing redirects and add
+      the production `/dashboard` and `/reset-password` URLs.
+- [ ] Do not use a service-role key, database password, or Cloudflare token in
+      Flutter Dart defines.
 
-## During deployment
+## Automated checks and build
 
-- [ ] Pages project was created manually only after mode approval.
-- [ ] Project name and assigned production hostname were recorded.
-- [ ] Selected project is the intended existing Direct Upload project.
-- [ ] Wrangler is authenticated to the account that owns that project.
-- [ ] `build\web` is the upload directory.
-- [ ] Review the script's production target, then type the exact confirmation
-      `DEPLOY PRODUCTION`.
-- [ ] Record the deployment URL and deployment identifier from Wrangler or
-      Cloudflare Dashboard.
+- [ ] `flutter analyze` succeeds.
+- [ ] `flutter test` succeeds; record the actual test count.
+- [ ] GitHub Actions uses Flutter 3.47.7 and Wrangler 4.156.0.
+- [ ] The production build has Demo Mode disabled and the exact production URL.
+- [ ] `build/web/index.html` contains the root base href and resolved generic
+      metadata, not `$FLUTTER_BASE_HREF` or the metadata placeholder.
+- [ ] Compiled `main.dart.js`, `flutter_bootstrap.js`, asset manifest, icons,
+      manifest, and Arabic fonts are present.
+- [ ] Wrangler deploy configuration uses `build/web` and SPA fallback; never
+      upload source `web/`.
+- [ ] No ignored production configuration or private credentials are staged.
+- [ ] Production build and deployment are explicitly approved before running.
 
-## After deployment
+## After Cloudflare deployment
 
-- [ ] Homepage loads over HTTPS.
-- [ ] Login, registration, and password recovery routes load directly.
-- [ ] Registration still contains only name, email, password, and confirm
-      password.
-- [ ] A real published memorial URL loads in a signed-out browser.
-- [ ] Direct URL entry and browser refresh work on `/m/<slug>`.
-- [ ] Invalid/unpublished slugs show a friendly unavailable state.
-- [ ] Published content and theme load; drafts/private content remain absent.
-- [ ] Share/copy actions point to the production hostname.
-- [ ] Arabic RTL, fonts, mobile layout, and browser back/forward work.
-- [ ] Supabase logs and browser console contain no unexpected failures.
-- [ ] Android/iOS shared application behavior remains unaffected.
-- [ ] Keep a known-good Pages deployment available for rollback.
+- [ ] Wrangler output identifies the existing `azkar-sadaqa` Worker.
+- [ ] Production homepage returns the compiled Flutter application, not source
+      HTML or the Flutter template.
+- [ ] Direct navigation and refresh work for `/login`, `/register`,
+      `/reset-password`, and `/m/<published-slug>`.
+- [ ] Published memorial data loads anonymously; unpublished pages/content
+      remain unavailable.
+- [ ] Registration still contains only name, email, password, and confirmation.
+- [ ] Share links use the production Worker origin and the correct encoded slug.
+- [ ] Verify Copy Link and native sharing on a real device when available.
+- [ ] Check browser console/network, fonts, icons, Arabic RTL, responsive sizes,
+      back/forward navigation, and Supabase errors.
+- [ ] Run authorized Supabase isolation tests for two owners and anonymous
+      access; static policy inspection is not live proof.
+- [ ] Record the deployment/version ID and keep a known-good Worker version for
+      rollback.
+- [ ] Do not declare launch readiness while critical authentication or RLS
+      checks remain blocked.
 
-## Not yet a deployment result
+## Current observed status
 
-- [ ] Do not mark the site live until a real Pages deployment and all post-
-      deployment checks above have actually completed.
-
+- [x] Existing homepage returns HTTP 200 but contains the raw Flutter source
+      template; this is a failed deployment, not an acceptance pass.
+- [x] Existing `/m/azkar-production-check` request returns HTTP 404.
+- [ ] Corrected production build deployed — pending explicit approval.
+- [ ] Production authentication and RLS tests — pending approved test setup.

@@ -1,88 +1,59 @@
 [CmdletBinding()]
-param(
-    [string]$ProjectName = $env:CLOUDFLARE_PAGES_PROJECT_NAME
-)
+param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $buildDirectory = Join-Path $projectRoot 'build\web'
+$configPath = Join-Path $projectRoot 'wrangler.jsonc'
+$buildScriptPath = Join-Path $PSScriptRoot 'build_web_production.ps1'
+$indexPath = Join-Path $buildDirectory 'index.html'
+$bootstrapPath = Join-Path $buildDirectory 'flutter_bootstrap.js'
+$applicationPath = Join-Path $buildDirectory 'main.dart.js'
 
-if ([string]::IsNullOrWhiteSpace($ProjectName) -or
-    $ProjectName -notmatch '^[a-z0-9][a-z0-9-]{0,62}$') {
-    throw 'Set CLOUDFLARE_PAGES_PROJECT_NAME or pass -ProjectName using the existing Pages project name.'
-}
-if (-not (Test-Path -LiteralPath (Join-Path $buildDirectory 'index.html') -PathType Leaf)) {
-    throw 'Production Web build is missing. Run scripts/build_web_production.ps1 first.'
-}
-if (-not (Test-Path -LiteralPath (Join-Path $buildDirectory 'flutter_bootstrap.js') -PathType Leaf)) {
-    throw 'Production Web build is incomplete: flutter_bootstrap.js is missing.'
-}
-if (Test-Path -LiteralPath (Join-Path $buildDirectory '404.html')) {
-    throw 'A top-level 404.html disables the Cloudflare Pages SPA fallback; review the production build.'
+foreach ($requiredPath in @($configPath, $buildScriptPath)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw 'The Wrangler configuration and production build script are required.'
+    }
 }
 
-$wrangler = Get-Command wrangler -ErrorAction SilentlyContinue
-if (-not $wrangler) {
-    throw 'Wrangler was not found on PATH. Install it with npm install --global wrangler, then reopen PowerShell.'
+$npx = Get-Command npx.cmd -ErrorAction SilentlyContinue
+if (-not $npx) {
+    throw 'Node.js/npm was not found on PATH. Install Node.js LTS and reopen PowerShell.'
 }
 
-Write-Output ('Target Pages project: ' + $ProjectName)
-Write-Output 'Target environment: production'
-Write-Output 'The selected project must already exist and use Direct Upload.'
+Set-Location $projectRoot
+& $buildScriptPath
+foreach ($requiredPath in @($indexPath, $bootstrapPath, $applicationPath)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw 'The production Flutter Web output is incomplete; no Cloudflare deployment was attempted.'
+    }
+}
+
+$wranglerArgs = @('--yes', 'wrangler@4.156.0')
+
+Write-Output 'Target Worker: azkar-sadaqa'
+Write-Output 'Production URL: https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev'
 Write-Output 'Checking Cloudflare authentication...'
-& wrangler whoami
+& $npx.Source @wranglerArgs whoami
 if ($LASTEXITCODE -ne 0) {
-    throw 'Wrangler is not authenticated. Run wrangler login and retry.'
+    throw 'Wrangler authentication or account access check failed.'
 }
 
-$projectListOutput = & wrangler pages project list --json 2>&1
+Write-Output 'Validating the Worker deployment without uploading files...'
+& $npx.Source @wranglerArgs deploy --config wrangler.jsonc --dry-run
 if ($LASTEXITCODE -ne 0) {
-    $projectListOutput | ForEach-Object { Write-Output $_ }
-    throw 'Could not list Pages projects. Verify Wrangler account access and project setup.'
-}
-try {
-    $projectList = ($projectListOutput -join "`n") | ConvertFrom-Json -ErrorAction Stop
-}
-catch {
-    throw 'Wrangler returned an unreadable Pages project list.'
+    throw 'Wrangler dry-run validation failed; no production deployment was attempted.'
 }
 
-$projects = if ($projectList -is [Array]) {
-    $projectList
-}
-elseif ($projectList.result) {
-    @($projectList.result)
-}
-else {
-    @($projectList)
-}
-$projectExists = @($projects | Where-Object {
-    $_.name -eq $ProjectName -or $_.project_name -eq $ProjectName
-}).Count -gt 0
-if (-not $projectExists) {
-    throw 'The named Pages project was not found in the authenticated account. Create it manually after choosing a deployment mode; this script never creates projects.'
-}
-
-$confirmation = Read-Host "Type DEPLOY PRODUCTION to upload build/web to '$ProjectName'"
+$confirmation = Read-Host "Type DEPLOY PRODUCTION to update the existing Worker 'azkar-sadaqa'"
 if ($confirmation -cne 'DEPLOY PRODUCTION') {
     Write-Output 'Deployment cancelled. No files were uploaded.'
     exit 0
 }
 
-$deployOutput = & wrangler pages deploy $buildDirectory --project-name $ProjectName 2>&1
-$deployExitCode = $LASTEXITCODE
-$deployOutput | ForEach-Object { Write-Output $_ }
-if ($deployExitCode -ne 0) {
-    throw "Cloudflare Pages deployment failed with exit code $deployExitCode."
+& $npx.Source @wranglerArgs deploy --config wrangler.jsonc
+if ($LASTEXITCODE -ne 0) {
+    throw 'Cloudflare Worker deployment failed.'
 }
 
-$deployedUrl = [regex]::Match(
-    ($deployOutput -join "`n"),
-    'https://[a-zA-Z0-9.-]+\.pages\.dev'
-).Value
-if ($deployedUrl) {
-    Write-Output ('Deployment URL: ' + $deployedUrl)
-}
-else {
-    Write-Output 'Deployment succeeded. Find the production URL under Workers & Pages > the Pages project > Deployments.'
-}
+Write-Output 'Cloudflare Workers Static Assets deployment completed.'

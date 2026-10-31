@@ -33,10 +33,11 @@ Supabase؛ أمّا عدّاد التسبيح فمحلي على جهاز أو م
   AZKAR.
 
 في الويب يستخدم التطبيق مسارات URL عادية عبر `usePathUrlStrategy()`، لذلك تكون
-الرابطة `/m/slug` مباشرة بدلاً من `/#/m/slug`. يحتاج المضيف إلى إرجاع
-`index.html` للمسارات غير المطابقة لملفات ثابتة. Cloudflare Pages يفعل ذلك
-تلقائياً لتطبيق SPA ما دام لا يوجد `404.html` أعلى مجلد النشر؛ لا نضيف
-`_redirects` catch-all كي لا نعيد كتابة طلبات JS أو الخطوط أو الصور.
+الرابطة `/m/slug` مباشرة بدلاً من `/#/m/slug`. يحتاج المضيف إلى إرجاع `index.html` لطلبات التنقل التي لا تطابق ملفات ثابتة.
+Workers Static Assets يحقق ذلك عبر
+`assets.not_found_handling: "single-page-application"` في `wrangler.jsonc`.
+الملفات الموجودة تُخدم كما هي؛ لا نعيد كتابة طلبات JS أو الخطوط أو الصور، ولا
+نستخدم إعدادات Pages أو ملف `_redirects`.
 
 ## 3. الميزات
 
@@ -138,19 +139,29 @@ flutter run -d edge --dart-define-from-file=config/dev.json
 - رؤوس HTML توفر معاينة عامة للموقع. معاينة الصفحة الخاصة لا تتغير عند زيارة
   مسار Flutter لأن البيانات تُجلب بعد تحميل JavaScript.
 
-## 8. النشر على Cloudflare Pages
+## 8. النشر على Cloudflare Workers
 
 التحضير المحلي موجود في:
 
 - `scripts/build_web_production.ps1`
 - `scripts/deploy_cloudflare.ps1`
+- `.github/workflows/deploy-worker.yml`
+- `wrangler.jsonc`
 - `docs/CLOUDFLARE_DEPLOYMENT.md`
 - `docs/DEPLOYMENT_CHECKLIST.md`
 
-التدفق المقترح: اختر طريقة Pages أولاً، وأنشئ المشروع يدوياً بعد الموافقة،
-وسجل hostname الفعلي، جهز `config/production.json`، ثم شغّل سكربت البناء.
-للنشر المباشر إلى مشروع Direct Upload موجود، شغّل سكربت النشر الذي يعرض الهدف
-ويطلب كتابة تأكيد صريح. لا ينشئ أي سكربت حساباً أو مشروعاً ولا ينشر تلقائياً.
+الاستضافة النشطة هي Worker موجود اسمه `azkar-sadaqa` على:
+`https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev`. إعداد Wrangler يرفع
+`build/web` فقط. GitHub Actions يثبت Flutter 3.47.7 وWrangler 4.156.0، يشغل
+التحليل والاختبارات، يبني Flutter Web release، ثم ينشر Worker بعد موافقة
+GitHub environment `production`. يجب فصل Workers Build القديم قبل تفعيل هذا
+المسار لتجنب النشر المكرر. لا ينشئ workflow Worker جديداً.
+
+التدفق المحلي اليدوي الاحتياطي يستخدم `scripts/deploy_cloudflare.ps1`، الذي
+يشغّل build إنتاجاً جديداً ثم يجري dry-run ويطلب تأكيداً صريحاً قبل النشر.
+يمكن تشغيل `scripts/build_web_production.ps1` منفرداً للتحقق من build فقط.
+لا تستخدم النشر اليدوي بالتوازي مع نشر آلي. إعدادات Cloudflare Pages ليست
+مسار النشر المختار.
 
 ## 9. الاختبارات
 
@@ -169,12 +180,14 @@ flutter run -d edge --dart-define-from-file=config/dev.json
 
 - شغّل `flutter pub get` بعد تغيير الاعتمادات فقط.
 - لبناء الموقع بعد تحديث الكود، راجع الإعداد أولاً ثم شغّل
-  `scripts/build_web_production.ps1` و`wrangler pages dev build\web` للاختبار
-  المحلي، وبعد مراجعة المخرجات شغّل سكربت النشر مع تأكيد صريح.
+  `scripts/build_web_production.ps1`. اختبر التوجيه المحلي باستخدام
+  `npx.cmd --yes wrangler@4.156.0 dev --local --ip 127.0.0.1 --port 8787`.
+  النشر الأساسي يتم من GitHub Actions بعد نجاح التحليل والاختبارات وموافقة
+  بيئة الإنتاج.
 - إذا ظهرت صفحة بيضاء، تحقق من سجل المتصفح، تهيئة Supabase، مسار `base href`
   وملفات Flutter التي أعادها المضيف.
-- إذا فشل `/m/slug` مباشرة، تأكد من Path URL Strategy وعدم وجود `404.html`
-  أعلى جذر Pages.
+- إذا فشل `/m/slug` مباشرة، تحقق من Path URL Strategy وإعداد
+  `assets.not_found_handling` ومن أن Cloudflare نشر `build/web` لا `web/`.
 - إذا لم تظهر البيانات، افحص حالة النشر وسياسات RLS وإعداد Supabase دون كشف
   تفاصيل الخطأ للمستخدم العام.
 - عند ظهور ملفات قديمة بعد نشر، اختبر في نافذة خاصة أولاً. لا تضف Cache Rules
@@ -185,9 +198,10 @@ flutter run -d edge --dart-define-from-file=config/dev.json
 
 ## 11. القيود المعروفة
 
-1. لا يوجد hostname إنتاجي أو ملف `config/production.json` متحقق منه بعد.
-2. لا يوجد نشر Cloudflare حيّ. اختبار البناء الإنتاجي والنطاق يتطلب إعدادات
-   إنتاج حقيقية وموافقة صاحب المشروع.
+1. hostname الـWorker موجود، لكن النسخة التي جرى فحصها تُرجع قالب HTML الخام؛
+   يلزم نشر Flutter build صحيح وموافقة صاحب المشروع.
+2. ملف `config/production.json` غير موجود محلياً؛ البناء الإنتاجي الحقيقي
+   يتطلب إعداد GitHub environment secrets.
 3. تعريفات RLS في الملف موجودة، لكن اختبار عبور المستأجرين على المشروع الحي
    ما زال مطلوباً.
 4. معاينات مشاركة الصفحات الفردية وبيانات SEO الديناميكية غير مدعومة حالياً.
@@ -197,8 +211,7 @@ flutter run -d edge --dart-define-from-file=config/dev.json
 ## 12. تحسينات مستقبلية
 
 - ربط نطاق مخصص بعد الإطلاق الاختباري.
-- Pages Function أو Worker اختياري لإرجاع HTML وOpen Graph ديناميكيين للزاحف،
+- Worker اختياري لإرجاع HTML وOpen Graph ديناميكيين للزاحف،
   مع قراءة المنشور فقط، وفشل آمن، ومراجعة حدود الاستخدام والتخزين المؤقت.
 - إضافة sitemap وrobots بعد تحديد سياسة الفهرسة وhostname.
-- تكامل Git للنشر المستمر إذا أصبح المستودع وإجراءات المراجعة جاهزين.
 - تحسين قياسات الأداء وSEO بعد اختبار ميداني على أجهزة واتصالات فعلية.

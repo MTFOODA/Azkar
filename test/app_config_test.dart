@@ -83,4 +83,11 @@ void main() {
     expect(link.path, '/m/$slug');
     expect(AppConfig.memorialPagePath(slug), '/m/$slug');
   });
+
+  test('memorial links encode the slug as a single URL path segment', () {
+    expect(
+      AppConfig.memorialPageLink('owner name/preview'),
+      '${AppConfig.siteBaseUrl}/m/owner%20name%2Fpreview',
+    );
+  });
 }

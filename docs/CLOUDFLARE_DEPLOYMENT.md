@@ -1,233 +1,205 @@
-# AZKAR Cloudflare Pages Deployment
+# AZKAR Cloudflare Workers Deployment
 
-## Architecture and hosting choice
+## Selected architecture
 
-AZKAR reuses the existing Flutter Web client and Supabase project. Cloudflare
-Pages serves the compiled static files; Auth, database, and content remain on
-Supabase. No Cloudflare account, project, Git connection, or deployment is
-created by this preparation.
+AZKAR is deployed as **Cloudflare Workers Static Assets**, not Cloudflare
+Pages. The existing Worker is `azkar-sadaqa`, with the production hostname
+[`azkar-sadaqa.mohamed-fooda-mtf.workers.dev`](https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev).
+Supabase remains the authentication and data backend.
 
-For the current Windows/local-build workflow and the absence of a Git repository
-in the workspace, **Direct Upload with Wrangler is the recommended initial
-choice**. It lets Flutter build on the developer machine and uploads only
-`build/web`. The choice is not reversible in-place: Cloudflare says a
-Direct Upload project cannot later be changed to Git integration, and a
-Git-integrated project cannot be converted to Direct Upload. Choose only after
-approval. Git integration remains an alternative for automatic builds and
-branch previews once a suitable Git repository and reproducible Flutter build
-environment exist.
+The production pipeline is GitHub Actions. Cloudflare's current Git-connected
+Workers Build was configured with no build command and deployed `web/`; a
+production request returned the unbuilt Flutter template, and `/m/...` returned
+404. GitHub Actions is selected because it installs the project's pinned
+Flutter SDK with caching, runs analysis and tests, compiles Flutter Web, checks
+the compiled output, then deploys the existing Worker with a pinned Wrangler
+version. The Cloudflare Workers Build connection must be disconnected before
+the Actions workflow is enabled, so a commit cannot trigger two deployments.
 
-Official references:
+This repository does not create a Worker or change its hostname. Production
+deployment is gated by the GitHub `production` environment and requires a
+reviewer approval configured in GitHub settings.
 
-- [Cloudflare Pages Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
-- [Cloudflare Pages Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/)
-- [Cloudflare Pages serving and SPA behavior](https://developers.cloudflare.com/pages/configuration/serving-pages/)
+## Build-time Supabase configuration
 
-## Prerequisites
+`lib/core/config/app_config.dart` reads Flutter compile-time Dart defines.
+Cloudflare runtime variables do **not** populate the compiled Flutter
+JavaScript. The protected GitHub environment therefore supplies:
 
-- Windows PowerShell and Flutter/Dart compatible with `pubspec.yaml`.
-- A real production Supabase URL and anon/publishable key. Never use a
-  service-role or secret key in this browser app.
-- Production schema, provisioning trigger, and RLS reviewed and tested before
-  setting `AZKAR_AUTH_SCHEMA_VERIFIED` to `true`.
-- A final HTTPS Pages hostname for `PUBLIC_BASE_URL`.
-- Node.js/npm and Wrangler for local Pages preview and deployment.
-- An existing Cloudflare Pages project in Direct Upload mode. The deploy
-  script will not create one.
-
-## Production configuration
-
-Copy the safe template and fill it in locally:
-
-```powershell
-Copy-Item config\production.example.json config\production.json
-notepad config\production.json
-```
-
-Required values:
-
-| Define | Requirement |
+| GitHub environment value | Purpose |
 |---|---|
-| `SUPABASE_URL` | Valid HTTPS project URL |
-| `SUPABASE_ANON_KEY` | Supabase anon JWT or `sb_publishable_...` key |
-| `AZKAR_DEMO_MODE` | JSON boolean `false` |
-| `AZKAR_AUTH_SCHEMA_VERIFIED` | JSON boolean `true` only after production schema/RLS checks |
-| `PUBLIC_BASE_URL` | Final HTTPS origin, for example `https://actual-name.pages.dev` |
+| `AZKAR_SUPABASE_URL` secret | Existing production Supabase HTTPS URL |
+| `AZKAR_SUPABASE_PUBLISHABLE_KEY` secret | Supabase anon/publishable client key only |
+| `AZKAR_AUTH_SCHEMA_VERIFIED` variable | Must be `true` only after production schema, provisioning, and RLS checks |
+| `CLOUDFLARE_API_TOKEN` secret | Least-privilege token for deploying the existing Worker |
+| `CLOUDFLARE_ACCOUNT_ID` secret | Account that owns the Worker |
 
-`config/production.json` is ignored by Git. Flutter Dart defines are compiled
-into the browser bundle and are not secrets. Do not copy any service-role key
-into this file. The build script validates values without printing them,
-executes the Flutter release build, substitutes the configured site origin in
-the Open Graph tags in the generated `index.html`, and checks the SPA hosting
-requirements.
+The workflow writes the ignored `config/production.json` only on its runner.
+It sets `AZKAR_DEMO_MODE` to `false` and the existing public origin to
+`https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev`. It fails closed unless
+the Supabase URL/key are valid and `AZKAR_AUTH_SCHEMA_VERIFIED` is explicitly
+`true`. Do not put a service-role key, database password, Cloudflare token, or
+other privileged secret in Flutter defines.
 
-## Build
-
-Run from the project root:
+For a local release build, copy
+[`config/production.example.json`](../config/production.example.json) to the
+ignored `config/production.json`, enter the approved production URL and
+publishable key locally, and keep schema verification false until its checks
+are complete. Then run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_web_production.ps1
 ```
 
-The script runs the equivalent Flutter release build with:
+The build requires the exact production hostname, valid HTTPS Supabase
+configuration, Demo Mode disabled, and schema verification enabled. It builds
+with Flutter release mode and validates:
+
+- `build/web/index.html`, root base URL, and Flutter bootstrap.
+- Compiled `main.dart.js` containing the configured public site origin.
+- Flutter asset manifest, web manifest, icon, and an Arabic font asset.
+- Replacement of the generic social metadata URL placeholder.
+- Absence of `pages.dev`, localhost, and loopback URLs from generated metadata.
+
+No local production Supabase configuration is currently present, so this
+production build has not been run with real production settings.
+
+## Wrangler Static Assets and SPA routing
+
+[`wrangler.jsonc`](../wrangler.jsonc) is the source of truth for deployment:
+
+- Worker name: `azkar-sadaqa`.
+- Static asset directory: `./build/web` (never the source `web/` directory).
+- `workers_dev: true`, preserving the existing Worker hostname.
+- `assets.not_found_handling: "single-page-application"`.
+
+Cloudflare Workers Static Assets serves matching files as-is and returns
+`index.html` for unmatched navigation requests. This supports Flutter's
+path-based `/m/:slug` route, browser refresh, login, registration, recovery,
+and dashboard navigation without a Pages `_redirects` file or a custom Worker
+entry point. Missing non-navigation assets remain missing rather than being
+silently rewritten to HTML.
+
+The build output contains only the compiled public client and its assets. The
+ignored production configuration file is outside `build/web` and is not
+uploaded. `PUBLIC_BASE_URL` is a compile-time value used for share links, Auth
+redirects, and generic social metadata.
+
+## GitHub Actions deployment
+
+The workflow is
+[`deploy-worker.yml`](../.github/workflows/deploy-worker.yml). It:
+
+1. Runs on pushes to `main` or an explicit workflow dispatch on `main`.
+2. Uses Flutter 3.47.7, runs `flutter analyze` and `flutter test`, and blocks
+   deployment if either fails.
+3. Waits for the protected GitHub environment `production`.
+4. Creates the local production config from environment secrets and builds the
+   compiled Web application.
+5. Uses Wrangler 4.156.0 and `wrangler.jsonc` to deploy the existing Worker.
+
+The workflow grants `GITHUB_TOKEN` read-only `contents` permission. It does not
+deploy preview branches or run on pull requests. The production environment
+must have required reviewers configured; merely naming an environment does
+not create an approval gate.
+
+### One-time Cloudflare change
+
+Before enabling this workflow, open **Cloudflare Dashboard → Workers & Pages →
+`azkar-sadaqa` → Settings → Builds** and disconnect the existing Git build
+connection (or disable its production builds if the dashboard offers that
+option). Do not delete the Worker. This leaves the current active deployment
+untouched and prevents the old build, which uploaded source `web/`, from
+competing with GitHub Actions.
+
+### Wrangler versions and local checks
+
+The GitHub workflow pins Flutter 3.47.7 and Wrangler 4.156.0. With a local
+Node.js installation and an authenticated Cloudflare account, the manual
+deployment script uses the same Wrangler version. It performs an authenticated
+account check and a dry run, then requires typing `DEPLOY PRODUCTION` before
+uploading:
 
 ```powershell
-flutter build web --release --base-href / --dart-define-from-file=config/production.json
-```
-
-It then verifies `build/web/index.html` and `flutter_bootstrap.js`, requires the
-site-root base URL, generates absolute generic social-image URLs, and rejects a
-top-level `404.html`. A real production config is intentionally required. Do
-not substitute fake production credentials or deploy a development build.
-
-## SPA routing on Pages
-
-`lib/main.dart` enables Flutter's path URL strategy for web builds. The actual
-routes are `/`, `/login`, `/register`, `/reset-password`, `/m/:slug`,
-`/m/:slug/:type`, and the dashboard/admin routes. Cloudflare Pages serves an
-exact static asset when it exists; for paths that do not map to a file, Pages
-uses the SPA root automatically **when there is no top-level `404.html`**.
-Therefore:
-
-- Keep Flutter assets and `index.html` in the deployment root (`build/web`).
-- Do not add a blanket `_redirects` rule; it is unnecessary for this setup and
-  can mask missing assets.
-- Do not add a top-level `404.html` unless the SPA fallback design is revised.
-- Do not rewrite requests for JS, CSS, fonts, icons, manifest, or service
-  worker files.
-
-Cloudflare reference: [Serving Pages](https://developers.cloudflare.com/pages/configuration/serving-pages/).
-
-## Local production-output preview
-
-Install Wrangler if needed, then serve the generated output using the Pages
-development server:
-
-```powershell
-npm install --global wrangler
-wrangler pages dev build\web --port 8788
-```
-
-Keep that terminal open and check `http://localhost:8788/`, `/login`,
-`/register`, and a `/m/<published-slug>` route. Test a direct URL and refresh,
-not only in-app navigation. The local browser still contacts Supabase; only
-publicly published data should be returned to an anonymous visitor. A local
-preview is not proof of a real Cloudflare deployment or live RLS acceptance.
-
-## Create and deploy the Pages project manually
-
-After confirming the irreversible Direct Upload choice, create the Pages
-project in Cloudflare Dashboard. Pick a project name and note the exact
-`pages.dev` hostname Cloudflare assigns. No deployment script creates the
-project.
-
-Authenticate Wrangler:
-
-```powershell
-wrangler login
-wrangler whoami
-wrangler pages project list
-```
-
-Set the project name in the current PowerShell session and ensure
-`PUBLIC_BASE_URL` in the production config matches the final public origin:
-
-```powershell
-$env:CLOUDFLARE_PAGES_PROJECT_NAME = "actual-project-name"
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_web_production.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\deploy_cloudflare.ps1
 ```
 
-The deployment script verifies the build files, Wrangler installation,
-authentication, and existence of the named project. It prints the target and
-asks you to type `DEPLOY PRODUCTION`. It then runs the Pages-specific command:
+For local routing verification after a valid release build:
 
 ```powershell
-wrangler pages deploy build\web --project-name actual-project-name
+npx.cmd --yes wrangler@4.156.0 dev --local --ip 127.0.0.1 --port 8787
 ```
 
-This script is for a pre-existing Direct Upload project. Git-integrated
-projects have their own automatic deployment behavior; do not use this script
-as a substitute for deciding and configuring the Git deployment workflow.
-Wrangler may still be used with Git projects under Cloudflare's documented
-conditions, but that is not the prepared deployment mode.
+Open `http://127.0.0.1:8787/` and directly request `/login`,
+`/register`, `/reset-password`, and `/m/<published-slug>`. This verifies local
+static-asset routing only; it is not proof of a production release or live
+Supabase access.
 
-## Production URL and updating the site
+## Authentication redirect allowlist
 
-Use the production hostname shown in the Pages project's **Deployments** page
-or Wrangler success output. The same origin must be in `PUBLIC_BASE_URL` before
-building, so page-share links, password recovery redirects, and social image
-metadata use the public host. If the assigned hostname or custom domain changes,
-update the local production config and rebuild before deploying.
+The application requests these exact redirects:
 
-For updates: review the code/config, run analysis and tests, build, preview with
-`wrangler pages dev`, inspect the generated metadata and route behavior, then
-deploy with confirmation. Cloudflare retains prior deployments in the
-dashboard; select a known-good prior deployment and use its rollback/redeploy
-action if a release must be reverted. A rollback of static assets does not
-roll back Supabase schema or content.
+- Signup/email confirmation: `https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev/dashboard`
+- Password recovery: `https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev/reset-password`
 
-Avoid custom cache rules initially. Pages already applies its static asset
-caching behavior, and custom caching can leave stale Flutter bundles or
-interfere with routing/Functions.
+In **Supabase Dashboard → Authentication → URL Configuration**, set the Site
+URL to the production origin and add those exact URLs to the Redirect URLs
+allowlist. Preserve existing development URLs. Do not guess callback paths or
+remove unrelated redirects.
 
-## Security checklist
+## Data provisioning and tenant security
 
-- No service-role key, secret key, or admin credential in Dart defines or
-  `build/web`.
-- Demo Mode is false.
-- Registration guard is enabled only after schema and RLS acceptance.
-- Public memorial, content, homepage-card, and theme reads are limited to
-  published resources by Supabase RLS.
-- Owner writes remain owner-scoped; platform administration remains separate.
-- Test anonymous access to a draft/unpublished slug and verify no private
-  content is returned.
-- Do not loosen RLS or add broad database grants to fix a hosting issue.
-- Configure Supabase Auth allowed redirect URLs for the final Pages hostname
-  and relevant login/dashboard/reset routes.
+The client uses the existing Supabase Auth flow. The signup service sends a
+display name and page-title metadata; it does not create memorial pages.
+`azkar_provision_owner_page` remains the single database provisioning trigger.
+The registration UI has four fields, and page title/slug management remains in
+Dashboard → Page Settings.
 
-The checked-in SQL can be reviewed locally. Live policy behavior is not
-certified by a Flutter test or by the presence of policy definitions; test the
-intended Supabase project with approved accounts before production signup.
+The committed SQL defines RLS on the application tables, owner-scoped writes,
+published-only anonymous reads, and active database-backed administrator
+checks. Static review of these definitions is not proof that the live
+Supabase project matches them. Do not rerun the initial schema, disable RLS,
+or set `AZKAR_AUTH_SCHEMA_VERIFIED=true` until approved, isolated acceptance
+tests establish owner isolation, unpublished-page privacy, and anonymous
+read-only behavior.
 
-## Generic and dynamic link previews
+No production users, content, or schema were created or changed for this
+preparation. Live RLS verification and account-flow testing remain blocked
+until an isolated test project or explicit account/test-data approval is
+available.
 
-The HTML entry response contains a generic AZKAR title, Arabic description,
-Open Graph metadata, Twitter summary card, favicon, manifest, and an approved
-AZKAR icon. Flutter cannot reliably set per-memorial metadata for social
-crawlers after the client-side app loads.
+## Rollback and operational limits
 
-Dynamic previews are a future, optional Pages Function/Worker. It would return
-crawler HTML only after a server-side lookup for a published slug, use a
-publicly scoped anon key or safe read-only endpoint, avoid secrets, return a
-generic unavailable response for drafts/missing pages, and avoid caching
-private or stale publication data. Functions use Workers runtime quotas; check
-the current plan/pricing before adding them. Do not deploy this enhancement
-without a separate review.
+For a bad Worker release, use **Workers & Pages → `azkar-sadaqa` →
+Deployments/Version history** to promote the last known-good Worker version.
+Verify the production URL after rollback. A Worker rollback does not revert
+Supabase data, Auth settings, or schema.
 
-## Cloudflare Free plan considerations
+Generic Open Graph and Twitter metadata are present. Per-memorial social
+previews are not implemented because the site renders memorial content in the
+Flutter client. Dynamic, publication-aware previews are a separate future
+enhancement and are not part of this deployment.
 
-Cloudflare's [Pages limits](https://developers.cloudflare.com/pages/platform/limits/)
-currently document, among other limits, 500 Git builds per month, one
-concurrent build, up to 20,000 files per Free site, a 25 MiB maximum per
-individual asset, and up to 100 custom domains per project. Build-count limits
-apply to Pages builds; Direct Upload builds locally and uploads static assets.
-Limits and plan details can change, so confirm the linked official page before
-relying on a specific quota. Pages Functions usage is governed by Workers
-quotas.
+## Cloudflare Pages is not the selected hosting mode
 
-## Troubleshooting
+Pages commands such as `wrangler pages deploy`, `wrangler pages dev`, and
+`pages.dev` hostnames do not apply to the existing Worker. Do not create a
+Pages project or use Pages-specific fallback behavior for this deployment.
 
-| Symptom | Check |
+## Current verification status
+
+| Check | Result |
 |---|---|
-| Deep URL returns a Cloudflare 404 | Confirm `build/web` was deployed, no root `404.html` exists, and path strategy is active. |
-| Blank page | Check browser console/network, `index.html` base href, bootstrap file, and current asset deployment. |
-| Supabase configuration error | Recheck production JSON keys and release build arguments; never print the values. |
-| CORS/Auth failure | Check Supabase Auth redirect allowlist and project API/auth configuration; do not bypass RLS. |
-| Share URL points to the wrong host | Correct `PUBLIC_BASE_URL`, rebuild, and redeploy. |
-| Missing fonts or images | Confirm asset paths/files exist in `build/web`; do not rewrite static asset routes. |
-| Wrangler says unauthenticated | Run `wrangler login`, then `wrangler whoami` with the account that owns the Pages project. |
-| Wrangler says project missing | Verify account, exact Pages project name, and selected upload mode; do not auto-create a second project. |
-| Old UI remains after deploy | Check the deployment URL and browser cache; avoid custom cache rules until needed. |
-| Social preview is generic | Expected for a client-rendered route; dynamic per-page metadata is not implemented. |
+| Current production homepage response | **FAIL** — HTTP 200 returns the source HTML template, including `$FLUTTER_BASE_HREF` |
+| Current production `/m/azkar-production-check` | **FAIL** — HTTP 404 |
+| Local Flutter SDK | **PASS** — Flutter 3.47.7 / Dart 3.13.5 |
+| Current Flutter Web output exists locally | **PASS** — compiled `main.dart.js`, bootstrap, icons, manifest, and font assets exist; not verified as a production build |
+| Production configuration | **BLOCKED** — ignored `config/production.json` is absent |
+| Live Supabase tenant isolation | **BLOCKED** — no approved isolated test accounts/data |
+| Cloudflare/GitHub deployment | **NOT RUN** — requires dashboard changes, environment secrets, review, and explicit production approval |
 
+See the
+[`production manual actions`](PRODUCTION_MANUAL_ACTIONS_AR.md),
+[`acceptance report`](PRODUCTION_ACCEPTANCE_REPORT.md), and
+[`deployment checklist`](DEPLOYMENT_CHECKLIST.md) for gates and current
+evidence.

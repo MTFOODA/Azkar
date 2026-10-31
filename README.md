@@ -23,7 +23,7 @@ videos, and other remembrance content.
 
 - **UI:** Flutter and Dart.
 - **Backend:** Supabase Auth, Postgres, and RLS.
-- **Web hosting preparation:** Cloudflare Pages and Wrangler scripts.
+- **Web hosting:** Cloudflare Workers Static Assets with Wrangler.
 - **Platforms:** Android, iOS, and Web.
 
 ## Architecture
@@ -101,18 +101,25 @@ verifying that project's schema and RLS.
 
 ## Web deployment status
 
-The Cloudflare Pages workflow is **prepared locally but not deployed**. The
-recommended initial workflow is a local Flutter Web release build followed by
-Wrangler Direct Upload to an already-created Pages project. No Cloudflare
-project or live website is configured by this repository. Direct Upload and
-Git-integrated Pages projects cannot be converted between modes in place, so
-choose the mode before creating a Pages project.
+The existing production Worker is `azkar-sadaqa` at
+`https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev`. A check on 2026-10-31
+found that its homepage returns the raw Flutter source template and a direct
+`/m/...` request returns HTTP 404; the production site is **not accepted as
+working**.
 
-The build and deploy scripts require a local `config/production.json`, which
-is intentionally ignored by Git. The template is
-[`config/production.example.json`](config/production.example.json). Git integration can be considered later as a source for a **new**
-Git-integrated Pages project after reviewing a suitable Flutter build setup;
-this repository does not connect to Cloudflare or create CI workflows.
+The production workflow is prepared at
+`.github/workflows/deploy-worker.yml`. It pins Flutter 3.47.7 and Wrangler
+4.156.0, runs analysis and tests, compiles Flutter Web into `build/web`, checks
+the compiled output, and deploys the existing Worker with SPA fallback. Before
+enabling it, disconnect the current Cloudflare Workers Build connection and
+configure the protected GitHub `production` environment. No deployment has
+been made from this workflow.
+
+Production Supabase settings are injected at build time from GitHub environment
+secrets; Cloudflare runtime variables do not configure Flutter's compiled
+JavaScript. For local builds, `config/production.json` is ignored and can be
+created from [`config/production.example.json`](config/production.example.json).
+Never use a service-role key or Cloudflare token in Flutter.
 
 ## Brand assets
 
@@ -136,32 +143,36 @@ The index is derived metadata; do not edit or regenerate the Quranic text.
 flutter analyze
 flutter test
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_web_production.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\deploy_cloudflare.ps1
 flutter build apk --debug --dart-define-from-file=config/dev.json
 ```
 
 The production build script requires a real, local `config/production.json`
 copied from `config/production.example.json`. It validates the production
 settings without printing them, builds Flutter Web, and prepares generic social
-metadata. The deployment script requires an existing Direct Upload Pages
-project, checks Wrangler authentication, and asks for an explicit production
-confirmation. Neither script creates a project or deploys without approval.
+metadata. The deployment script targets only the existing Worker, validates
+the Wrangler dry run, creates a fresh validated build, and asks for an explicit
+production confirmation. Run it separately only as a manual fallback; the
+GitHub Actions workflow is the selected automated path, so do not use both
+deployment paths for the same change.
 
 See the
 [complete AZKAR project documentation](docs/AZKAR_COMPLETE_PROJECT_DOCUMENTATION.md),
 [beginner Cloudflare guide in Egyptian Arabic](docs/CLOUDFLARE_SETUP_GUIDE_AR.md),
 [technical deployment guide](docs/CLOUDFLARE_DEPLOYMENT.md), and
-[deployment checklist](docs/DEPLOYMENT_CHECKLIST.md). The existing
+[deployment checklist](docs/DEPLOYMENT_CHECKLIST.md),
+[manual actions in Egyptian Arabic](docs/PRODUCTION_MANUAL_ACTIONS_AR.md), and
+[current production acceptance report](docs/PRODUCTION_ACCEPTANCE_REPORT.md).
+The existing
 [multi-tenant setup notes](docs/MULTI_TENANT_SETUP.md) describe the Supabase
 schema and RLS verification boundaries.
 
 ## Project status
 
 The Flutter application, Supabase integration, memorial-page workflows, tests,
-and local Cloudflare preparation files are present. A real production Web
-build, RLS acceptance using approved accounts, Cloudflare project creation,
-and public deployment are separate pending steps; this README does not claim
-they are complete.
+and Workers deployment preparation are present. The Worker exists, but its
+current deployed assets fail direct-route acceptance. A production build with
+approved Supabase configuration, live RLS acceptance, GitHub/Cloudflare
+configuration, and the first corrected deployment remain pending.
 
 ## Security
 

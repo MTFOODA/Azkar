@@ -1,287 +1,141 @@
-# دليل إعداد Cloudflare لموقع AZKAR — بالمصري وبالراحة
+# دليل نشر AZKAR على Cloudflare Workers — بالمصري
 
-الدليل ده بيجهزك ترفع نسخة الويب الحالية من AZKAR على Cloudflare Pages. كل
-الملفات هتفضل Flutter، وSupabase هيفضل مسؤول عن الحسابات والبيانات. **مفيش
-حساب Cloudflare أو مشروع أو نشر اتعمل من داخل المشروع.**
+## قبل ما تبدأ
 
-> **مهم قبل أي خطوة إنشاء:** Cloudflare بيخلي اختيار طريقة النشر ثابت للمشروع.
-> لو اخترت Direct Upload مش هتقدر تحوّله بعدين لـGit integration في نفس المشروع؛
-> هتحتاج مشروع جديد. التوصية الحالية هي Direct Upload لأنه أبسط مع البناء
-> المحلي على Windows ومفيش Git repository متاح في مساحة العمل دي. دي توصية بس؛
-> استنى موافقتك قبل ما تنشئ المشروع.
+النشر الحالي لـAZKAR بيستخدم **Cloudflare Workers مع Static Assets**، مش
+Cloudflare Pages. الـWorker الموجود هو `azkar-sadaqa`، والرابط العام المطلوب:
 
-## 1 — اعمل حساب Cloudflare
-
-1. افتح الموقع الرسمي: [dash.cloudflare.com](https://dash.cloudflare.com/).
-2. لو عندك حساب، اختار **Log in**. لو أول مرة، اختار **Sign up**.
-3. اكتب بريدك وكلمة مرورك، وبعدها أكّد البريد لو Cloudflare طلب ده.
-4. فعّل حماية الحساب بالطريقة اللي تناسبك، وما تبعتش كلمة المرور أو أكواد
-   التحقق لأي حد.
-5. بعد الدخول، اتأكد إنك داخل الحساب الصحيح من اسم الحساب أعلى لوحة التحكم.
-
-**Checkpoint:** لوحة Cloudflare الرئيسية ظاهرة، ولسه ما أنشأتش أي مشروع.
-
-## 2 — افتح Workers & Pages
-
-1. من القائمة الجانبية افتح **Workers & Pages**. ممكن تلاقيها تحت **Compute**
-   أو **Developer Platform** حسب شكل لوحة التحكم.
-2. لو ظهر زر **Create application** أو **Create**, افتحه لمشاهدة الاختيارات.
-
-**Checkpoint:** وصلت لقائمة إنشاء تطبيق، لكن لسه ما ضغطتش نشر أو إنشاء مشروع.
-
-## 3 — اختار Cloudflare Pages
-
-في بعض تحديثات لوحة التحكم Cloudflare بيوجهك الأول لـWorkers. اختار **Pages**
-أو **Pages project** / **Upload assets** لو ظهر الاسم ده. Pages هو المناسب هنا
-لأن Flutter بيبني ملفات HTML وJavaScript وصور ثابتة محلياً. Workers برنامج
-server-side؛ مش مطلوب لرفع نسخة الويب الأساسية.
-
-صفحة Cloudflare الرسمية قد تعرض Workers كخيارها الأحدث، لكن المهمة دي مجهزة
-لـPages بناءً على اختيار الاستضافة المطلوب. ما تختارش Workers من نفسك كبديل.
-
-## 4 — اختار طريقة النشر (وقّف هنا لو لسه محتاج موافقة)
-
-غالباً هتلاقي اختيارين:
-
-### Direct Upload — الرفع المباشر
-
-- Flutter يبني الملفات على جهاز Windows بتاعك.
-- Wrangler يرفع مجلد `build\web`.
-- بسيط في التجربة والتشخيص ومناسب للشغل الحالي.
-- تحديث الموقع محتاج تشغيل build وبعده deploy يدوي.
-- **الاختيار ده ما بيتحولش بعدين لـGit integration في نفس المشروع.**
-
-### Git integration — الربط بـGitHub أو GitLab
-
-- Cloudflare يتابع repository ويعمل build/deploy تلقائي مع التغييرات.
-- يوفر preview deployments ويدير إصدارات الفروع.
-- محتاج repository مضبوط وخط بناء Flutter/Dart مناسب؛ مساحة العمل الحالية
-  مش Git repository.
-- **ما بيتحولش بعدين لمشروع Direct Upload.** توثيق Cloudflare يسمح بحالات رفع
-  يدوية لبعض مشاريع Git، لكن ده مش نفس تغيير وضع المشروع.
-
-**التوصية:** Direct Upload للمشروع الأول. ما تضغطش Create project دلوقتي إلا
-بعد موافقتك على الاختيار النهائي.
-
-مرجع Cloudflare الرسمي:
-[Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
-و[Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/).
-
-## 5 — إنشاء المشروع (بعد الموافقة على Direct Upload)
-
-1. اختار **Direct Upload** أو **Upload assets**.
-2. اكتب اسم مشروع مناسب بالإنجليزي وأرقام وشرطة، مثلاً
-   `azkar-public-site` — ده مثال فقط، مش ضمان إن الاسم متاح.
-3. Cloudflare هيعرض hostname بالشكل
-   `https://<project-name>.pages.dev`. لو الاسم محجوز، اتبع الاسم البديل اللي
-   تقترحه اللوحة وسجّل الـhostname النهائي بالضبط.
-4. أكمل الإنشاء من لوحة Cloudflare. ما ترفعش ملفات Flutter قديمة في الخطوة دي.
-5. انسخ الاسم والـhostname الفعليين في مكان محلي آمن عشان تستخدمهم في
-   الإعدادات. ما تحطش مفاتيح Supabase في Cloudflare Pages كـsecrets؛ التطبيق
-   Flutter عميل عام ومفتاحه لازم يكون publishable فقط.
-
-**Checkpoint:** المشروع موجود في Cloudflare لكن مفيش نسخة AZKAR اتنشرت بعد.
-
-## 6 — جهز نسخة Flutter محلياً
-
-افتح PowerShell في مجلد المشروع:
-
-```powershell
-cd "D:\MTFOODA\Code\Flutter apps\Azkar"
-Copy-Item config\production.example.json config\production.json
-notepad config\production.json
+```text
+https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev
 ```
 
-املأ الملف محلياً بالقيم الحقيقية:
+النسخة الحالية على الرابط لسه مش سليمة: الصفحة الرئيسية بترجع HTML قالب
+Flutter الخام، وفتح `/m/...` مباشرة بيرجع 404. متعتبرش ظهور **Ready** في
+Cloudflare دليل إن الموقع اتنشر صح.
 
-- `SUPABASE_URL`: رابط مشروع Supabase الصحيح.
-- `SUPABASE_ANON_KEY`: مفتاح anon/publishable فقط.
-- `AZKAR_DEMO_MODE`: `false`.
-- `AZKAR_AUTH_SCHEMA_VERIFIED`: خليه `false` لحد ما مراجعة المخطط وRLS
-  واختبارات المالكين المعتمدة تكتمل. سكربت البناء هيرفض البناء لحد ما يبقى
-  `true`؛ ما تغيّروش لمجرد تخطي الرسالة.
-- `PUBLIC_BASE_URL`: الـhostname الحقيقي اللي Cloudflare خصصه للمشروع، زي
-  `https://اسم-مشروعك.pages.dev` من غير `/` في الآخر أو مسار.
+التدفق المختار هو GitHub Actions: يثبت Flutter 3.47.7، يشغل التحليل والاختبارات،
+يبني Flutter Web release، ويتأكد إن `build/web` فيه التطبيق المترجم، وبعدها
+ينشر نفس Worker باستخدام Wrangler 4.156.0. مش هنستخدم إعدادات أو أوامر Pages.
 
-ما تلصقش المفاتيح في محادثة أو screenshot أو ملف متعقب بـGit. الملف
-`config/production.json` مستثنى من Git.
+## إعداد GitHub مرة واحدة
 
-بعد ضبط إعداد Supabase الإنتاجي والتحقق المطلوب، شغّل:
+1. افتح مستودع `MTFOODA/Azkar` ثم **Settings → Environments** وأنشئ environment
+   باسم `production`.
+2. فعّل **Required reviewers** واختار مراجعاً يوافق صراحة على نشر الإنتاج.
+   وجود اسم environment في الملف وحده مش كفاية لو مفيش approval protection.
+3. أضف القيم دي كـ**Environment secrets** في `production`:
+
+   | الاسم | القيمة |
+   |---|---|
+   | `AZKAR_SUPABASE_URL` | رابط مشروع Supabase الإنتاجي |
+   | `AZKAR_SUPABASE_PUBLISHABLE_KEY` | anon/publishable key فقط |
+   | `CLOUDFLARE_ACCOUNT_ID` | Account ID للحساب اللي عليه الـWorker |
+   | `CLOUDFLARE_API_TOKEN` | Token محدود بصلاحية **Edit Cloudflare Workers** وعلى الحساب المطلوب فقط |
+
+4. أضف **Environment variable** باسم `AZKAR_AUTH_SCHEMA_VERIFIED` وقيمته
+   `false` حالياً. ما تغيّروش لـ`true` إلا بعد اختبار إنتاج معتمد يثبت
+   provisioning وعزل المالكين وسياسات RLS.
+5. ما تضيفش `PUBLIC_BASE_URL` كـCloudflare runtime variable؛ Flutter محتاجه
+   وقت الـbuild، والـworkflow بيحقنه بقيمة الـWorker الصحيحة.
+
+## إعداد Cloudflare مرة واحدة
+
+1. افتح **Cloudflare Dashboard → Workers & Pages → azkar-sadaqa → Settings →
+   Builds**.
+2. افصل Git build connection الحالي، أو عطّل production builds منه لو اللوحة
+   بتوفر الاختيار ده. **ما تحذفش الـWorker.**
+3. السبب: الإعداد السابق مفيهوش Build command وكان بينشر مجلد المصدر `web/`.
+   لازم يبقى فيه طريق نشر واحد بس: GitHub Actions.
+4. احتفظ باسم الـWorker والرابط الحالي زي ما هما. ملف
+   `wrangler.jsonc` بينشر `build/web` ويفعّل SPA fallback لمسارات Flutter.
+
+فصل Git Builds ما بينشرش نسخة جديدة وما يغيرش النسخة النشطة؛ التغيير بيحصل عند
+تشغيل workflow بعد موافقة GitHub.
+
+## إعداد Supabase قبل اختبار الحسابات
+
+الكود بيطلب redirect بعد تأكيد التسجيل إلى `/dashboard`، وبعد استعادة كلمة
+المرور إلى `/reset-password`. في:
+
+**Supabase Dashboard → Authentication → URL Configuration**
+
+- **Site URL:** `https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev`
+- **Redirect URLs:** أضف:
+  - `https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev/dashboard`
+  - `https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev/reset-password`
+
+احتفظ بكل روابط التطوير الموجودة؛ ما تمسحش ولا تستبدل إعدادات تانية. المفتاح
+اللي هيدخل GitHub لازم يبقى publishable فقط، وممنوع تحط service-role أو كلمة
+سر قاعدة البيانات في Flutter أو GitHub.
+
+## بناء واختبار محلي
+
+على جهاز المطور، انسخ
+`config/production.example.json` إلى `config/production.json`، واملأ رابط
+Supabase ومفتاح publishable المعتمدين محلياً فقط. خلي
+`AZKAR_AUTH_SCHEMA_VERIFIED` = `false` لحد ما اختبار RLS يتوافق عليه. سكربت
+الإنتاج هيرفض البناء لحد التحقق المطلوب؛ ماتغيّرش القيمة لتخطي الفحص.
 
 ```powershell
+flutter analyze
+flutter test
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_web_production.ps1
+npx.cmd --yes wrangler@4.156.0 dev --local --ip 127.0.0.1 --port 8787
 ```
 
-الملفات الجاهزة هتكون في:
+بعدها اختبر `/` و`/login` و`/register` و`/reset-password` و`/m/<slug>` مع
+تحديث المتصفح. المحلي ما يثبتش إن الإنتاج أو RLS اشتغلوا.
 
-```text
-build\web
-```
+## تشغيل نشر الإنتاج
 
-السكربت بيتأكد من القيم من غير ما يطبعها، Demo Mode مقفول، وبيانات Supabase
-صالحة كمفتاح عام، وبيعمل Flutter Web release build. كمان بيكمل عنوان الصورة
-والـmetadata بالـhostname الفعلي. ما تستخدمش `config/dev.json` بدل إعداد
-الإنتاج عشان النشر الحي.
+النشر متوقف لحد ما مالك المشروع يوافق. بعد إعداد الـsecrets والحماية:
 
-## 7 — ثبت Wrangler وسجّل الدخول
+1. راجع **Actions → Deploy AZKAR Worker**.
+2. اتأكد إن `Analyze and test` نجح.
+3. راجع commit والـdiff؛ موافقة GitHub environment مطلوبة قبل خطوات البناء
+   والنشر.
+4. بعد الموافقة، اتأكد إن الـworkflow عمل Flutter release build ونشر
+   `build/web` للـWorker `azkar-sadaqa`.
+5. راجع مخرجات Wrangler ثم اختبر رابط الإنتاج و`/m/<slug>` مباشرةً.
 
-Wrangler أداة Cloudflare الرسمية. محتاج Node.js وnpm:
+الـworkflow لا يشغّل على الفروع أو Pull Requests، ومش هيعمل deploy لو التحليل
+أو الاختبارات أو إعداد الإنتاج فشل. سكربت `deploy_cloudflare.ps1` يفضل مسار
+يدوي احتياطي يتطلب تأكيد كتابة `DEPLOY PRODUCTION`؛ استخدمه فقط بطلب وموافقة
+واضحين، لتجنب نشرين متنافسين.
 
-```powershell
-node --version
-npm --version
-```
+## الرجوع لنسخة سليمة
 
-لو الأمرين مش معروفين، نزّل نسخة LTS من [nodejs.org](https://nodejs.org/)
-وأعد فتح PowerShell.
+من **Workers & Pages → azkar-sadaqa → Deployments/Version history** اختار
+آخر نسخة سليمة وارجع لها حسب إجراء Cloudflare الظاهر في اللوحة. بعدها اختبر
+الرابط. الرجوع لنسخة Worker لا يرجع تغييرات Supabase أو بيانات المستخدمين.
 
-ثبت Wrangler:
+## اختبارات القبول
 
-```powershell
-npm install --global wrangler
-wrangler --version
-wrangler login
-wrangler whoami
-```
+جرّب الصفحة الرئيسية، تسجيل الدخول والتسجيل واستعادة كلمة المرور، روابط
+الميموريال المباشرة، تحديث المتصفح، المشاركة، الخطوط العربية، وأحجام شاشة
+مختلفة. التسجيل لازم يفضل 4 حقول فقط؛ الصفحة بتتعمل بآلية قاعدة البيانات
+الموجودة، والعنوان والـslug بيتغيروا من **لوحة التحكم ← إعدادات صفحتي**.
 
-أمر `wrangler login` هيفتح المتصفح ويطلب موافقتك على ربط الأداة بحسابك.
-ارجع لـPowerShell بعد نجاح تسجيل الدخول. `wrangler whoami` لازم يبين الحساب
-الصح. ما تشاركش access token.
+ما تعملش حسابات حقيقية أو بيانات اختبار على production من غير موافقة. راجع
+[`الإجراءات اليدوية المطلوبة`](PRODUCTION_MANUAL_ACTIONS_AR.md) و
+[`تقرير القبول الحالي`](PRODUCTION_ACCEPTANCE_REPORT.md) لمعرفة الخطوات
+المتوقفة والدليل المتاح.
 
-**Checkpoint:** نسخة البناء موجودة، وWrangler مسجل دخول على الحساب اللي عليه
-المشروع.
+## استكشاف المشاكل
 
-## 8 — ارفع AZKAR
-
-لازم تكون موافق على Direct Upload، والمشروع اتعمل يدوياً وموجود بالفعل. في
-نفس نافذة PowerShell:
-
-```powershell
-$env:CLOUDFLARE_PAGES_PROJECT_NAME = "اسم-المشروع-الحقيقي"
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\deploy_cloudflare.ps1
-```
-
-السكربت هيعرض اسم المشروع والبيئة `production`، ويتأكد من تسجيل دخول Wrangler
-ووجود المشروع ومجلد build. بعد كده هيطلب تكتب حرفياً:
-
-```text
-DEPLOY PRODUCTION
-```
-
-لو مش موافق، اكتب أي حاجة تانية؛ مش هيتم رفع ملفات. بعد التأكيد، هيشغل
-`wrangler pages deploy build\web --project-name <اسم-المشروع>`.
-
-**النتيجة المتوقعة:** Wrangler يعرض نجاح الرفع ورابط deployment. لو ظهر خطأ
-مش واضح، احتفظ برسالة الخطأ من غير ما تعرض أي ملف إعدادات أو مفاتيح.
-
-## 9 — هات رابط الموقع
-
-1. ارجع لـCloudflare Dashboard.
-2. افتح **Workers & Pages** ثم مشروع AZKAR.
-3. افتح **Deployments** أو **Overview**.
-4. انسخ رابط Production اللي Cloudflare عرضه. الـhostname قد يكون فيه لاحقة
-   مختلفة لو الاسم اللي اخترته غير متاح؛ استخدم الرابط المعروض مش التخمين.
-
-## 10 — اضبط الرابط العام
-
-`PUBLIC_BASE_URL` لازم يساوي رابط Production النهائي، لأن AZKAR بيستخدمه في
-روابط الصفحات ومشاركة الرابط وروابط استعادة كلمة المرور والـmetadata.
-
-لو اكتشفت إن hostname اتغير:
-
-1. عدّل `PUBLIC_BASE_URL` في `config/production.json`.
-2. أعد `scripts\build_web_production.ps1`.
-3. راجع الـpreview المحلي.
-4. أعد النشر بعد التأكيد.
-
-يعني ما فيش دائرة مغلقة: اعمل المشروع يدوي بعد الموافقة، خد الرابط منه، حطه
-في الإعداد، ابنِ الملفات، وبعدها ارفعها.
-
-## 11 — اختبر الصفحة الرئيسية
-
-افتح رابط Production في نافذة خاصة:
-
-1. اتأكد إن المتصفح بيعرض HTTPS وقفل الأمان.
-2. اتأكد إن عنوان AZKAR والهوية والخط العربي ظاهرين.
-3. افتح Developer Tools → **Console** و**Network** وشوف هل فيه أخطاء تحميل.
-4. تأكد إن تسجيل الدخول والتصفح ما بيطلبوش حساب لمحتوى الموقع العام.
-
-## 12 — اختبر صفحة تذكارية منشورة
-
-استخدم slug حقيقي لصفحة اختبرها صاحبها وفعّل نشرها. الرابط بالشكل:
-
-```text
-https://اسم-المشروع.pages.dev/m/slug-منشور
-```
-
-ما تستخدمش صفحة خاصة أو slug عشوائي كاختبار بيانات. لو الصفحة منشورة، المفروض
-تظهر محتوياتها المسموح بها بدون تسجيل دخول.
-
-## 13 — اختبر الرابط من جلسة جديدة
-
-انسخ رابط `/m/slug` وافتحه في نافذة خاصة أو متصفح تاني من غير تسجيل الدخول.
-اضغط Refresh بعد ما الصفحة تظهر. لازم المسار يفضل `/m/slug`، وما يتحولش
-لصفحة login أو Cloudflare 404. كرر مع `/login` و`/register`.
-
-## 14 — اختبر مشاركة WhatsApp
-
-1. من الصفحة المنشورة اختار مشاركة أو نسخ الرابط.
-2. ابعت الرابط لنفسك أو جهاز تاني تملكه.
-3. افتحه من WhatsApp وتأكد إنه رابط hostname الرسمي مش localhost أو عنوان
-   emulator.
-4. ممكن تظهر معاينة عامة للشعار والوصف بدل عنوان صفحة التذكار؛ ده متوقع لأن
-   الموقع Flutter client-rendered، والمعاينة الديناميكية اختيار مستقبلي.
-
-## 15 — تحديث الموقع بعدين
-
-بعد تغيير الكود:
-
-1. راجع الملفات والتغييرات.
-2. شغّل `flutter analyze` و`flutter test`.
-3. شغّل سكربت بناء الإنتاج.
-4. اختبر محلياً بالأوامر الموجودة في قسم الاستكشاف.
-5. شغّل سكربت النشر واكتب تأكيد الإنتاج بعد مراجعة اسم المشروع.
-
-كل رفع جديد deployment جديد. لو ظهر خطأ، افتح صفحة **Deployments** واستخدم
-النسخة السابقة المعروفة السليمة. الرجوع لملفات الويب لا يرجع بيانات Supabase.
-
-## 16 — حل المشاكل
-
-| المشكلة | جرّب إيه |
+| المشكلة | التحقق |
 |---|---|
-| 404 عند فتح `/m/slug` مباشرة | تأكد إن `build\web` هو مجلد الرفع ومافيش `404.html` في جذره. |
-| صفحة بيضاء | افتح Console/Network، وتأكد من `index.html` و`flutter_bootstrap.js` وتحميل ملفات assets. |
-| رسالة إعداد Supabase ناقص | راجع ملف الإنتاج محلياً واسم المفتاح، من غير ما تطبعه أو تبعته. |
-| CORS أو تسجيل الدخول بيرجع خطأ | راجع Supabase Auth URL Configuration وروابط redirect للـhostname النهائي. ما توسعش RLS. |
-| رابط المشاركة localhost أو غلط | راجع `PUBLIC_BASE_URL`، وبعدها اعمل build ونشر جديد. |
-| خطوط أو صور مش ظاهرة | تأكد إن الملفات موجودة بمجلد `build\web` وإنه مفيش redirect للملفات الثابتة. |
-| Wrangler مش مسجل دخول | نفذ `wrangler login` ثم `wrangler whoami` بالحساب الصحيح. |
-| المشروع مش ظاهر في Wrangler | راجع الاسم والحساب ووضع Direct Upload؛ ما تعملش مشروع تاني تلقائياً. |
-| التحديث القديم لسه ظاهر | راجع رابط deployment والنافذة الخاصة؛ Pages عنده كاش افتراضي، ما تضفش قواعد كاش عشوائية. |
-| معاينة WhatsApp عامة | طبيعي حالياً؛ معاينات الصفحات الفردية server-side مش مفعلة. |
-| build بيرفض `AZKAR_AUTH_SCHEMA_VERIFIED` | ده مقصود لحد ما مراجعة المخطط وسياسات RLS واختبارات القبول تخلص. |
+| الصفحة الرئيسية تفتح بس مفيش تطبيق Flutter | اتأكد إن Wrangler رفع `build/web` مش مجلد `web` المصدري. |
+| `/m/slug` بيرجع 404 | راجع `assets.not_found_handling` في `wrangler.jsonc` ونسخة الـWorker المنشورة. |
+| رسالة إعداد Supabase | راجع GitHub environment secrets وإعداد build-time؛ ماتطبعش القيم. |
+| رابط المشاركة host غلط | راجع `PUBLIC_BASE_URL` في إعداد الإنتاج واطلب build جديد. |
+| فشل تسجيل الدخول/الاستعادة | راجع روابط Supabase Auth المحددة فوق وسجلات Supabase بدون كشف بيانات شخصية. |
+| fonts أو icons ناقصة | راجع `build/web/assets` وملفات `icons`، وماتعملش fallback يعيد HTML لطلبات الأصول. |
+| ظهرت صفحتين نشر/تكرار build | افصل Workers Builds القديم، وخلي GitHub Actions مسار النشر الوحيد. |
 
-للتجربة المحلية المشابهة لـPages، بعد build:
+## مراجع
 
-```powershell
-wrangler pages dev build\web --port 8788
-```
-
-سيب النافذة مفتوحة وافتح `http://localhost:8788/` ثم جرّب المسارات المباشرة.
-ده اختبار محلي، مش دليل إن نشر Cloudflare الحقيقي نجح.
-
-## 17 — حدود الخطة المجانية
-
-حسب [صفحة حدود Cloudflare Pages الرسمية](https://developers.cloudflare.com/pages/platform/limits/)،
-تتضمن الحدود المنشورة للخطة المجانية حالياً 500 Git builds بالشهر وبناء واحد
-متزامن، وحتى 20,000 ملف للموقع، وحجم أقصى 25 MiB للملف الواحد، وحتى 100
-custom domains للمشروع. الرفع المباشر بيعمل build على جهازك وما بيشغّلش
-Cloudflare build لكل رفع. Pages Functions بتستخدم حصص Workers. الأرقام ممكن
-تتغير؛ راجع الرابط الرسمي قبل الاعتماد عليها.
-
-## 18 — دومين خاص (اختياري)
-
-ممكن بعدين تربط دومين تملكه من صفحة مشروع Pages عبر **Custom domains**. شراء
-دومين مش مطلوب لاستخدام `pages.dev`. بعد الربط والتحقق من DNS/HTTPS، عدّل
-`PUBLIC_BASE_URL` للدومين الجديد واعمل build ونشر جديد. راجع إعدادات Supabase
-Auth redirects كمان. ما تشتريش دومين إلا لو حابب تعمل ده.
+- [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
+- [Cloudflare Workers SPA routing](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/)
+- [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/)
+- [Cloudflare GitHub Actions](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/)
