@@ -258,6 +258,34 @@ void main() {
     expect(find.byType(AccountLoginPage), findsNothing);
   });
 
+  testWidgets('/forgot-password aliases the password reset page', (
+    tester,
+  ) async {
+    late GoRouter router;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          accountSessionProvider.overrideWith(_AnonymousAccountSession.new),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            router = ref.watch(routerProvider);
+            return MaterialApp.router(routerConfig: router);
+          },
+        ),
+      ),
+    );
+
+    router.go('/forgot-password');
+    await tester.pumpAndSettle();
+
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      '/reset-password',
+    );
+    expect(find.byType(PasswordResetPage), findsOneWidget);
+  });
+
   testWidgets('registration handles required email confirmation', (
     tester,
   ) async {

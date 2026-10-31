@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 /// Compile-time application configuration.
 ///
 /// All values are injected with `--dart-define` so that no credential is ever
@@ -12,10 +14,13 @@ import 'dart:convert';
 /// flutter run -d chrome \
 ///   --dart-define=SUPABASE_URL=https://xxxx.supabase.co \
 ///   --dart-define=SUPABASE_ANON_KEY=eyJhbGciOi... \
-///   --dart-define=PUBLIC_BASE_URL=https://azkar.example
+///   --dart-define=PUBLIC_BASE_URL=https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev
 /// ```
 class AppConfig {
   const AppConfig._();
+
+  static const String defaultPublicBaseUrl =
+      'https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev';
 
   /// Supabase project URL, e.g. `https://abcdefgh.supabase.co`.
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -124,6 +129,7 @@ class AppConfig {
   static String? registrationUnavailableMessage({
     required bool demoMode,
     required bool schemaVerified,
+    bool productionBuild = kReleaseMode,
   }) {
     if (forceDemoMode) {
       return 'وضع العرض المحلي مفعّل. شغّل التطبيق مع '
@@ -146,7 +152,19 @@ class AppConfig {
     if (demoMode) {
       return 'يتعذر تفعيل التسجيل ما دام التطبيق يستخدم وضع العرض المحلي.';
     }
-    if (!schemaVerified) {
+    return schemaGateMessage(
+      schemaVerified: schemaVerified,
+      productionBuild: productionBuild,
+    );
+  }
+
+  /// The verification flag gates only production builds; local development
+  /// against a configured Supabase project must be able to register accounts.
+  static String? schemaGateMessage({
+    required bool schemaVerified,
+    required bool productionBuild,
+  }) {
+    if (productionBuild && !schemaVerified) {
       return 'التسجيل مغلق حتى التحقق من جداول قاعدة البيانات ومشغّل '
           'azkar_provision_owner_page وسياسات RLS، ثم البناء مع '
           '--dart-define=AZKAR_AUTH_SCHEMA_VERIFIED=true.';
@@ -164,7 +182,7 @@ class AppConfig {
   /// Public base URL without a trailing slash.
   static String get siteBaseUrl {
     final trimmed = publicBaseUrl.trim();
-    if (trimmed.isEmpty) return 'https://azkar.example';
+    if (trimmed.isEmpty) return defaultPublicBaseUrl;
     return trimmed.replaceAll(RegExp(r'/+$'), '');
   }
 

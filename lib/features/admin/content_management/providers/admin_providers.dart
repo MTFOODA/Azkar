@@ -11,7 +11,7 @@ import '../../../home/domain/homepage_entry.dart';
 final adminContentProvider =
     FutureProvider.family<List<ContentItem>, ContentType>((ref, type) async {
       return ref.watch(contentRepositoryProvider).fetchAll(type);
-    });
+    }, dependencies: [contentRepositoryProvider]);
 
 /// Layout rows plus the content records needed to label them.
 class AdminHomepageData {
@@ -31,7 +31,7 @@ final adminHomepageProvider = FutureProvider<AdminHomepageData>((ref) async {
     }
   }
   return AdminHomepageData(entries: entries, items: items);
-});
+}, dependencies: [contentRepositoryProvider, homepageRepositoryProvider]);
 
 /// Aggregate dashboard data. No visitor analytics or Tasbeeh counts are
 /// collected; these are content counts only.
@@ -62,4 +62,4 @@ final adminDashboardProvider = FutureProvider<AdminDashboardData>((ref) async {
     return bDate.compareTo(aDate);
   });
   return AdminDashboardData(counts: counts, recent: recent.take(10).toList());
-});
+}, dependencies: [contentRepositoryProvider]);

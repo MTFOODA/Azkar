@@ -103,6 +103,11 @@ class SupabaseAccountAuthService implements AccountAuthService {
 
   String _translateAuthError(AuthException error) {
     final message = error.message.toLowerCase();
+    final code = error.code?.toLowerCase() ?? '';
+    if (code == 'invalid_credentials') return 'بيانات الدخول غير صحيحة.';
+    if (code == 'email_not_confirmed') {
+      return 'يرجى تأكيد البريد الإلكتروني قبل تسجيل الدخول.';
+    }
     if (message.contains('already registered') ||
         message.contains('already been registered') ||
         message.contains('user already exists')) {

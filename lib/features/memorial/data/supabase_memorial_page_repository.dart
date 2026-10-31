@@ -43,11 +43,16 @@ class SupabaseMemorialPageRepository implements MemorialPageRepository {
 
   @override
   Future<MemorialPage> update(MemorialPage page) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null || page.ownerUserId != userId) {
+      throw const NotAuthorizedException();
+    }
     try {
       final row = await _client
           .from('memorial_pages')
           .update(page.toUpdateRow())
           .eq('id', page.id)
+          .eq('owner_user_id', userId)
           .select()
           .single();
       return MemorialPage.fromRow(row);

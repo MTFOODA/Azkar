@@ -16,7 +16,7 @@ final homeLayoutProvider = FutureProvider<List<HomeCard>>((ref) async {
     cards.map((card) => card.item.style.fontFamily),
   );
   return cards;
-});
+}, dependencies: [homepageRepositoryProvider]);
 
 /// Published records for a collection route (`/azkar`, `/quran`, ...).
 final publishedContentProvider =
@@ -28,7 +28,7 @@ final publishedContentProvider =
         items.map((item) => item.style.fontFamily),
       );
       return items;
-    });
+    }, dependencies: [contentRepositoryProvider]);
 
 /// A single shared-card deep link. The record type and id form the family key.
 final sharedContentProvider =
@@ -37,4 +37,4 @@ final sharedContentProvider =
       key,
     ) async {
       return ref.watch(contentRepositoryProvider).fetchById(key.type, key.id);
-    });
+    }, dependencies: [contentRepositoryProvider]);

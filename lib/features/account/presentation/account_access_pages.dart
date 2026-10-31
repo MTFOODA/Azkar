@@ -70,7 +70,8 @@ class _AccountLoginPageState extends ConsumerState<AccountLoginPage> {
         .signIn(email: _email.text, password: _password.text);
     final administrator = await ref
         .read(adminSessionProvider.notifier)
-        .refreshCurrentUser();
+        .refreshCurrentUser()
+        .catchError((_) => null);
     return administrator == null ? '/dashboard' : '/admin/dashboard';
   }
 

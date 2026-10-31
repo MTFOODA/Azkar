@@ -79,6 +79,11 @@ void main() {
     const slug = 'azkar-a7f29c82';
     final link = Uri.parse(AppConfig.memorialPageLink(slug));
 
+    expect(
+      AppConfig.defaultPublicBaseUrl,
+      'https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev',
+    );
+    expect(AppConfig.siteBaseUrl, AppConfig.defaultPublicBaseUrl);
     expect(link.origin, AppConfig.siteBaseUrl);
     expect(link.path, '/m/$slug');
     expect(AppConfig.memorialPagePath(slug), '/m/$slug');

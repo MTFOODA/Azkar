@@ -66,6 +66,7 @@ class OwnerDashboardScope extends ConsumerWidget {
           );
         }
         return ProviderScope(
+          key: ValueKey(value.id),
           overrides: [
             contentRepositoryProvider.overrideWith(
               (scopeRef) =>
@@ -338,7 +339,7 @@ class OwnerDashboardHomePage extends ConsumerWidget {
 final _ownerContentCountsProvider =
     FutureProvider<Map<ContentType, TypeCounts>>((ref) {
       return ref.watch(contentRepositoryProvider).counts();
-    });
+    }, dependencies: [contentRepositoryProvider]);
 
 class OwnerPageSettingsPage extends ConsumerStatefulWidget {
   const OwnerPageSettingsPage({super.key});

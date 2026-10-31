@@ -45,7 +45,7 @@ final themeRepositoryProvider = Provider<ThemeRepository>((ref) {
   return client == null
       ? LocalThemeRepository()
       : SupabaseThemeRepository(client);
-});
+}, dependencies: []);
 
 final contentRepositoryProvider = Provider<ContentRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -57,7 +57,7 @@ final contentRepositoryProvider = Provider<ContentRepository>((ref) {
           client: client,
           themeProvider: () => ref.read(themeSettingsProvider),
         );
-});
+}, dependencies: [themeSettingsProvider]);
 
 final pageContentRepositoryProvider =
     Provider.family<ContentRepository, String>((ref, pageId) {
@@ -72,7 +72,7 @@ final pageContentRepositoryProvider =
               pageId: pageId,
               themeProvider: () => ref.read(themeSettingsProvider),
             );
-    });
+    }, dependencies: [themeSettingsProvider]);
 
 final homepageRepositoryProvider = Provider<HomepageRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -84,7 +84,7 @@ final homepageRepositoryProvider = Provider<HomepageRepository>((ref) {
           client: client,
           themeProvider: () => ref.read(themeSettingsProvider),
         );
-});
+}, dependencies: [contentRepositoryProvider, themeSettingsProvider]);
 
 final pageHomepageRepositoryProvider =
     Provider.family<HomepageRepository, String>((ref, pageId) {
@@ -102,7 +102,7 @@ final pageHomepageRepositoryProvider =
               pageId: pageId,
               themeProvider: () => ref.read(themeSettingsProvider),
             );
-    });
+    }, dependencies: [pageContentRepositoryProvider, themeSettingsProvider]);
 
 final pageThemeRepositoryProvider = Provider.family<ThemeRepository, String>((
   ref,
@@ -128,7 +128,14 @@ final memorialPageRepositoryProvider = Provider<MemorialPageRepository>((ref) {
 });
 
 final currentMemorialPageProvider = FutureProvider<MemorialPage?>((ref) {
-  return ref.watch(memorialPageRepositoryProvider).fetchMine();
+  final userId = ref.watch(accountSessionProvider.select((user) => user?.id));
+  if (userId == null) return null;
+  return ref.watch(memorialPageRepositoryProvider).fetchMine().then((page) {
+    if (page != null && page.ownerUserId != userId) {
+      throw const NotAuthorizedException();
+    }
+    return page;
+  });
 });
 
 final publicMemorialPageProvider = FutureProvider.family<MemorialPage?, String>(
@@ -146,7 +153,7 @@ final publicMemorialLayoutProvider =
         cards.map((card) => card.item.style.fontFamily),
       );
       return cards;
-    });
+    }, dependencies: [pageHomepageRepositoryProvider]);
 
 final pagePublishedContentProvider =
     FutureProvider.family<
@@ -160,7 +167,7 @@ final pagePublishedContentProvider =
         items.map((item) => item.style.fontFamily),
       );
       return items;
-    });
+    }, dependencies: [pageContentRepositoryProvider]);
 
 final accountAuthServiceProvider = Provider<AccountAuthService>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -307,6 +314,7 @@ class ThemeSettingsNotifier extends Notifier<ThemeSettings> {
 final themeSettingsProvider =
     NotifierProvider<ThemeSettingsNotifier, ThemeSettings>(
       ThemeSettingsNotifier.new,
+      dependencies: [themeRepositoryProvider],
     );
 
 /// Light/dark/system preference, stored locally per visitor.

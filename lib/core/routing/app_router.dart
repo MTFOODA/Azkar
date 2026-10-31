@@ -99,6 +99,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AccountRegistrationPage(),
       ),
       GoRoute(
+        path: '/forgot-password',
+        redirect: (context, state) => '/reset-password',
+      ),
+      GoRoute(
         path: '/reset-password',
         builder: (context, state) => const PasswordResetPage(),
       ),

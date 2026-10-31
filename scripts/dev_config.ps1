@@ -53,8 +53,8 @@ function Assert-AzkarSupabaseDevConfig {
     if ([string]$config.AZKAR_DEMO_MODE -ne 'false') {
         $problems.Add('AZKAR_DEMO_MODE must be false for Supabase development.')
     }
-    if ([string]$config.AZKAR_AUTH_SCHEMA_VERIFIED -ne 'true') {
-        $problems.Add('AZKAR_AUTH_SCHEMA_VERIFIED must be true for this verified project.')
+    if ([string]$config.AZKAR_AUTH_SCHEMA_VERIFIED -notin @('true', 'false')) {
+        $problems.Add('AZKAR_AUTH_SCHEMA_VERIFIED must be explicitly set to true or false.')
     }
 
     if ($problems.Count -gt 0) {
