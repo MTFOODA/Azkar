@@ -20,7 +20,9 @@ import '../../content/domain/content_type.dart';
 import '../../content/widgets/content_card.dart';
 import '../../memorial/domain/memorial_page.dart';
 import '../../memorial/domain/page_slug.dart';
+import '../../memorial/presentation/memorial_section_navigation.dart';
 import '../../home/data/bismillah_loader.dart';
+import '../../home/domain/homepage_entry.dart';
 import '../../sharing/share_widgets.dart';
 
 class OwnerDashboardScope extends ConsumerWidget {
@@ -677,23 +679,53 @@ class PublicMemorialPage extends ConsumerWidget {
   }
 }
 
-class _MemorialPageContent extends ConsumerWidget {
+class _MemorialPageContent extends ConsumerStatefulWidget {
   const _MemorialPageContent({required this.page, required this.type});
 
   final MemorialPage page;
   final ContentType? type;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cards = type == null
-        ? ref.watch(publicMemorialLayoutProvider(page.id))
-        : null;
-    final content = type == null
-        ? null
-        : ref.watch(
-            pagePublishedContentProvider((pageId: page.id, type: type!)),
-          );
-    final pathPrefix = AppConfig.memorialPagePath(page.slug);
+  ConsumerState<_MemorialPageContent> createState() =>
+      _MemorialPageContentState();
+}
+
+class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
+  final Map<ContentType, GlobalKey> _sectionKeys = {};
+  bool _initialScrollScheduled = false;
+
+  MemorialPage get page => widget.page;
+
+  GlobalKey _keyFor(ContentType type) => _sectionKeys.putIfAbsent(
+    type,
+    () => MemorialSectionNavigation.register(page.slug, type),
+  );
+
+  @override
+  void didUpdateWidget(covariant _MemorialPageContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.page.slug != widget.page.slug) {
+      _unregisterSectionKeys(oldWidget.page.slug);
+      _sectionKeys.clear();
+    }
+    if (oldWidget.type != widget.type) _initialScrollScheduled = false;
+  }
+
+  @override
+  void dispose() {
+    _unregisterSectionKeys(page.slug);
+    super.dispose();
+  }
+
+  void _unregisterSectionKeys(String slug) {
+    for (final entry in _sectionKeys.entries) {
+      MemorialSectionNavigation.unregister(slug, entry.key, entry.value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = ref.watch(publicMemorialLayoutProvider(page.id));
     final deceasedName = _publicDeceasedName(page.deceasedName);
     final dedicationMessage = _publicDedicationMessage(page.dedicationMessage);
     return SingleChildScrollView(
@@ -703,6 +735,14 @@ class _MemorialPageContent extends ConsumerWidget {
           children: [
             const SizedBox(height: AppPalette.spaceLg),
             const AzkarBrandLockup(markSize: 64),
+            const SizedBox(height: AppPalette.spaceMd),
+            _MemorialIdentityCard(
+              key: const ValueKey('first-memorial-card'),
+              deceasedName: deceasedName,
+              dedicationMessage: dedicationMessage,
+            ),
+            const SizedBox(height: AppPalette.spaceMd),
+            Center(child: ShareMemorialButton(page: page)),
             const SizedBox(height: AppPalette.spaceMd),
             FutureBuilder<String>(
               future: BismillahLoader.load(),
@@ -723,103 +763,183 @@ class _MemorialPageContent extends ConsumerWidget {
                 );
               },
             ),
-            Text(
-              deceasedName,
-              style: Theme.of(context).textTheme.headlineMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppPalette.spaceSm),
-            Text(
-              page.title,
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppPalette.spaceMd),
-            Text(
-              dedicationMessage,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
             if (page.description != null &&
                 page.description!.trim().isNotEmpty) ...[
               const SizedBox(height: AppPalette.spaceMd),
               Text(page.description!, textAlign: TextAlign.center),
             ],
-            const SizedBox(height: AppPalette.spaceMd),
-            Center(child: ShareMemorialButton(page: page)),
             const SizedBox(height: AppPalette.spaceLg),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ActionChip(
-                  label: const Text('الرئيسية'),
-                  onPressed: () => context.go(pathPrefix),
-                ),
-                for (final itemType in ContentType.values)
-                  ActionChip(
-                    avatar: Icon(itemType.icon, size: 18),
-                    label: Text(itemType.pluralLabelAr),
-                    onPressed: () => context.go('$pathPrefix/${itemType.id}'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppPalette.spaceLg),
-            if (cards != null)
-              cards.when(
-                loading: () => const LoadingView(),
-                error: (error, stackTrace) => ErrorView(
-                  error: error,
-                  onRetry: () =>
-                      ref.invalidate(publicMemorialLayoutProvider(page.id)),
-                ),
-                data: (items) => items.isEmpty
-                    ? const EmptyView(
-                        title: 'لا يوجد محتوى منشور بعد',
-                        message: 'ستظهر هنا البطاقات التي يضيفها مالك الصفحة.',
-                      )
-                    : AdaptiveCardGrid(
-                        children: [
-                          for (final card in items)
-                            homeCardWidget(
-                              card,
-                              key: ValueKey(card.key),
-                              pageId: page.id,
-                              pageSlug: page.slug,
-                            ),
-                        ],
-                      ),
-              )
-            else
-              content!.when(
-                loading: () => const LoadingView(),
-                error: (error, stackTrace) => ErrorView(
-                  error: error,
-                  onRetry: () => ref.invalidate(
-                    pagePublishedContentProvider((
-                      pageId: page.id,
-                      type: type!,
-                    )),
-                  ),
-                ),
-                data: (items) => items.isEmpty
-                    ? EmptyView(
-                        title: 'لا يوجد ${type!.pluralLabelAr} منشور',
-                        icon: type!.icon,
-                      )
-                    : AdaptiveCardGrid(
-                        children: [
-                          for (final item in items)
-                            ContentCard(
-                              key: ValueKey(item.cardKey),
-                              item: item,
-                              pageId: page.id,
-                              pageSlug: page.slug,
-                            ),
-                        ],
-                      ),
+            cards.when(
+              loading: () => const LoadingView(),
+              error: (error, stackTrace) => ErrorView(
+                error: error,
+                onRetry: () =>
+                    ref.invalidate(publicMemorialLayoutProvider(page.id)),
               ),
+              data: (items) {
+                final sections = _groupMemorialSections(
+                  items
+                      .where(
+                        (card) => card.entry.isEnabled && card.item.isPublished,
+                      )
+                      .toList(growable: false),
+                );
+                final visibleTypes = sections.keys.toList(growable: false);
+                _syncSectionKeys(visibleTypes);
+                _scheduleInitialSectionScroll(visibleTypes);
+                if (sections.isEmpty) {
+                  return const EmptyView(
+                    title: 'لا يوجد محتوى منشور بعد',
+                    message: 'ستظهر هنا البطاقات التي يضيفها مالك الصفحة.',
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final itemType in visibleTypes)
+                          ActionChip(
+                            avatar: Icon(itemType.icon, size: 18),
+                            label: Text(itemType.pluralLabelAr),
+                            onPressed: () => _scrollToSection(itemType),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AppPalette.spaceLg),
+                    for (final section in sections.entries)
+                      KeyedSubtree(
+                        key: ValueKey('memorial-section-${section.key.id}'),
+                        child: Padding(
+                          key: _keyFor(section.key),
+                          padding: const EdgeInsets.only(
+                            bottom: AppPalette.spaceXl,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SectionHeader(
+                                key: ValueKey(
+                                  'memorial-section-heading-${section.key.id}',
+                                ),
+                                title: section.key.pluralLabelAr,
+                                trailing: Icon(section.key.icon),
+                              ),
+                              const SizedBox(height: AppPalette.spaceMd),
+                              AdaptiveCardGrid(
+                                children: [
+                                  for (final card in section.value)
+                                    homeCardWidget(
+                                      card,
+                                      key: ValueKey(card.key),
+                                      pageId: page.id,
+                                      pageSlug: page.slug,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    _MemorialIdentityCard(
+                      key: const ValueKey('bottom-memorial-card'),
+                      deceasedName: deceasedName,
+                      dedicationMessage: dedicationMessage,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _syncSectionKeys(List<ContentType> visibleTypes) {
+    for (final type in _sectionKeys.keys.toList()) {
+      if (visibleTypes.contains(type)) continue;
+      MemorialSectionNavigation.unregister(
+        page.slug,
+        type,
+        _sectionKeys.remove(type)!,
+      );
+    }
+    for (final type in visibleTypes) {
+      _keyFor(type);
+    }
+  }
+
+  void _scheduleInitialSectionScroll(List<ContentType> visibleTypes) {
+    final requestedType = widget.type;
+    if (_initialScrollScheduled ||
+        requestedType == null ||
+        !visibleTypes.contains(requestedType)) {
+      return;
+    }
+    _initialScrollScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scrollToSection(requestedType);
+    });
+  }
+
+  void _scrollToSection(ContentType type) {
+    final targetContext = _sectionKeys[type]?.currentContext;
+    if (targetContext == null) return;
+    Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeInOut,
+      alignment: 0.04,
+    );
+  }
+}
+
+Map<ContentType, List<HomeCard>> _groupMemorialSections(List<HomeCard> cards) {
+  final sections = <ContentType, List<HomeCard>>{};
+  for (final card in cards) {
+    sections.putIfAbsent(card.item.type, () => <HomeCard>[]).add(card);
+  }
+  return sections;
+}
+
+class _MemorialIdentityCard extends StatelessWidget {
+  const _MemorialIdentityCard({
+    super.key,
+    required this.deceasedName,
+    required this.dedicationMessage,
+  });
+
+  final String deceasedName;
+  final String dedicationMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppPalette.radiusMd),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppPalette.spaceLg),
+        child: Column(
+          children: [
+            Text(
+              deceasedName,
+              style: theme.textTheme.headlineMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppPalette.spaceSm),
+            Text(
+              dedicationMessage,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge,
+            ),
           ],
         ),
       ),

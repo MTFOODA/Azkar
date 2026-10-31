@@ -3,9 +3,11 @@ import 'package:azkar/features/account/presentation/owner_dashboard_pages.dart';
 import 'package:azkar/features/content/domain/content_item.dart';
 import 'package:azkar/features/content/domain/content_type.dart';
 import 'package:azkar/features/memorial/domain/memorial_page.dart';
+import 'package:azkar/features/home/domain/homepage_entry.dart';
 import 'package:azkar/core/design/azkar_brand.dart';
 import 'package:azkar/features/sharing/public_scaffold.dart';
 import 'package:azkar/features/sharing/share_widgets.dart';
+import 'package:azkar/features/tasbeeh/domain/tasbeeh_counter_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -25,12 +27,12 @@ void main() {
 
     expect(find.text('أحمد محمد'), findsOneWidget);
     expect(find.text('نسألكم الدعاء له ولأسرته.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('first-memorial-card')), findsOneWidget);
+    expect(find.byKey(const ValueKey('bottom-memorial-card')), findsNothing);
     expect(find.byType(AzkarBrandLockup), findsOneWidget);
     expect(find.text('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ'), findsOneWidget);
-    expect(
-      find.byType(ActionChip),
-      findsNWidgets(ContentType.values.length + 1),
-    );
+    expect(find.byType(ActionChip), findsNothing);
+    expect(find.text(_page.title), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -48,71 +50,227 @@ void main() {
     expect(find.text('رسالة الإهداء لم تُضف بعد.'), findsOneWidget);
   });
 
-  testWidgets('category navigation stays on the memorial and shows its items', (
+  testWidgets('published sections share one page in configured order', (
     tester,
   ) async {
-    final requestedKeys = <({String pageId, ContentType type})>[];
     final router = _router();
     addTearDown(router.dispose);
     await tester.pumpWidget(
       _app(
         router,
         _page,
-        requestedKeys: requestedKeys,
-        categoryItems: [
-          const ContentItem(
-            id: 'published-azkar',
-            type: ContentType.azkar,
-            title: 'ذكر الصفحة الحاليّة',
-            arabicText: 'محتوى منشور للصفحة',
-            isPublished: true,
-          ),
+        homepageCards: [
+          _homeCard(ContentType.quran, 'quran-page', 0),
+          _homeCard(ContentType.tasbeeh, 'tasbeeh-page', 1),
+          _homeCard(ContentType.dua, 'dua-page', 2),
         ],
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ActionChip, 'الأذكار'));
-    await tester.pumpAndSettle();
-
+    expect(find.text('محتوى quran-page'), findsOneWidget);
+    expect(find.text('محتوى tasbeeh-page'), findsOneWidget);
+    expect(find.text('محتوى dua-page'), findsOneWidget);
+    expect(find.byKey(const ValueKey('bottom-memorial-card')), findsOneWidget);
+    expect(find.text('أحمد محمد'), findsNWidgets(2));
+    expect(find.text('نسألكم الدعاء له ولأسرته.'), findsNWidgets(2));
     expect(
-      router.routeInformationProvider.value.uri.path,
-      '/m/member-page/azkar',
+      tester
+          .getTopLeft(find.byKey(const ValueKey('memorial-section-quran')))
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('memorial-section-tasbeeh')))
+            .dy,
+      ),
     );
-    expect(find.text('ذكر الصفحة الحاليّة'), findsOneWidget);
-    expect(requestedKeys, [(pageId: _page.id, type: ContentType.azkar)]);
-    expect(find.widgetWithText(ActionChip, 'الرئيسية'), findsOneWidget);
+    expect(
+      tester
+          .getTopLeft(find.byKey(const ValueKey('memorial-section-tasbeeh')))
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('memorial-section-dua')))
+            .dy,
+      ),
+    );
+    expect(find.byType(ActionChip), findsNWidgets(3));
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('empty memorial categories show the Arabic empty state', (
+  testWidgets('category navigation scrolls without changing the memorial URL', (
     tester,
   ) async {
-    final router = _router(initialLocation: '/m/member-page/azkar');
+    final router = _router();
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      _app(
+        router,
+        _page,
+        homepageCards: [
+          _homeCard(ContentType.azkar, 'azkar-page', 0),
+          _homeCard(ContentType.quran, 'quran-page', 1),
+          _homeCard(ContentType.dua, 'dua-page', 2),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ActionChip, 'الآيات القرآنية'));
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.path, '/m/member-page');
+    expect(
+      tester
+          .getTopLeft(find.byKey(const ValueKey('memorial-section-quran')))
+          .dy,
+      lessThan(120),
+    );
+    expect(find.text('محتوى quran-page'), findsOneWidget);
+    expect(find.text('محتوى azkar-page'), findsOneWidget);
+    expect(find.text('محتوى dua-page'), findsOneWidget);
+  });
+
+  testWidgets('disabled and unpublished cards are hidden', (tester) async {
+    final router = _router();
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      _app(
+        router,
+        _page,
+        homepageCards: [
+          _homeCard(ContentType.azkar, 'visible', 0),
+          _homeCard(ContentType.quran, 'disabled', 1, enabled: false),
+          _homeCard(ContentType.dua, 'unpublished', 2, published: false),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('محتوى visible'), findsOneWidget);
+    expect(find.text('محتوى disabled'), findsNothing);
+    expect(find.text('محتوى unpublished'), findsNothing);
+    expect(find.byType(ActionChip), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('memorial-section-azkar')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('memorial-section-quran')), findsNothing);
+    expect(find.byKey(const ValueKey('memorial-section-dua')), findsNothing);
+  });
+
+  testWidgets('empty memorial layout displays one card and its empty state', (
+    tester,
+  ) async {
+    final router = _router(initialLocation: '/m/member-page');
     addTearDown(router.dispose);
     await tester.pumpWidget(_app(router, _page));
     await tester.pumpAndSettle();
 
-    expect(find.text('لا يوجد الأذكار منشور'), findsOneWidget);
-    expect(find.widgetWithText(ActionChip, 'الرئيسية'), findsOneWidget);
+    expect(find.text('لا يوجد محتوى منشور بعد'), findsOneWidget);
+    expect(find.byKey(const ValueKey('first-memorial-card')), findsOneWidget);
+    expect(find.byKey(const ValueKey('bottom-memorial-card')), findsNothing);
+    expect(find.byType(ActionChip), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('drawer categories preserve the current memorial slug', (
+  testWidgets(
+    'legacy category URLs render the same page and scroll to section',
+    (tester) async {
+      final router = _router(initialLocation: '/m/member-page/quran');
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        _app(
+          router,
+          _page,
+          homepageCards: [
+            _homeCard(ContentType.azkar, 'azkar-page', 0),
+            _homeCard(ContentType.quran, 'quran-page', 1),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/m/member-page/quran',
+      );
+      expect(find.byKey(const ValueKey('first-memorial-card')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('bottom-memorial-card')),
+        findsOneWidget,
+      );
+      expect(find.text('محتوى azkar-page'), findsOneWidget);
+      expect(find.text('محتوى quran-page'), findsOneWidget);
+      expect(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('memorial-section-quran')))
+            .dy,
+        lessThan(120),
+      );
+    },
+  );
+
+  testWidgets('Tasbeeh counter state survives scrolling between sections', (
+    tester,
+  ) async {
+    final router = _router();
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      _app(
+        router,
+        _page,
+        homepageCards: [
+          _homeCard(ContentType.tasbeeh, 'tasbeeh-page', 0),
+          _homeCard(ContentType.quran, 'quran-page', 1),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('تسبيح +'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تسبيح +'));
+    await tester.pump();
+    expect(find.text('1'), findsOneWidget);
+
+    final quranCategory = find.widgetWithText(ActionChip, 'الآيات القرآنية');
+    await tester.ensureVisible(quranCategory);
+    await tester.tap(quranCategory);
+    await tester.pumpAndSettle();
+    final tasbeehCategory = find.widgetWithText(ActionChip, 'التسبيح');
+    await tester.ensureVisible(tasbeehCategory);
+    await tester.tap(tasbeehCategory);
+    await tester.pumpAndSettle();
+
+    expect(find.text('1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('drawer categories scroll only to rendered memorial sections', (
     tester,
   ) async {
     final router = _router(scaffoldPublicPage: true);
     addTearDown(router.dispose);
-    await tester.pumpWidget(_app(router, _page));
+    await tester.pumpWidget(
+      _app(
+        router,
+        _page,
+        homepageCards: [_homeCard(ContentType.azkar, 'azkar-page', 0)],
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('القائمة'));
     await tester.pumpAndSettle();
+    expect(find.text('الآيات القرآنية'), findsNothing);
     await tester.tap(find.text('الأذكار').last);
     await tester.pumpAndSettle();
 
+    expect(router.routeInformationProvider.value.uri.path, '/m/member-page');
     expect(
-      router.routeInformationProvider.value.uri.path,
-      '/m/member-page/azkar',
+      find.byKey(const ValueKey('memorial-section-azkar')),
+      findsOneWidget,
     );
   });
 
@@ -177,7 +335,7 @@ const _page = MemorialPage(
   id: 'memorial-page-id',
   ownerUserId: 'private-owner-id',
   slug: 'member-page',
-  title: 'عنوان الصفحة',
+  title: 'حساب صاحب الصفحة',
   deceasedName: 'أحمد محمد',
   dedicationMessage: 'نسألكم الدعاء له ولأسرته.',
   isPublished: true,
@@ -186,8 +344,7 @@ const _page = MemorialPage(
 Widget _app(
   GoRouter router,
   MemorialPage page, {
-  List<ContentItem> categoryItems = const [],
-  List<({String pageId, ContentType type})>? requestedKeys,
+  List<HomeCard> homepageCards = const [],
 }) => ProviderScope(
   overrides: [
     publicMemorialPageProvider.overrideWith((ref, slug) async {
@@ -196,10 +353,9 @@ Widget _app(
     accountSessionProvider.overrideWith(_AnonymousAccountSession.new),
     adminSessionProvider.overrideWith(_AnonymousAdminSession.new),
     pageThemeSettingsProvider.overrideWith((ref, pageId) async => null),
-    publicMemorialLayoutProvider.overrideWith((ref, pageId) async => const []),
-    pagePublishedContentProvider.overrideWith((ref, key) async {
-      requestedKeys?.add(key);
-      return key.pageId == page.id ? categoryItems : const [];
+    tasbeehCounterStoreProvider.overrideWithValue(_MemoryCounterStore()),
+    publicMemorialLayoutProvider.overrideWith((ref, pageId) async {
+      return pageId == page.id ? homepageCards : const [];
     }),
   ],
   child: MaterialApp.router(
@@ -211,6 +367,56 @@ Widget _app(
     theme: ThemeData(useMaterial3: true),
   ),
 );
+
+HomeCard _homeCard(
+  ContentType type,
+  String id,
+  int order, {
+  bool enabled = true,
+  bool published = true,
+}) => HomeCard(
+  entry: HomepageEntry(
+    id: 'entry-$id',
+    contentType: type,
+    contentId: id,
+    displayOrder: order,
+    isEnabled: enabled,
+  ),
+  item: ContentItem(
+    id: id,
+    type: type,
+    title: '${type.labelAr} $id',
+    arabicText: 'محتوى $id',
+    isPublished: published,
+  ),
+);
+
+class _MemoryCounterStore implements TasbeehCounterStore {
+  final Map<String, BigInt> _values = {};
+
+  @override
+  String get backendLabel => 'test';
+
+  @override
+  Future<void> delete(String tasbeehId, {String? pageId}) async {
+    _values.remove(tasbeehId);
+  }
+
+  @override
+  Future<BigInt> read(String tasbeehId, {String? pageId}) async =>
+      _values[tasbeehId] ?? BigInt.zero;
+
+  @override
+  Future<Map<String, BigInt>> readMany(
+    Iterable<String> tasbeehIds, {
+    String? pageId,
+  }) async => {for (final id in tasbeehIds) id: _values[id] ?? BigInt.zero};
+
+  @override
+  Future<void> write(String tasbeehId, BigInt value, {String? pageId}) async {
+    _values[tasbeehId] = value;
+  }
+}
 
 GoRouter _router({
   String initialLocation = '/m/member-page',

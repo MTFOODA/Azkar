@@ -8,6 +8,7 @@ import '../../core/config/app_config.dart';
 import '../../core/providers/app_providers.dart';
 import '../../core/widgets/route_back_button.dart';
 import '../content/domain/content_type.dart';
+import '../memorial/presentation/memorial_section_navigation.dart';
 import '../sharing/share_widgets.dart';
 
 /// The public website chrome: responsive navigation, theme switch and sharing.
@@ -131,9 +132,15 @@ class PublicNavigationDrawer extends ConsumerWidget {
     final isMemorialPage =
         routeState.matchedLocation.startsWith('/m/') &&
         routeState.pathParameters['slug'] != null;
-    final memorialPath = isMemorialPage
-        ? AppConfig.memorialPagePath(routeState.pathParameters['slug']!)
+    final memorialSlug = isMemorialPage
+        ? routeState.pathParameters['slug']
         : null;
+    final memorialPath = memorialSlug == null
+        ? null
+        : AppConfig.memorialPagePath(memorialSlug);
+    final categories = memorialSlug == null
+        ? ContentType.values
+        : MemorialSectionNavigation.visibleTypes(memorialSlug);
     return Drawer(
       child: SafeArea(
         child: ListView(
@@ -145,16 +152,11 @@ class PublicNavigationDrawer extends ConsumerWidget {
               onTap: () => _go(context, memorialPath ?? '/'),
             ),
             const Divider(),
-            for (final type in ContentType.values)
+            for (final type in categories)
               ListTile(
                 leading: Icon(type.icon),
                 title: Text(type.pluralLabelAr),
-                onTap: () => _go(
-                  context,
-                  memorialPath == null
-                      ? type.route
-                      : '$memorialPath/${type.id}',
-                ),
+                onTap: () => _selectCategory(context, type, memorialSlug),
               ),
             const Divider(),
             if (adminSession != null || account != null) ...[
@@ -185,6 +187,19 @@ class PublicNavigationDrawer extends ConsumerWidget {
   void _go(BuildContext context, String location) {
     Navigator.of(context).maybePop();
     context.go(location);
+  }
+
+  void _selectCategory(
+    BuildContext context,
+    ContentType type,
+    String? memorialSlug,
+  ) {
+    if (memorialSlug == null) {
+      _go(context, type.route);
+      return;
+    }
+    Navigator.of(context).maybePop();
+    MemorialSectionNavigation.scrollTo(memorialSlug, type);
   }
 }
 
