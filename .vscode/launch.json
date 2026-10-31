@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "AZKAR — Android (Supabase Development)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "${workspaceFolder}",
+      "program": "lib/main.dart",
+      "preLaunchTask": "AZKAR: Verify Supabase Development Configuration",
+      "toolArgs": [
+        "--dart-define-from-file=config/dev.json"
+      ]
+    },
+    {
+      "name": "AZKAR — Web (Supabase Development)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "edge",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "AZKAR: Verify Supabase Development Configuration",
+      "toolArgs": [
+        "--dart-define-from-file=config/dev.json"
+      ]
+    }
+  ]
+}
