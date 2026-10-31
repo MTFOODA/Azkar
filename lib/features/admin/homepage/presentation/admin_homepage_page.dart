@@ -221,9 +221,7 @@ class _AdminHomepagePageState extends ConsumerState<AdminHomepagePage> {
                             navigateToLocation(context, '/');
                             return;
                           }
-                          final page = ref
-                              .read(currentMemorialPageProvider)
-                              .value;
+                          final page = ref.read(selectedMemorialPageProvider);
                           if (page != null) {
                             navigateToLocation(
                               context,

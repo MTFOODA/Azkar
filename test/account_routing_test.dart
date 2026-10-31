@@ -279,10 +279,7 @@ void main() {
     router.go('/forgot-password');
     await tester.pumpAndSettle();
 
-    expect(
-      router.routeInformationProvider.value.uri.path,
-      '/reset-password',
-    );
+    expect(router.routeInformationProvider.value.uri.path, '/reset-password');
     expect(find.byType(PasswordResetPage), findsOneWidget);
   });
 
@@ -344,7 +341,7 @@ void main() {
           overrides: [
             isDemoBackendProvider.overrideWithValue(false),
             accountSessionProvider.overrideWith(_RestoredAccountSession.new),
-            currentMemorialPageProvider.overrideWith((ref) async => null),
+            ownedMemorialPagesProvider.overrideWith((ref) async => const []),
           ],
           child: Consumer(
             builder: (context, ref, _) {
@@ -379,29 +376,27 @@ void main() {
     },
   );
 
-  testWidgets('a missing memorial page shows recovery without creating one', (
-    tester,
-  ) async {
+  testWidgets('a page not owned by the account fails closed', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          currentMemorialPageProvider.overrideWith((ref) async => null),
+          ownedMemorialPageProvider.overrideWith((ref, pageId) async => null),
         ],
         child: const MaterialApp(
-          home: OwnerDashboardScope(child: SizedBox.shrink()),
+          home: OwnerDashboardScope(
+            pageId: 'unowned-page',
+            child: SizedBox.shrink(),
+          ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('لم تُجهّز الصفحة الشخصية بعد'), findsOneWidget);
+    expect(find.text('الصفحة غير متاحة'), findsOneWidget);
     expect(
-      find.textContaining('لن ينشئ التطبيق صفحة بديلة تلقائيًا'),
+      find.textContaining('لا تملك صلاحية إدارة هذه الصفحة'),
       findsOneWidget,
     );
-    await tester.tap(find.byKey(const ValueKey('retry-memorial-page')));
-    await tester.pumpAndSettle();
-    expect(find.text('لم تُجهّز الصفحة الشخصية بعد'), findsOneWidget);
   });
 
   testWidgets('login failures display the supplied Arabic error', (

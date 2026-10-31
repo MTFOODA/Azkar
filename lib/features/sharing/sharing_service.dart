@@ -38,12 +38,28 @@ class SharingService {
   static String memorialText(MemorialPage page) {
     final deceasedName = page.deceasedName?.trim() ?? '';
     final dedication = page.dedicationMessage?.trim() ?? '';
+    final memorialPhrase = switch (page.deceasedGender) {
+      'male' =>
+        deceasedName.isEmpty
+            ? 'صدقة جارية على روح المرحوم'
+            : 'صدقة جارية على روح المرحوم $deceasedName',
+      'female' =>
+        deceasedName.isEmpty
+            ? 'صدقة جارية على روح المرحومة'
+            : 'صدقة جارية على روح المرحومة $deceasedName',
+      _ =>
+        deceasedName.isEmpty
+            ? 'صدقة جارية على روح عزيزٍ رحل'
+            : 'صدقة جارية على روح عزيزٍ رحل: $deceasedName',
+    };
     return [
-      deceasedName.isEmpty
-          ? 'صدقة جارية على روح عزيزٍ رحل'
-          : 'صدقة جارية على روح المرحوم/المرحومة $deceasedName',
+      memorialPhrase,
       if (dedication.isNotEmpty) dedication,
-      'نسألكم الدعاء له/لها بالرحمة والمغفرة.',
+      switch (page.deceasedGender) {
+        'male' => 'نسألكم الدعاء له بالرحمة والمغفرة.',
+        'female' => 'نسألكم الدعاء لها بالرحمة والمغفرة.',
+        _ => 'نسألكم الدعاء له/لها بالرحمة والمغفرة.',
+      },
     ].join('\n\n');
   }
 

@@ -92,6 +92,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.updates.single.deceasedName, 'أحمد محمد');
+    expect(repository.updates.single.id, _page.id);
+    expect(repository.updates.single.deceasedGender, 'male');
     expect(
       repository.updates.single.dedicationMessage,
       'نسألكم الدعاء له بالرحمة.',
@@ -158,7 +160,7 @@ void main() {
 Widget _settingsApp(_RecordingMemorialPageRepository repository) =>
     ProviderScope(
       overrides: [
-        currentMemorialPageProvider.overrideWith((ref) async => _page),
+        selectedMemorialPageProvider.overrideWithValue(_page),
         memorialPageRepositoryProvider.overrideWithValue(repository),
       ],
       child: const MaterialApp(home: Scaffold(body: OwnerPageSettingsPage())),
@@ -169,6 +171,7 @@ const _page = MemorialPage(
   ownerUserId: 'owner-id',
   slug: 'owner-page',
   title: 'صدقة جارية على روح والدي.',
+  deceasedGender: 'male',
   deceasedName: 'اسم محفوظ سابقًا',
   dedicationMessage: 'رسالة محفوظة سابقًا',
 );
@@ -180,10 +183,31 @@ class _RecordingMemorialPageRepository implements MemorialPageRepository {
   final List<MemorialPage> updates = [];
 
   @override
-  Future<MemorialPage?> fetchMine() async => _page;
+  Future<List<MemorialPage>> fetchOwnedPages() async => [_page];
+
+  @override
+  Future<MemorialPage?> fetchOwnedById(String pageId) async =>
+      pageId == _page.id ? _page : null;
 
   @override
   Future<MemorialPage?> fetchPublishedBySlug(String slug) async => null;
+
+  @override
+  Future<MemorialPage> create({
+    required String slug,
+    required String deceasedName,
+    required String deceasedGender,
+    String? dedicationMessage,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<MemorialPage> duplicate({
+    required String sourcePageId,
+    required String slug,
+    required String deceasedName,
+    required String deceasedGender,
+    String? dedicationMessage,
+  }) async => throw UnimplementedError();
 
   @override
   Future<MemorialPage> update(MemorialPage page) async {

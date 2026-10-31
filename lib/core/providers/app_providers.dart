@@ -127,16 +127,36 @@ final memorialPageRepositoryProvider = Provider<MemorialPageRepository>((ref) {
       : SupabaseMemorialPageRepository(client);
 });
 
-final currentMemorialPageProvider = FutureProvider<MemorialPage?>((ref) {
+final ownedMemorialPagesProvider = FutureProvider<List<MemorialPage>>((ref) {
+  final userId = ref.watch(accountSessionProvider.select((user) => user?.id));
+  if (userId == null) return const <MemorialPage>[];
+  return ref.watch(memorialPageRepositoryProvider).fetchOwnedPages().then((
+    pages,
+  ) {
+    if (pages.any((page) => page.ownerUserId != userId)) {
+      throw const NotAuthorizedException();
+    }
+    return pages;
+  });
+});
+
+final ownedMemorialPageProvider = FutureProvider.family<MemorialPage?, String>((
+  ref,
+  pageId,
+) {
   final userId = ref.watch(accountSessionProvider.select((user) => user?.id));
   if (userId == null) return null;
-  return ref.watch(memorialPageRepositoryProvider).fetchMine().then((page) {
-    if (page != null && page.ownerUserId != userId) {
+  return ref.watch(memorialPageRepositoryProvider).fetchOwnedById(pageId).then((
+    page,
+  ) {
+    if (page != null && (page.id != pageId || page.ownerUserId != userId)) {
       throw const NotAuthorizedException();
     }
     return page;
   });
 });
+
+final selectedMemorialPageProvider = Provider<MemorialPage?>((ref) => null);
 
 final publicMemorialPageProvider = FutureProvider.family<MemorialPage?, String>(
   (ref, slug) {

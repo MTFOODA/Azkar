@@ -126,36 +126,57 @@ void main() {
           throwsA(isA<NotAuthorizedException>()),
         );
         await expectLater(
-          repository.fetchMine(),
+          repository.fetchOwnedPages(),
+          throwsA(isA<NotAuthorizedException>()),
+        );
+        await expectLater(
+          repository.fetchOwnedById('page-b'),
           throwsA(isA<NotAuthorizedException>()),
         );
       },
     );
 
-    test('sign-out clears the cached page and a new user reloads', () async {
-      final session = _Session(_user('user-a'));
-      final repository = _PerUserPages(() => session.userId);
-      final container = ProviderContainer(
-        overrides: [
-          accountSessionProvider.overrideWith(() => session),
-          memorialPageRepositoryProvider.overrideWithValue(repository),
-        ],
-        retry: (_, _) => null,
-      );
-      addTearDown(container.dispose);
-      container.read(accountSessionProvider);
+    test(
+      'sign-out clears owned pages and a new user reloads their pages',
+      () async {
+        final session = _Session(_user('user-a'));
+        final repository = _PerUserPages(() => session.userId);
+        final container = ProviderContainer(
+          overrides: [
+            accountSessionProvider.overrideWith(() => session),
+            memorialPageRepositoryProvider.overrideWithValue(repository),
+          ],
+          retry: (_, _) => null,
+        );
+        addTearDown(container.dispose);
+        container.read(accountSessionProvider);
 
-      expect(
-        (await container.read(currentMemorialPageProvider.future))?.id,
-        'page-user-a',
-      );
-      session.setUser(null);
-      expect(await container.read(currentMemorialPageProvider.future), isNull);
-      session.setUser(_user('user-b'));
-      final pageB = await container.read(currentMemorialPageProvider.future);
-      expect(pageB?.id, 'page-user-b');
-      expect(pageB?.ownerUserId, 'user-b');
-    });
+        expect(
+          (await container.read(ownedMemorialPagesProvider.future))
+              .map((page) => page.id)
+              .toList(),
+          ['page-user-a-1', 'page-user-a-2'],
+        );
+        session.setUser(null);
+        expect(
+          await container.read(ownedMemorialPagesProvider.future),
+          isEmpty,
+        );
+        session.setUser(_user('user-b'));
+        final pagesB = await container.read(ownedMemorialPagesProvider.future);
+        expect(pagesB.map((page) => page.id), [
+          'page-user-b-1',
+          'page-user-b-2',
+        ]);
+        expect(pagesB.every((page) => page.ownerUserId == 'user-b'), isTrue);
+        expect(
+          await container.read(
+            ownedMemorialPageProvider('page-user-b-2').future,
+          ),
+          isNotNull,
+        );
+      },
+    );
   });
 }
 
@@ -213,15 +234,27 @@ class _PerUserPages implements MemorialPageRepository {
   final String? Function() _userId;
 
   @override
-  Future<MemorialPage?> fetchMine() async {
+  Future<List<MemorialPage>> fetchOwnedPages() async {
     final owner = _userId();
-    if (owner == null) return null;
-    return MemorialPage(
-      id: 'page-$owner',
-      ownerUserId: owner,
-      slug: 'page-$owner',
-      title: 'Page $owner',
-    );
+    if (owner == null) return const [];
+    return [
+      for (var index = 1; index <= 2; index++)
+        MemorialPage(
+          id: 'page-$owner-$index',
+          ownerUserId: owner,
+          slug: 'page-$owner-$index',
+          title: 'Page $owner $index',
+        ),
+    ];
+  }
+
+  @override
+  Future<MemorialPage?> fetchOwnedById(String pageId) async {
+    final pages = await fetchOwnedPages();
+    for (final page in pages) {
+      if (page.id == pageId) return page;
+    }
+    return null;
   }
 
   @override

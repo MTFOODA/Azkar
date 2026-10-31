@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/account/presentation/account_access_pages.dart';
+import '../../features/account/presentation/owner_memorial_pages_page.dart';
 import '../../features/account/presentation/owner_dashboard_pages.dart';
 import '../../features/admin/appearance/presentation/admin_appearance_page.dart';
 import '../../features/admin/content_management/presentation/admin_content_editor_page.dart';
@@ -174,50 +175,95 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       ShellRoute(
-        builder: (context, state, child) => OwnerDashboardScope(child: child),
+        builder: (context, state, child) => OwnerDashboardScope(
+          pageId: state.pathParameters['pageId'],
+          child: child,
+        ),
         routes: [
           GoRoute(
             path: '/dashboard',
-            builder: (context, state) => const OwnerDashboardHomePage(),
+            builder: (context, state) => const OwnerMemorialPagesPage(),
           ),
           GoRoute(
             path: '/dashboard/settings',
-            builder: (context, state) => const OwnerPageSettingsPage(),
+            redirect: (context, state) => '/dashboard',
           ),
           GoRoute(
             path: '/dashboard/homepage',
-            builder: (context, state) => const OwnerDashboardHomepagePage(),
+            redirect: (context, state) => '/dashboard',
           ),
           GoRoute(
             path: '/dashboard/appearance',
-            builder: (context, state) => const OwnerDashboardAppearancePage(),
+            redirect: (context, state) => '/dashboard',
           ),
           GoRoute(
             path: '/dashboard/content/:type',
-            builder: (context, state) {
-              final type = ContentTypeX.fromId(state.pathParameters['type']);
-              if (type == null) return const RouteNotFoundPage();
-              return OwnerDashboardContentListPage(type: type);
-            },
+            redirect: (context, state) => '/dashboard',
           ),
           GoRoute(
             path: '/dashboard/content/:type/new',
-            builder: (context, state) {
-              final type = ContentTypeX.fromId(state.pathParameters['type']);
-              if (type == null) return const RouteNotFoundPage();
-              return OwnerDashboardContentEditorPage(type: type, itemId: 'new');
-            },
+            redirect: (context, state) => '/dashboard',
           ),
           GoRoute(
             path: '/dashboard/content/:type/:id/edit',
+            redirect: (context, state) => '/dashboard',
+          ),
+          GoRoute(
+            path: '/dashboard/pages/:pageId',
+            builder: (context, state) => const OwnerDashboardHomePage(),
+          ),
+          GoRoute(
+            path: '/dashboard/pages/:pageId/settings',
+            builder: (context, state) => const OwnerPageSettingsPage(),
+          ),
+          GoRoute(
+            path: '/dashboard/pages/:pageId/homepage',
+            builder: (context, state) => const OwnerDashboardHomepagePage(),
+          ),
+          GoRoute(
+            path: '/dashboard/pages/:pageId/appearance',
+            builder: (context, state) => const OwnerDashboardAppearancePage(),
+          ),
+          GoRoute(
+            path: '/dashboard/pages/:pageId/content/:type',
+            builder: (context, state) {
+              final type = ContentTypeX.fromId(state.pathParameters['type']);
+              if (type == null) return const RouteNotFoundPage();
+              return OwnerDashboardContentListPage(
+                type: type,
+                pageId: state.pathParameters['pageId'] ?? '',
+              );
+            },
+          ),
+          GoRoute(
+            path: '/dashboard/pages/:pageId/content/:type/new',
+            builder: (context, state) {
+              final type = ContentTypeX.fromId(state.pathParameters['type']);
+              if (type == null) return const RouteNotFoundPage();
+              return OwnerDashboardContentEditorPage(
+                type: type,
+                itemId: 'new',
+                pageId: state.pathParameters['pageId'] ?? '',
+              );
+            },
+          ),
+          GoRoute(
+            path: '/dashboard/pages/:pageId/content/:type/:id/edit',
             builder: (context, state) {
               final type = ContentTypeX.fromId(state.pathParameters['type']);
               if (type == null) return const RouteNotFoundPage();
               return OwnerDashboardContentEditorPage(
                 type: type,
                 itemId: state.pathParameters['id'] ?? '',
+                pageId: state.pathParameters['pageId'] ?? '',
               );
             },
+          ),
+          GoRoute(
+            path: '/dashboard/pages/:pageId/preview',
+            builder: (context, state) => OwnerMemorialPreviewPage(
+              pageId: state.pathParameters['pageId'] ?? '',
+            ),
           ),
         ],
       ),

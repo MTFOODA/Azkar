@@ -11,13 +11,32 @@ class SupabaseMemorialPageRepository implements MemorialPageRepository {
   final SupabaseClient _client;
 
   @override
-  Future<MemorialPage?> fetchMine() async {
+  Future<List<MemorialPage>> fetchOwnedPages() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw const NotAuthorizedException();
+    try {
+      final rows = await _client
+          .from('memorial_pages')
+          .select()
+          .eq('owner_user_id', userId)
+          .order('updated_at', ascending: false);
+      return (rows as List<dynamic>)
+          .map((row) => MemorialPage.fromRow(row as Map<String, dynamic>))
+          .toList(growable: false);
+    } on PostgrestException catch (error) {
+      throw translatePostgrestError(error);
+    }
+  }
+
+  @override
+  Future<MemorialPage?> fetchOwnedById(String pageId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw const NotAuthorizedException();
     try {
       final row = await _client
           .from('memorial_pages')
           .select()
+          .eq('id', pageId)
           .eq('owner_user_id', userId)
           .maybeSingle();
       return row == null ? null : MemorialPage.fromRow(row);
@@ -42,6 +61,65 @@ class SupabaseMemorialPageRepository implements MemorialPageRepository {
   }
 
   @override
+  Future<MemorialPage> create({
+    required String slug,
+    required String deceasedName,
+    required String deceasedGender,
+    String? dedicationMessage,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw const NotAuthorizedException();
+    try {
+      final result = await _client.rpc(
+        'create_memorial_page',
+        params: <String, dynamic>{
+          'p_slug': slug,
+          'p_deceased_name': deceasedName.trim(),
+          'p_deceased_gender': deceasedGender,
+          'p_dedication_message': _nullIfBlank(dedicationMessage),
+        },
+      );
+      if (result is! Map<String, dynamic>) {
+        throw const AppException('تعذّر إنشاء الصفحة. أعد المحاولة.');
+      }
+      return MemorialPage.fromRow(result);
+    } on PostgrestException catch (error) {
+      throw _translatePageWriteError(error);
+    }
+  }
+
+  @override
+  Future<MemorialPage> duplicate({
+    required String sourcePageId,
+    required String slug,
+    required String deceasedName,
+    required String deceasedGender,
+    String? dedicationMessage,
+  }) async {
+    if (_client.auth.currentUser == null) {
+      throw const NotAuthorizedException();
+    }
+    try {
+      final row = await _client.rpc(
+        'duplicate_memorial_page',
+        params: <String, dynamic>{
+          'p_source_page_id': sourcePageId,
+          'p_slug': slug,
+          'p_deceased_name': deceasedName.trim(),
+          'p_deceased_gender': deceasedGender,
+          'p_dedication_message': _nullIfBlank(dedicationMessage),
+        },
+      );
+      if (row is! Map<String, dynamic>) {
+        throw const AppException('تعذّر إنشاء نسخة الصفحة. أعد المحاولة.');
+      }
+      return MemorialPage.fromRow(row);
+    } on PostgrestException catch (error) {
+      throw _translatePageWriteError(error);
+    }
+  }
+
+  @override
   Future<MemorialPage> update(MemorialPage page) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null || page.ownerUserId != userId) {
@@ -57,14 +135,22 @@ class SupabaseMemorialPageRepository implements MemorialPageRepository {
           .single();
       return MemorialPage.fromRow(row);
     } on PostgrestException catch (error) {
-      if (error.code == '23505' ||
-          error.message.toLowerCase().contains('slug')) {
-        throw AppException(
-          'هذا الرابط مستخدم بالفعل. اختر رابطًا آخر.',
-          technical: error.message,
-        );
-      }
-      throw translatePostgrestError(error);
+      throw _translatePageWriteError(error);
     }
+  }
+
+  static AppException _translatePageWriteError(PostgrestException error) {
+    if (error.code == '23505' || error.message.toLowerCase().contains('slug')) {
+      return AppException(
+        'هذا الرابط مستخدم بالفعل. اختر رابطًا آخر.',
+        technical: error.message,
+      );
+    }
+    return translatePostgrestError(error);
+  }
+
+  static String? _nullIfBlank(String? value) {
+    final text = value?.trim();
+    return text == null || text.isEmpty ? null : text;
   }
 }

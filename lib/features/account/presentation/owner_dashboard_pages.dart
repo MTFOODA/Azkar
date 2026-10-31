@@ -24,53 +24,52 @@ import '../../memorial/presentation/memorial_section_navigation.dart';
 import '../../home/data/bismillah_loader.dart';
 import '../../home/domain/homepage_entry.dart';
 import '../../sharing/share_widgets.dart';
+import '../../sharing/sharing_service.dart';
 
 class OwnerDashboardScope extends ConsumerWidget {
-  const OwnerDashboardScope({super.key, required this.child});
+  const OwnerDashboardScope({
+    super.key,
+    required this.child,
+    required this.pageId,
+  });
 
   final Widget child;
+  final String? pageId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final page = ref.watch(currentMemorialPageProvider);
+    final selectedPageId = pageId;
+    if (selectedPageId == null) return child;
+    final page = ref.watch(ownedMemorialPageProvider(selectedPageId));
     return page.when(
       loading: () => const Scaffold(body: LoadingView()),
       error: (error, stackTrace) => Scaffold(
         body: ErrorView(
           error: error,
-          onRetry: () => ref.invalidate(currentMemorialPageProvider),
+          onRetry: () =>
+              ref.invalidate(ownedMemorialPageProvider(selectedPageId)),
         ),
       ),
       data: (value) {
         if (value == null) {
           return Scaffold(
             body: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: EmptyView(
-                    title: 'لم تُجهّز الصفحة الشخصية بعد',
-                    message:
-                        'لم يُعثر على صفحة مرتبطة بهذا الحساب. تحقق من '
-                        'تطبيق المخطط الأولي ومشغّل '
-                        'azkar_provision_owner_page وسياسات RLS. '
-                        'لن ينشئ التطبيق صفحة بديلة تلقائيًا.',
-                    action: FilledButton.icon(
-                      key: const ValueKey('retry-memorial-page'),
-                      onPressed: () =>
-                          ref.invalidate(currentMemorialPageProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('إعادة التحقق'),
-                    ),
-                  ),
+              child: EmptyView(
+                title: 'الصفحة غير متاحة',
+                message: 'لا تملك صلاحية إدارة هذه الصفحة أو أنها غير موجودة.',
+                action: FilledButton.icon(
+                  onPressed: () => context.go('/dashboard'),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('صفحاتي وروابطي'),
                 ),
               ),
             ),
           );
         }
         return ProviderScope(
-          key: ValueKey(value.id),
+          key: ValueKey((value.id, value.updatedAt)),
           overrides: [
+            selectedMemorialPageProvider.overrideWithValue(value),
             contentRepositoryProvider.overrideWith(
               (scopeRef) =>
                   scopeRef.watch(pageContentRepositoryProvider(value.id)),
@@ -101,53 +100,58 @@ class OwnerDashboardShell extends ConsumerWidget {
   final MemorialPage page;
   final Widget child;
 
-  static const _entries = <({String label, IconData icon, String path})>[
-    (label: 'لوحة صفحتي', icon: Icons.dashboard_outlined, path: '/dashboard'),
-    (
-      label: 'ترتيب الرئيسية',
-      icon: Icons.home_outlined,
-      path: '/dashboard/homepage',
-    ),
-    (
-      label: 'المظهر والخطوط',
-      icon: Icons.palette_outlined,
-      path: '/dashboard/appearance',
-    ),
-    (
-      label: 'إعدادات الصفحة',
-      icon: Icons.settings_outlined,
-      path: '/dashboard/settings',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isWide = MediaQuery.sizeOf(context).width >= 1000;
+    final basePath = '/dashboard/pages/${page.id}';
     final location = GoRouterState.of(context).matchedLocation;
-    final isRoot = location == '/dashboard';
-    final contentDestinations = [
+    final isRoot = location == basePath;
+    final entries = <({String label, IconData icon, String path})>[
+      (label: 'لوحة الصفحة', icon: Icons.dashboard_outlined, path: basePath),
+      (
+        label: 'ترتيب الرئيسية',
+        icon: Icons.home_outlined,
+        path: '$basePath/homepage',
+      ),
+      (
+        label: 'المظهر والخطوط',
+        icon: Icons.palette_outlined,
+        path: '$basePath/appearance',
+      ),
+      (
+        label: 'إعدادات الصفحة',
+        icon: Icons.settings_outlined,
+        path: '$basePath/settings',
+      ),
+      (
+        label: 'صفحاتي وروابطي',
+        icon: Icons.collections_bookmark_outlined,
+        path: '/dashboard',
+      ),
       for (final type in ContentType.values)
         (
           label: type.pluralLabelAr,
           icon: type.icon,
-          path: '/dashboard/content/${type.id}',
+          path: '$basePath/content/${type.id}',
         ),
     ];
-    final destinations = [..._entries, ...contentDestinations];
+    final previewPath = page.isPublished
+        ? AppConfig.memorialPagePath(page.slug)
+        : '$basePath/preview';
     final navigation = ListView(
       padding: const EdgeInsets.all(AppPalette.spaceMd),
       children: [
         ListTile(
-          title: const Text('لوحة صفحتي'),
+          title: const Text('لوحة الصفحة'),
           subtitle: Text(
-            page.title,
+            page.deceasedName ?? page.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           leading: const AzkarBrandMark(size: 42),
         ),
         const Divider(),
-        for (final entry in destinations)
+        for (final entry in entries)
           ListTile(
             leading: Icon(entry.icon),
             title: Text(entry.label),
@@ -157,12 +161,11 @@ class OwnerDashboardShell extends ConsumerWidget {
         const Divider(),
         ListTile(
           leading: const Icon(Icons.open_in_new_outlined),
-          title: const Text('معاينة الصفحة العامة'),
-          onTap: () => navigateToLocation(
-            context,
-            AppConfig.memorialPagePath(page.slug),
-            closeDrawer: true,
+          title: Text(
+            page.isPublished ? 'فتح الصفحة العامة' : 'معاينة خاصة للمالك',
           ),
+          onTap: () =>
+              navigateToLocation(context, previewPath, closeDrawer: true),
         ),
         ListTile(
           leading: const Icon(Icons.logout_outlined),
@@ -202,11 +205,10 @@ class OwnerDashboardShell extends ConsumerWidget {
                     const AzkarBrandLockup(markSize: 36),
                     const Spacer(),
                     IconButton(
-                      tooltip: 'معاينة الصفحة العامة',
-                      onPressed: () => navigateToLocation(
-                        context,
-                        AppConfig.memorialPagePath(page.slug),
-                      ),
+                      tooltip: page.isPublished
+                          ? 'فتح الصفحة العامة'
+                          : 'معاينة خاصة للمالك',
+                      onPressed: () => navigateToLocation(context, previewPath),
                       icon: const Icon(Icons.open_in_new_outlined),
                     ),
                     if (!isRoot) const RouteBackButton(),
@@ -248,93 +250,88 @@ class OwnerDashboardHomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pageAsync = ref.watch(currentMemorialPageProvider);
+    final page = ref.watch(selectedMemorialPageProvider);
     final counts = ref.watch(_ownerContentCountsProvider);
-    return pageAsync.when(
-      loading: () => const LoadingView(),
-      error: (error, stackTrace) => ErrorView(
-        error: error,
-        onRetry: () => ref.invalidate(currentMemorialPageProvider),
-      ),
-      data: (page) {
-        if (page == null) return const SizedBox.shrink();
-        return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(AppPalette.spaceLg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SectionHeader(
-                  title: 'لوحة صفحتي',
-                  subtitle: page.isPublished
-                      ? 'صفحتك منشورة ومتاحة للزوار.'
-                      : 'صفحتك خاصة حتى تنشرها.',
-                  trailing: OutlinedButton.icon(
-                    onPressed: () =>
-                        context.go(AppConfig.memorialPagePath(page.slug)),
-                    icon: const Icon(Icons.open_in_new_outlined),
-                    label: const Text('معاينة'),
-                  ),
+    if (page == null) {
+      return const EmptyView(
+        title: 'الصفحة غير متاحة',
+        message: 'اختر صفحة من صفحاتك لمتابعة إدارتها.',
+      );
+    }
+    final basePath = ownerMemorialDashboardPath(page.id);
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(AppPalette.spaceLg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SectionHeader(
+              title: 'لوحة صفحتي',
+              subtitle: page.isPublished
+                  ? 'صفحتك منشورة ومتاحة للزوار.'
+                  : 'مسودة — الرابط العام غير متاح للزوار.',
+              trailing: OutlinedButton.icon(
+                onPressed: () => context.go(
+                  page.isPublished
+                      ? AppConfig.memorialPagePath(page.slug)
+                      : '/dashboard/pages/${page.id}/preview',
                 ),
-                const SizedBox(height: AppPalette.spaceMd),
-                Card(
-                  child: ListTile(
-                    leading: Icon(
-                      page.isPublished
-                          ? Icons.public_outlined
-                          : Icons.lock_outline,
-                    ),
-                    title: Text(page.title),
-                    subtitle: Text(
-                      '${AppConfig.memorialPageLink(page.slug)}\n'
-                      '${page.isPublished ? 'منشورة' : 'مسودة — لا تظهر للزوار'}',
-                    ),
-                    isThreeLine: true,
-                    trailing: IconButton(
-                      tooltip: 'مشاركة الصفحة',
-                      onPressed: () => showShareSheet(
-                        context,
-                        text: page.title,
-                        link: AppConfig.memorialPageLink(page.slug),
-                      ),
-                      icon: const Icon(Icons.ios_share_outlined),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppPalette.spaceMd),
-                counts.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (error, stackTrace) => ErrorView(
-                    error: error,
-                    onRetry: () => ref.invalidate(_ownerContentCountsProvider),
-                  ),
-                  data: (result) => Wrap(
-                    spacing: AppPalette.spaceMd,
-                    runSpacing: AppPalette.spaceMd,
-                    children: [
-                      for (final type in ContentType.values)
-                        ActionChip(
-                          avatar: Icon(type.icon),
-                          label: Text(
-                            '${type.pluralLabelAr} (${result[type]?.total ?? 0})',
-                          ),
-                          onPressed: () =>
-                              context.go('/dashboard/content/${type.id}'),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppPalette.spaceLg),
-                FilledButton.icon(
-                  onPressed: () => context.go('/dashboard/settings'),
-                  icon: const Icon(Icons.tune_outlined),
-                  label: const Text('إعداد الصفحة والنشر'),
-                ),
-              ],
+                icon: const Icon(Icons.open_in_new_outlined),
+                label: const Text('معاينة'),
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: AppPalette.spaceMd),
+            Card(
+              child: ListTile(
+                leading: Icon(
+                  page.isPublished ? Icons.public_outlined : Icons.lock_outline,
+                ),
+                title: Text(page.title),
+                subtitle: Text(
+                  '${page.deceasedName ?? page.title}\n'
+                  '${AppConfig.memorialPageLink(page.slug)}\n'
+                  '${page.isPublished ? 'منشورة' : 'مسودة — معاينة خاصة للمالك فقط'}',
+                ),
+                isThreeLine: true,
+                trailing: IconButton(
+                  tooltip: 'مشاركة الصفحة',
+                  onPressed: () => _shareMemorialPage(context, page),
+                  icon: const Icon(Icons.ios_share_outlined),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppPalette.spaceMd),
+            counts.when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, stackTrace) => ErrorView(
+                error: error,
+                onRetry: () => ref.invalidate(_ownerContentCountsProvider),
+              ),
+              data: (result) => Wrap(
+                spacing: AppPalette.spaceMd,
+                runSpacing: AppPalette.spaceMd,
+                children: [
+                  for (final type in ContentType.values)
+                    ActionChip(
+                      avatar: Icon(type.icon),
+                      label: Text(
+                        '${type.pluralLabelAr} (${result[type]?.total ?? 0})',
+                      ),
+                      onPressed: () =>
+                          context.go('$basePath/content/${type.id}'),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppPalette.spaceLg),
+            FilledButton.icon(
+              onPressed: () => context.go('$basePath/settings'),
+              icon: const Icon(Icons.tune_outlined),
+              label: const Text('إعداد الصفحة والنشر'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -359,6 +356,7 @@ class _OwnerPageSettingsPageState extends ConsumerState<OwnerPageSettingsPage> {
   final _deceased = TextEditingController();
   final _dedication = TextEditingController();
   final _description = TextEditingController();
+  String? _gender;
   String? _loadedId;
   bool _busy = false;
   String? _message;
@@ -380,6 +378,7 @@ class _OwnerPageSettingsPageState extends ConsumerState<OwnerPageSettingsPage> {
     _slug.text = page.slug;
     _title.text = page.title;
     _deceased.text = page.deceasedName ?? '';
+    _gender = page.deceasedGender;
     _dedication.text = page.dedicationMessage ?? '';
     _description.text = page.description ?? '';
   }
@@ -399,13 +398,15 @@ class _OwnerPageSettingsPageState extends ConsumerState<OwnerPageSettingsPage> {
       slug: PageSlug.normalize(_slug.text),
       title: _title.text.trim(),
       deceasedName: _deceased.text.trim(),
+      deceasedGender: _gender,
       dedicationMessage: _dedication.text.trim(),
       description: _description.text.trim(),
       isPublished: publish ?? page.isPublished,
     );
     try {
       await ref.read(memorialPageRepositoryProvider).update(updated);
-      ref.invalidate(currentMemorialPageProvider);
+      ref.invalidate(ownedMemorialPageProvider(page.id));
+      ref.invalidate(ownedMemorialPagesProvider);
       if (mounted) setState(() => _message = 'تم حفظ إعدادات الصفحة.');
     } catch (error) {
       if (mounted) setState(() => _error = friendlyMessage(error));
@@ -439,168 +440,183 @@ class _OwnerPageSettingsPageState extends ConsumerState<OwnerPageSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final page = ref.watch(currentMemorialPageProvider);
-    return page.when(
-      loading: () => const LoadingView(),
-      error: (error, stackTrace) => ErrorView(
-        error: error,
-        onRetry: () => ref.invalidate(currentMemorialPageProvider),
-      ),
-      data: (value) {
-        if (value == null) return const SizedBox.shrink();
-        _initialize(value);
-        final hasUnsavedChanges =
-            PageSlug.normalize(_slug.text) != value.slug ||
-            _title.text.trim() != value.title ||
-            _deceased.text.trim() != (value.deceasedName ?? '') ||
-            _dedication.text.trim() != (value.dedicationMessage ?? '') ||
-            _description.text.trim() != (value.description ?? '');
-        return UnsavedChangesGuard(
-          isDirty: hasUnsavedChanges,
-          fallbackLocation: '/dashboard',
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(AppPalette.spaceLg),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+    final page = ref.watch(selectedMemorialPageProvider);
+    if (page == null) return const SizedBox.shrink();
+    _initialize(page);
+    final hasUnsavedChanges =
+        PageSlug.normalize(_slug.text) != page.slug ||
+        _title.text.trim() != page.title ||
+        _deceased.text.trim() != (page.deceasedName ?? '') ||
+        _gender != page.deceasedGender ||
+        _dedication.text.trim() != (page.dedicationMessage ?? '') ||
+        _description.text.trim() != (page.description ?? '');
+    return UnsavedChangesGuard(
+      isDirty: hasUnsavedChanges,
+      fallbackLocation: ownerMemorialDashboardPath(page.id),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(AppPalette.spaceLg),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SectionHeader(
+                  title: 'إعدادات الصفحة',
+                  subtitle: 'غيّر بيانات صفحتك ورابطها وحالة النشر.',
+                ),
+                const SizedBox(height: AppPalette.spaceMd),
+                TextFormField(
+                  controller: _title,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(labelText: 'عنوان الصفحة'),
+                  validator: (text) => (text?.trim().isEmpty ?? true)
+                      ? 'أدخل عنوانًا للصفحة.'
+                      : null,
+                ),
+                const SizedBox(height: AppPalette.spaceSm),
+                const Text(
+                  'ده الاسم اللي هيظهر للزوار أعلى صفحتك، مثال: صدقة جارية على روح والدي.',
+                ),
+                const SizedBox(height: AppPalette.spaceSm),
+                Text(
+                  _title.text.trim().isEmpty
+                      ? 'معاينة عنوان الصفحة'
+                      : _title.text.trim(),
+                  textDirection: TextDirection.rtl,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppPalette.spaceMd),
+                TextFormField(
+                  controller: _slug,
+                  textDirection: TextDirection.ltr,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(labelText: 'الرابط المختصر'),
+                  validator: (text) => PageSlug.validate(text ?? ''),
+                ),
+                const SizedBox(height: AppPalette.spaceSm),
+                const Text(
+                  'ده الاسم المميز لرابط صفحتك اللي هتشاركه مع الناس، مثال: mohamed-ahmed.',
+                ),
+                const SizedBox(height: AppPalette.spaceSm),
+                Text(
+                  'يتم التحقق من توفر الرابط عند الحفظ.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppPalette.spaceXs),
+                Text(
+                  AppConfig.memorialPagePath(PageSlug.normalize(_slug.text)),
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
+                ),
+                const SizedBox(height: AppPalette.spaceMd),
+                TextFormField(
+                  controller: _deceased,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(labelText: 'اسم المتوفى'),
+                  validator: (text) => (text?.trim().isEmpty ?? true)
+                      ? 'أدخل اسم المتوفى.'
+                      : null,
+                ),
+                const SizedBox(height: AppPalette.spaceMd),
+                DropdownButtonFormField<String>(
+                  initialValue: _gender,
+                  decoration: const InputDecoration(labelText: 'جنس المتوفى'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'male',
+                      child: Text('ذكر — المرحوم'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'female',
+                      child: Text('أنثى — المرحومة'),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() => _gender = value),
+                  validator: (value) =>
+                      value == null ? 'اختر جنس المتوفى.' : null,
+                ),
+                const SizedBox(height: AppPalette.spaceMd),
+                TextFormField(
+                  controller: _dedication,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'رسالة الإهداء (اختيارية)',
+                  ),
+                ),
+                const SizedBox(height: AppPalette.spaceMd),
+                TextFormField(
+                  controller: _description,
+                  minLines: 2,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    labelText: 'وصف الصفحة (اختياري)',
+                  ),
+                ),
+                if (_message != null) ...[
+                  const SizedBox(height: AppPalette.spaceMd),
+                  Text(_message!, textAlign: TextAlign.center),
+                ],
+                if (_error != null) ...[
+                  const SizedBox(height: AppPalette.spaceMd),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppPalette.spaceLg),
+                Wrap(
+                  spacing: AppPalette.spaceMd,
+                  runSpacing: AppPalette.spaceMd,
                   children: [
-                    const SectionHeader(
-                      title: 'إعدادات الصفحة',
-                      subtitle: 'غيّر بيانات صفحتك ورابطها وحالة النشر.',
+                    FilledButton.icon(
+                      onPressed: _busy ? null : () => _save(page),
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('حفظ التغييرات'),
                     ),
-                    const SizedBox(height: AppPalette.spaceMd),
-                    TextFormField(
-                      controller: _title,
-                      onChanged: (_) => setState(() {}),
-                      decoration: const InputDecoration(
-                        labelText: 'عنوان الصفحة',
+                    OutlinedButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => _save(page, publish: !page.isPublished),
+                      icon: Icon(
+                        page.isPublished
+                            ? Icons.visibility_off_outlined
+                            : Icons.publish_outlined,
                       ),
-                      validator: (text) => (text?.trim().isEmpty ?? true)
-                          ? 'أدخل عنوانًا للصفحة.'
-                          : null,
-                    ),
-                    const SizedBox(height: AppPalette.spaceSm),
-                    const Text(
-                      'ده الاسم اللي هيظهر للزوار أعلى صفحتك، مثال: صدقة جارية على روح والدي.',
-                    ),
-                    const SizedBox(height: AppPalette.spaceSm),
-                    Text(
-                      _title.text.trim().isEmpty
-                          ? 'معاينة عنوان الصفحة'
-                          : _title.text.trim(),
-                      textDirection: TextDirection.rtl,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppPalette.spaceMd),
-                    TextFormField(
-                      controller: _slug,
-                      textDirection: TextDirection.ltr,
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(labelText: 'الرابط المختصر'),
-                      validator: (text) => PageSlug.validate(text ?? ''),
-                    ),
-                    const SizedBox(height: AppPalette.spaceSm),
-                    const Text(
-                      'ده الاسم المميز لرابط صفحتك اللي هتشاركه مع الناس، مثال: mohamed-ahmed.',
-                    ),
-                    const SizedBox(height: AppPalette.spaceSm),
-                    Text(
-                      'يتم التحقق من توفر الرابط عند الحفظ.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: AppPalette.spaceXs),
-                    Text(
-                      AppConfig.memorialPagePath(
-                        PageSlug.normalize(_slug.text),
+                      label: Text(
+                        page.isPublished ? 'إلغاء النشر' : 'نشر الصفحة',
                       ),
-                      textDirection: TextDirection.ltr,
-                      textAlign: TextAlign.left,
-                    ),
-                    const SizedBox(height: AppPalette.spaceMd),
-                    TextFormField(
-                      controller: _deceased,
-                      decoration: const InputDecoration(
-                        labelText: 'اسم المتوفى (اختياري)',
-                      ),
-                    ),
-                    const SizedBox(height: AppPalette.spaceMd),
-                    TextFormField(
-                      controller: _dedication,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'رسالة الإهداء (اختيارية)',
-                      ),
-                    ),
-                    const SizedBox(height: AppPalette.spaceMd),
-                    TextFormField(
-                      controller: _description,
-                      minLines: 2,
-                      maxLines: 5,
-                      decoration: const InputDecoration(
-                        labelText: 'وصف الصفحة (اختياري)',
-                      ),
-                    ),
-                    if (_message != null) ...[
-                      const SizedBox(height: AppPalette.spaceMd),
-                      Text(_message!, textAlign: TextAlign.center),
-                    ],
-                    if (_error != null) ...[
-                      const SizedBox(height: AppPalette.spaceMd),
-                      Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: AppPalette.spaceLg),
-                    Wrap(
-                      spacing: AppPalette.spaceMd,
-                      runSpacing: AppPalette.spaceMd,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: _busy ? null : () => _save(value),
-                          icon: const Icon(Icons.save_outlined),
-                          label: const Text('حفظ التغييرات'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: _busy
-                              ? null
-                              : () => _save(value, publish: !value.isPublished),
-                          icon: Icon(
-                            value.isPublished
-                                ? Icons.visibility_off_outlined
-                                : Icons.publish_outlined,
-                          ),
-                          label: Text(
-                            value.isPublished ? 'إلغاء النشر' : 'نشر الصفحة',
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
 class OwnerDashboardContentListPage extends StatelessWidget {
-  const OwnerDashboardContentListPage({super.key, required this.type});
+  const OwnerDashboardContentListPage({
+    super.key,
+    required this.type,
+    required this.pageId,
+  });
 
   final ContentType type;
+  final String pageId;
 
   @override
-  Widget build(BuildContext context) =>
-      AdminContentListPage(type: type, basePath: '/dashboard');
+  Widget build(BuildContext context) => AdminContentListPage(
+    type: type,
+    basePath: ownerMemorialDashboardPath(pageId),
+  );
 }
 
 class OwnerDashboardContentEditorPage extends StatelessWidget {
@@ -608,16 +624,18 @@ class OwnerDashboardContentEditorPage extends StatelessWidget {
     super.key,
     required this.type,
     required this.itemId,
+    required this.pageId,
   });
 
   final ContentType type;
   final String itemId;
+  final String pageId;
 
   @override
   Widget build(BuildContext context) => AdminContentEditorPage(
     type: type,
     itemId: itemId,
-    basePath: '/dashboard',
+    basePath: ownerMemorialDashboardPath(pageId),
   );
 }
 
@@ -635,6 +653,34 @@ class OwnerDashboardAppearancePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const AdminAppearancePage(isPersonalPageAppearance: true);
+}
+
+String ownerMemorialDashboardPath(String pageId) => '/dashboard/pages/$pageId';
+
+Future<void> _shareMemorialPage(BuildContext context, MemorialPage page) async {
+  if (!page.isPublished) {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('الصفحة غير منشورة'),
+        content: const Text(
+          'الرابط العام غير متاح للزوار. انشر الصفحة أولًا لمشاركتها.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('حسنًا'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+  await showShareSheet(
+    context,
+    text: SharingService.memorialText(page),
+    link: AppConfig.memorialPageLink(page.slug),
+  );
 }
 
 class PublicMemorialPage extends ConsumerWidget {
@@ -678,10 +724,67 @@ class PublicMemorialPage extends ConsumerWidget {
   }
 }
 
+class OwnerMemorialPreviewPage extends ConsumerWidget {
+  const OwnerMemorialPreviewPage({super.key, required this.pageId});
+
+  final String pageId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final page = ref.watch(ownedMemorialPageProvider(pageId));
+    return page.when(
+      loading: () => const LoadingView(),
+      error: (error, stackTrace) => ErrorView(
+        error: error,
+        onRetry: () => ref.invalidate(ownedMemorialPageProvider(pageId)),
+      ),
+      data: (value) {
+        if (value == null) {
+          return const EmptyView(
+            title: 'المعاينة غير متاحة',
+            message: 'لا تملك صلاحية معاينة هذه الصفحة.',
+          );
+        }
+        final theme = ref.watch(pageThemeSettingsProvider(value.id));
+        return theme.when(
+          loading: () => const LoadingView(),
+          error: (error, stackTrace) => ErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(pageThemeSettingsProvider(value.id)),
+          ),
+          data: (settings) => Column(
+            children: [
+              if (!value.isPublished)
+                Container(
+                  width: double.infinity,
+                  color: Theme.of(context).colorScheme.tertiaryContainer,
+                  padding: const EdgeInsets.all(AppPalette.spaceSm),
+                  child: const Text(
+                    'معاينة خاصة للمالك — الرابط غير متاح للعامة حتى نشر الصفحة.',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              Expanded(
+                child: Theme(
+                  data: settings == null
+                      ? Theme.of(context)
+                      : AppTheme.light(settings),
+                  child: _MemorialPageContent(page: value, ownerPreview: true),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _MemorialPageContent extends ConsumerStatefulWidget {
-  const _MemorialPageContent({required this.page});
+  const _MemorialPageContent({required this.page, this.ownerPreview = false});
 
   final MemorialPage page;
+  final bool ownerPreview;
 
   @override
   ConsumerState<_MemorialPageContent> createState() =>
@@ -729,7 +832,8 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
               dedicationMessage: dedicationMessage,
             ),
             const SizedBox(height: AppPalette.spaceMd),
-            Center(child: ShareMemorialButton(page: page)),
+            if (!widget.ownerPreview || page.isPublished)
+              Center(child: ShareMemorialButton(page: page)),
             const SizedBox(height: AppPalette.spaceMd),
             FutureBuilder<String>(
               future: BismillahLoader.load(),

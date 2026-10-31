@@ -4,6 +4,8 @@ import 'package:azkar/features/admin/content_management/providers/admin_provider
 import 'package:azkar/features/content/data/content_repository.dart';
 import 'package:azkar/features/content/domain/content_item.dart';
 import 'package:azkar/features/content/domain/content_type.dart';
+import 'package:azkar/core/design/theme_repository.dart';
+import 'package:azkar/core/design/theme_settings.dart';
 import 'package:azkar/features/memorial/data/memorial_page_repository.dart';
 import 'package:azkar/features/memorial/domain/memorial_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +43,56 @@ void main() {
   );
 
   test(
-    'switching account identity reloads the current memorial page',
+    'one account resolves two page IDs with separate content caches',
+    () async {
+      final session = _MutableAccountSession(_user('shared-owner'));
+      final pages = _TwoMemorialPagesRepository();
+      final container = ProviderContainer(
+        overrides: [
+          accountSessionProvider.overrideWith(() => session),
+          memorialPageRepositoryProvider.overrideWithValue(pages),
+          pageContentRepositoryProvider.overrideWith(
+            (ref, pageId) => _ItemsRepository(pageId),
+          ),
+          pageThemeRepositoryProvider.overrideWith(
+            (ref, pageId) => _PageThemeRepository(pageId),
+          ),
+        ],
+        retry: (_, _) => null,
+      );
+      addTearDown(container.dispose);
+      container.read(accountSessionProvider);
+
+      final first = await container.read(
+        ownedMemorialPageProvider('page-a').future,
+      );
+      final second = await container.read(
+        ownedMemorialPageProvider('page-b').future,
+      );
+      final firstContent = await container
+          .read(pageContentRepositoryProvider('page-a'))
+          .fetchAll(ContentType.azkar);
+      final secondContent = await container
+          .read(pageContentRepositoryProvider('page-b'))
+          .fetchAll(ContentType.azkar);
+      final firstTheme = await container
+          .read(pageThemeRepositoryProvider('page-a'))
+          .load();
+      final secondTheme = await container
+          .read(pageThemeRepositoryProvider('page-b'))
+          .load();
+
+      expect(first?.deceasedName, 'Deceased A');
+      expect(second?.deceasedName, 'Deceased B');
+      expect(firstContent.single.title, 'page-a');
+      expect(secondContent.single.title, 'page-b');
+      expect(firstTheme?.primaryColor, '#page-a');
+      expect(secondTheme?.primaryColor, '#page-b');
+    },
+  );
+
+  test(
+    'switching account identity reloads only that account’s memorial pages',
     () async {
       final session = _MutableAccountSession(_user('primary-user'));
       final repository = _SessionMemorialPageRepository(() => session.userId);
@@ -55,21 +106,21 @@ void main() {
       addTearDown(container.dispose);
 
       container.read(accountSessionProvider);
-      final primaryPage = await container.read(
-        currentMemorialPageProvider.future,
+      final primaryPages = await container.read(
+        ownedMemorialPagesProvider.future,
       );
       session.setUser(_user('secondary-user'));
-      final secondaryPage = await container.read(
-        currentMemorialPageProvider.future,
+      final secondaryPages = await container.read(
+        ownedMemorialPagesProvider.future,
       );
       session.setUser(null);
-      final signedOutPage = await container.read(
-        currentMemorialPageProvider.future,
+      final signedOutPages = await container.read(
+        ownedMemorialPagesProvider.future,
       );
 
-      expect(primaryPage?.ownerUserId, 'primary-user');
-      expect(secondaryPage?.ownerUserId, 'secondary-user');
-      expect(signedOutPage, isNull);
+      expect(primaryPages.single.ownerUserId, 'primary-user');
+      expect(secondaryPages.single.ownerUserId, 'secondary-user');
+      expect(signedOutPages, isEmpty);
       expect(repository.requestedOwners, ['primary-user', 'secondary-user']);
     },
   );
@@ -89,7 +140,7 @@ void main() {
     container.read(accountSessionProvider);
 
     await expectLater(
-      container.read(currentMemorialPageProvider.future),
+      container.read(ownedMemorialPageProvider('page-primary-user').future),
       throwsA(isA<NotAuthorizedException>()),
     );
   });
@@ -131,20 +182,80 @@ class _SessionMemorialPageRepository implements MemorialPageRepository {
   final requestedOwners = <String?>[];
 
   @override
-  Future<MemorialPage?> fetchMine() async {
+  Future<List<MemorialPage>> fetchOwnedPages() async {
     final owner = _userId();
     requestedOwners.add(owner);
+    if (owner == null) return const [];
+    return [
+      MemorialPage(
+        id: 'page-$owner',
+        ownerUserId: owner,
+        slug: 'page-$owner',
+        title: 'Page $owner',
+      ),
+    ];
+  }
+
+  @override
+  Future<MemorialPage?> fetchOwnedById(String pageId) async {
+    final owner = _userId();
     if (owner == null) return null;
     return MemorialPage(
-      id: 'page-$owner',
+      id: pageId,
       ownerUserId: owner,
-      slug: 'page-$owner',
+      slug: pageId,
       title: 'Page $owner',
     );
   }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _TwoMemorialPagesRepository implements MemorialPageRepository {
+  final pages = [
+    MemorialPage(
+      id: 'page-a',
+      ownerUserId: 'shared-owner',
+      slug: 'deceased-a',
+      title: 'Page A',
+      deceasedName: 'Deceased A',
+    ),
+    MemorialPage(
+      id: 'page-b',
+      ownerUserId: 'shared-owner',
+      slug: 'deceased-b',
+      title: 'Page B',
+      deceasedName: 'Deceased B',
+    ),
+  ];
+
+  @override
+  Future<List<MemorialPage>> fetchOwnedPages() async => pages;
+
+  @override
+  Future<MemorialPage?> fetchOwnedById(String pageId) async {
+    for (final page in pages) {
+      if (page.id == pageId) return page;
+    }
+    return null;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _PageThemeRepository implements ThemeRepository {
+  _PageThemeRepository(this.pageId);
+
+  final String pageId;
+
+  @override
+  Future<ThemeSettings?> load() async =>
+      ThemeSettings(primaryColor: '#$pageId');
+
+  @override
+  Future<ThemeSettings> save(ThemeSettings settings) async => settings;
 }
 
 User _user(String id) => User(

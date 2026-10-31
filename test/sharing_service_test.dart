@@ -10,6 +10,7 @@ void main() {
       ownerUserId: 'private-owner@example.test',
       slug: 'member-page',
       title: 'Owner Account Name',
+      deceasedGender: 'male',
       deceasedName: 'أحمد محمد',
       dedicationMessage: 'صدقة جارية عن روحه.',
     );
@@ -18,9 +19,9 @@ void main() {
 
     expect(
       message,
-      'صدقة جارية على روح المرحوم/المرحومة أحمد محمد\n\n'
+      'صدقة جارية على روح المرحوم أحمد محمد\n\n'
       'صدقة جارية عن روحه.\n\n'
-      'نسألكم الدعاء له/لها بالرحمة والمغفرة.',
+      'نسألكم الدعاء له بالرحمة والمغفرة.',
     );
     expect(message, isNot(contains(page.ownerUserId)));
     expect(message, isNot(contains(page.title)));
@@ -47,4 +48,25 @@ void main() {
       );
     },
   );
+
+  test('female memorial share uses the selected page identity and link', () {
+    const page = MemorialPage(
+      id: 'page-id',
+      ownerUserId: 'private-owner@example.test',
+      slug: 'fatemah-memorial',
+      title: 'Private account name',
+      deceasedGender: 'female',
+      deceasedName: 'فاطمة',
+      dedicationMessage: 'دعاء لها.',
+    );
+
+    final message = SharingService.memorialText(page);
+
+    expect(message, contains('المرحومة فاطمة'));
+    expect(message, contains('نسألكم الدعاء لها بالرحمة والمغفرة.'));
+    expect(message, contains(page.dedicationMessage!));
+    expect(message, isNot(contains(page.ownerUserId)));
+    expect(message, isNot(contains(page.title)));
+    expect(SharingService.memorialLink(page), endsWith('/m/fatemah-memorial'));
+  });
 }

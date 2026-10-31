@@ -4,6 +4,7 @@ class MemorialPage {
     required this.ownerUserId,
     required this.slug,
     required this.title,
+    this.deceasedGender,
     this.deceasedName,
     this.dedicationMessage,
     this.description,
@@ -16,6 +17,7 @@ class MemorialPage {
   final String ownerUserId;
   final String slug;
   final String title;
+  final String? deceasedGender;
   final String? deceasedName;
   final String? dedicationMessage;
   final String? description;
@@ -26,6 +28,7 @@ class MemorialPage {
   MemorialPage copyWith({
     String? slug,
     String? title,
+    String? deceasedGender,
     String? deceasedName,
     String? dedicationMessage,
     String? description,
@@ -35,6 +38,7 @@ class MemorialPage {
     ownerUserId: ownerUserId,
     slug: slug ?? this.slug,
     title: title ?? this.title,
+    deceasedGender: deceasedGender ?? this.deceasedGender,
     deceasedName: deceasedName ?? this.deceasedName,
     dedicationMessage: dedicationMessage ?? this.dedicationMessage,
     description: description ?? this.description,
@@ -46,6 +50,7 @@ class MemorialPage {
   Map<String, dynamic> toUpdateRow() => <String, dynamic>{
     'slug': slug,
     'title': title.trim(),
+    'deceased_gender': deceasedGender,
     'deceased_name': _nullIfBlank(deceasedName),
     'dedication_message': _nullIfBlank(dedicationMessage),
     'description': _nullIfBlank(description),
@@ -57,6 +62,7 @@ class MemorialPage {
     ownerUserId: row['owner_user_id']?.toString() ?? '',
     slug: row['slug']?.toString() ?? '',
     title: row['title']?.toString() ?? '',
+    deceasedGender: _genderOrNull(row['deceased_gender']),
     deceasedName: _textOrNull(row['deceased_name']),
     dedicationMessage: _textOrNull(row['dedication_message']),
     description: _textOrNull(row['description']),
@@ -68,6 +74,11 @@ class MemorialPage {
   static String? _textOrNull(Object? value) {
     final text = value?.toString().trim();
     return text == null || text.isEmpty ? null : text;
+  }
+
+  static String? _genderOrNull(Object? value) {
+    final gender = value?.toString();
+    return gender == 'male' || gender == 'female' ? gender : null;
   }
 
   static String? _nullIfBlank(String? value) => _textOrNull(value);
