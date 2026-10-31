@@ -80,11 +80,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/m/:slug/:type',
             builder: (context, state) {
-              final type = ContentTypeX.fromId(state.pathParameters['type']);
-              if (type == null) return const RouteNotFoundPage();
+              if (ContentTypeX.fromId(state.pathParameters['type']) == null) {
+                return const RouteNotFoundPage();
+              }
               return PublicMemorialPage(
                 slug: state.pathParameters['slug'] ?? '',
-                type: type,
               );
             },
           ),

@@ -638,10 +638,9 @@ class OwnerDashboardAppearancePage extends StatelessWidget {
 }
 
 class PublicMemorialPage extends ConsumerWidget {
-  const PublicMemorialPage({super.key, required this.slug, this.type});
+  const PublicMemorialPage({super.key, required this.slug});
 
   final String slug;
-  final ContentType? type;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -671,7 +670,7 @@ class PublicMemorialPage extends ConsumerWidget {
             data: settings == null
                 ? Theme.of(context)
                 : AppTheme.light(settings),
-            child: _MemorialPageContent(page: value, type: type),
+            child: _MemorialPageContent(page: value),
           ),
         );
       },
@@ -680,10 +679,9 @@ class PublicMemorialPage extends ConsumerWidget {
 }
 
 class _MemorialPageContent extends ConsumerStatefulWidget {
-  const _MemorialPageContent({required this.page, required this.type});
+  const _MemorialPageContent({required this.page});
 
   final MemorialPage page;
-  final ContentType? type;
 
   @override
   ConsumerState<_MemorialPageContent> createState() =>
@@ -692,7 +690,6 @@ class _MemorialPageContent extends ConsumerStatefulWidget {
 
 class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
   final Map<ContentType, GlobalKey> _sectionKeys = {};
-  bool _initialScrollScheduled = false;
 
   MemorialPage get page => widget.page;
 
@@ -700,16 +697,6 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
     type,
     () => MemorialSectionNavigation.register(page.slug, type),
   );
-
-  @override
-  void didUpdateWidget(covariant _MemorialPageContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.page.slug != widget.page.slug) {
-      _unregisterSectionKeys(oldWidget.page.slug);
-      _sectionKeys.clear();
-    }
-    if (oldWidget.type != widget.type) _initialScrollScheduled = false;
-  }
 
   @override
   void dispose() {
@@ -777,16 +764,11 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
                     ref.invalidate(publicMemorialLayoutProvider(page.id)),
               ),
               data: (items) {
-                final sections = _groupMemorialSections(
-                  items
-                      .where(
-                        (card) => card.entry.isEnabled && card.item.isPublished,
-                      )
-                      .toList(growable: false),
-                );
-                final visibleTypes = sections.keys.toList(growable: false);
+                final sections = _buildMemorialSections(items);
+                final visibleTypes = sections
+                    .map((section) => section.type)
+                    .toList(growable: false);
                 _syncSectionKeys(visibleTypes);
-                _scheduleInitialSectionScroll(visibleTypes);
                 if (sections.isEmpty) {
                   return const EmptyView(
                     title: 'لا يوجد محتوى منشور بعد',
@@ -810,11 +792,11 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
                       ],
                     ),
                     const SizedBox(height: AppPalette.spaceLg),
-                    for (final section in sections.entries)
+                    for (final section in sections)
                       KeyedSubtree(
-                        key: ValueKey('memorial-section-${section.key.id}'),
+                        key: ValueKey('memorial-section-${section.type.id}'),
                         child: Padding(
-                          key: _keyFor(section.key),
+                          key: _keyFor(section.type),
                           padding: const EdgeInsets.only(
                             bottom: AppPalette.spaceXl,
                           ),
@@ -823,15 +805,15 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
                             children: [
                               SectionHeader(
                                 key: ValueKey(
-                                  'memorial-section-heading-${section.key.id}',
+                                  'memorial-section-heading-${section.type.id}',
                                 ),
-                                title: section.key.pluralLabelAr,
-                                trailing: Icon(section.key.icon),
+                                title: section.type.pluralLabelAr,
+                                trailing: Icon(section.type.icon),
                               ),
                               const SizedBox(height: AppPalette.spaceMd),
                               AdaptiveCardGrid(
                                 children: [
-                                  for (final card in section.value)
+                                  for (final card in section.cards)
                                     homeCardWidget(
                                       card,
                                       key: ValueKey(card.key),
@@ -873,37 +855,48 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
     }
   }
 
-  void _scheduleInitialSectionScroll(List<ContentType> visibleTypes) {
-    final requestedType = widget.type;
-    if (_initialScrollScheduled ||
-        requestedType == null ||
-        !visibleTypes.contains(requestedType)) {
-      return;
-    }
-    _initialScrollScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _scrollToSection(requestedType);
-    });
-  }
-
   void _scrollToSection(ContentType type) {
     final targetContext = _sectionKeys[type]?.currentContext;
     if (targetContext == null) return;
     Scrollable.ensureVisible(
       targetContext,
-      duration: const Duration(milliseconds: 450),
+      duration: Duration.zero,
       curve: Curves.easeInOut,
       alignment: 0.04,
     );
   }
 }
 
-Map<ContentType, List<HomeCard>> _groupMemorialSections(List<HomeCard> cards) {
-  final sections = <ContentType, List<HomeCard>>{};
-  for (final card in cards) {
-    sections.putIfAbsent(card.item.type, () => <HomeCard>[]).add(card);
+class _MemorialSection {
+  const _MemorialSection(this.type, this.cards);
+
+  final ContentType type;
+  final List<HomeCard> cards;
+}
+
+List<_MemorialSection> _buildMemorialSections(List<HomeCard> cards) {
+  final orderedCards =
+      cards
+          .where((card) => card.entry.isEnabled && card.item.isPublished)
+          .toList(growable: false)
+          .indexed
+          .toList(growable: true)
+        ..sort((left, right) {
+          final byDisplayOrder = left.$2.entry.displayOrder.compareTo(
+            right.$2.entry.displayOrder,
+          );
+          return byDisplayOrder == 0
+              ? left.$1.compareTo(right.$1)
+              : byDisplayOrder;
+        });
+  final cardsByType = <ContentType, List<HomeCard>>{};
+  for (final (_, card) in orderedCards) {
+    cardsByType.putIfAbsent(card.item.type, () => <HomeCard>[]).add(card);
   }
-  return sections;
+  return [
+    for (final entry in cardsByType.entries)
+      _MemorialSection(entry.key, List<HomeCard>.unmodifiable(entry.value)),
+  ];
 }
 
 class _MemorialIdentityCard extends StatelessWidget {

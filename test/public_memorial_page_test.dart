@@ -117,7 +117,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(ActionChip, 'الآيات القرآنية'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(router.routeInformationProvider.value.uri.path, '/m/member-page');
     expect(
@@ -174,42 +174,40 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'legacy category URLs render the same page and scroll to section',
-    (tester) async {
-      final router = _router(initialLocation: '/m/member-page/quran');
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        _app(
-          router,
-          _page,
-          homepageCards: [
-            _homeCard(ContentType.azkar, 'azkar-page', 0),
-            _homeCard(ContentType.quran, 'quran-page', 1),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('legacy category URLs render the complete memorial page', (
+    tester,
+  ) async {
+    final router = _router(initialLocation: '/m/member-page/quran');
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      _app(
+        router,
+        _page,
+        homepageCards: [
+          _homeCard(ContentType.azkar, 'azkar-page', 0),
+          _homeCard(ContentType.quran, 'quran-page', 1),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(
-        router.routeInformationProvider.value.uri.path,
-        '/m/member-page/quran',
-      );
-      expect(find.byKey(const ValueKey('first-memorial-card')), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('bottom-memorial-card')),
-        findsOneWidget,
-      );
-      expect(find.text('محتوى azkar-page'), findsOneWidget);
-      expect(find.text('محتوى quran-page'), findsOneWidget);
-      expect(
-        tester
-            .getTopLeft(find.byKey(const ValueKey('memorial-section-quran')))
-            .dy,
-        lessThan(120),
-      );
-    },
-  );
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      '/m/member-page/quran',
+    );
+    expect(find.byKey(const ValueKey('first-memorial-card')), findsOneWidget);
+    expect(find.byKey(const ValueKey('bottom-memorial-card')), findsOneWidget);
+    expect(find.text('محتوى azkar-page'), findsOneWidget);
+    expect(find.text('محتوى quran-page'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('memorial-section-azkar')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('memorial-section-quran')),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('Tasbeeh counter state survives scrolling between sections', (
     tester,
@@ -436,7 +434,6 @@ GoRouter _router({
       builder: (context, state) {
         final page = PublicMemorialPage(
           slug: state.pathParameters['slug']!,
-          type: ContentTypeX.fromId(state.pathParameters['type'])!,
         );
         return scaffoldPublicPage ? PublicScaffold(child: page) : page;
       },
