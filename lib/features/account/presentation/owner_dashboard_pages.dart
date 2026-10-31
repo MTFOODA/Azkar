@@ -20,6 +20,7 @@ import '../../content/domain/content_type.dart';
 import '../../content/widgets/content_card.dart';
 import '../../memorial/domain/memorial_page.dart';
 import '../../memorial/domain/page_slug.dart';
+import '../../home/data/bismillah_loader.dart';
 import '../../sharing/share_widgets.dart';
 
 class OwnerDashboardScope extends ConsumerWidget {
@@ -692,50 +693,60 @@ class _MemorialPageContent extends ConsumerWidget {
         : ref.watch(
             pagePublishedContentProvider((pageId: page.id, type: type!)),
           );
-    final pathPrefix = '/m/${Uri.encodeComponent(page.slug)}';
+    final pathPrefix = AppConfig.memorialPagePath(page.slug);
+    final deceasedName = _publicDeceasedName(page.deceasedName);
+    final dedicationMessage = _publicDedicationMessage(page.dedicationMessage);
     return SingleChildScrollView(
       child: PageContent(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: AppPalette.spaceLg),
+            const AzkarBrandLockup(markSize: 64),
+            const SizedBox(height: AppPalette.spaceMd),
+            FutureBuilder<String>(
+              future: BismillahLoader.load(),
+              builder: (context, snapshot) {
+                final bismillah = snapshot.data ?? '';
+                if (bismillah.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppPalette.spaceMd),
+                  child: Text(
+                    bismillah,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      height: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    textAlign: TextAlign.center,
+                    textDirection: TextDirection.rtl,
+                  ),
+                );
+              },
+            ),
             Text(
-              page.title,
+              deceasedName,
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.center,
             ),
-            if (page.deceasedName != null) ...[
-              const SizedBox(height: AppPalette.spaceSm),
-              Text(
-                page.deceasedName!,
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-            ],
-            if (page.description != null) ...[
+            const SizedBox(height: AppPalette.spaceSm),
+            Text(
+              page.title,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppPalette.spaceMd),
+            Text(
+              dedicationMessage,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            if (page.description != null &&
+                page.description!.trim().isNotEmpty) ...[
               const SizedBox(height: AppPalette.spaceMd),
               Text(page.description!, textAlign: TextAlign.center),
             ],
-            if (page.dedicationMessage != null) ...[
-              const SizedBox(height: AppPalette.spaceMd),
-              Text(
-                page.dedicationMessage!,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ],
             const SizedBox(height: AppPalette.spaceMd),
-            Center(
-              child: FilledButton.icon(
-                onPressed: () => showShareSheet(
-                  context,
-                  text: page.title,
-                  link: AppConfig.memorialPageLink(page.slug),
-                ),
-                icon: const Icon(Icons.ios_share_outlined),
-                label: const Text('مشاركة الصفحة'),
-              ),
-            ),
+            Center(child: ShareMemorialButton(page: page)),
             const SizedBox(height: AppPalette.spaceLg),
             Wrap(
               alignment: WrapAlignment.center,
@@ -814,4 +825,14 @@ class _MemorialPageContent extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _publicDeceasedName(String? value) {
+  final name = value?.trim() ?? '';
+  return name.isEmpty ? 'اسم الفقيد/الفقيدة غير محدد' : name;
+}
+
+String _publicDedicationMessage(String? value) {
+  final message = value?.trim() ?? '';
+  return message.isEmpty ? 'رسالة الإهداء لم تُضف بعد.' : message;
 }

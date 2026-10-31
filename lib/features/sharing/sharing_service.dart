@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/utils/app_logger.dart';
+import '../memorial/domain/memorial_page.dart';
 
 /// A share destination that works without a third-party sharing plugin.
 enum ShareTarget { system, whatsapp, telegram, facebook, copy }
@@ -33,6 +34,21 @@ class SharingService {
 
   static String contentLink({required String type, required String id}) =>
       AppConfig.contentLink(type: type, id: id);
+
+  static String memorialText(MemorialPage page) {
+    final deceasedName = page.deceasedName?.trim() ?? '';
+    final dedication = page.dedicationMessage?.trim() ?? '';
+    return [
+      deceasedName.isEmpty
+          ? 'صدقة جارية على روح عزيزٍ رحل'
+          : 'صدقة جارية على روح المرحوم/المرحومة $deceasedName',
+      if (dedication.isNotEmpty) dedication,
+      'نسألكم الدعاء له/لها بالرحمة والمغفرة.',
+    ].join('\n\n');
+  }
+
+  static String memorialLink(MemorialPage page) =>
+      AppConfig.memorialPageLink(page.slug);
 
   static Future<bool> copyText(String text) async {
     try {

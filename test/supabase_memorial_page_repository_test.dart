@@ -22,6 +22,8 @@ void main() {
               'owner_user_id': 'owner-id',
               'slug': 'azkar-a7f29c82',
               'title': 'صفحة تذكارية',
+              'deceased_name': 'أحمد محمد',
+              'dedication_message': 'نسألكم الدعاء له.',
               'is_published': true,
             },
           ]),
@@ -45,6 +47,8 @@ void main() {
 
       expect(page?.slug, 'azkar-a7f29c82');
       expect(page?.isPublished, isTrue);
+      expect(page?.deceasedName, 'أحمد محمد');
+      expect(page?.dedicationMessage, 'نسألكم الدعاء له.');
       expect(capturedRequest.url.path, '/rest/v1/memorial_pages');
       expect(capturedRequest.url.queryParameters['slug'], 'eq.azkar-a7f29c82');
       expect(capturedRequest.url.queryParameters['is_published'], 'eq.true');

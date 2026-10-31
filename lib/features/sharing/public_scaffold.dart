@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/app_palette.dart';
 import '../../core/design/azkar_brand.dart';
+import '../../core/config/app_config.dart';
 import '../../core/providers/app_providers.dart';
 import '../../core/widgets/route_back_button.dart';
 import '../content/domain/content_type.dart';
@@ -26,6 +27,9 @@ class PublicScaffold extends ConsumerWidget {
         ? '/admin/dashboard'
         : '/dashboard';
     final location = GoRouterState.of(context).matchedLocation;
+    final routeState = GoRouterState.of(context);
+    final memorialSlug = routeState.pathParameters['slug'];
+    final isMemorialPage = location.startsWith('/m/') && memorialSlug != null;
     final isHomePage = location == '/';
     return Scaffold(
       appBar: AppBar(
@@ -54,7 +58,11 @@ class PublicScaffold extends ConsumerWidget {
                       ),
                       InkWell(
                         key: const ValueKey('public-header-brand'),
-                        onTap: () => context.go('/'),
+                        onTap: () => context.go(
+                          isMemorialPage
+                              ? AppConfig.memorialPagePath(memorialSlug)
+                              : '/',
+                        ),
                         child: showBrandName
                             ? const AzkarBrandLockup(markSize: 36)
                             : const AzkarBrandMark(size: 42),
@@ -119,6 +127,13 @@ class PublicNavigationDrawer extends ConsumerWidget {
     final accountLocation = adminSession != null
         ? '/admin/dashboard'
         : '/dashboard';
+    final routeState = GoRouterState.of(context);
+    final isMemorialPage =
+        routeState.matchedLocation.startsWith('/m/') &&
+        routeState.pathParameters['slug'] != null;
+    final memorialPath = isMemorialPage
+        ? AppConfig.memorialPagePath(routeState.pathParameters['slug']!)
+        : null;
     return Drawer(
       child: SafeArea(
         child: ListView(
@@ -127,14 +142,19 @@ class PublicNavigationDrawer extends ConsumerWidget {
             ListTile(
               title: const AzkarBrandLockup(markSize: 44),
               subtitle: const Text('صدقة جارية نسأل الله قبولها'),
-              onTap: () => _go(context, '/'),
+              onTap: () => _go(context, memorialPath ?? '/'),
             ),
             const Divider(),
             for (final type in ContentType.values)
               ListTile(
                 leading: Icon(type.icon),
                 title: Text(type.pluralLabelAr),
-                onTap: () => _go(context, type.route),
+                onTap: () => _go(
+                  context,
+                  memorialPath == null
+                      ? type.route
+                      : '$memorialPath/${type.id}',
+                ),
               ),
             const Divider(),
             if (adminSession != null || account != null) ...[

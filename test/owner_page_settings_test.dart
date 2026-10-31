@@ -60,6 +60,44 @@ void main() {
     expect(repository.updates.single.title, 'صفحة جديدة');
   });
 
+  testWidgets('deceased name and dedication are saved in page settings', (
+    tester,
+  ) async {
+    final repository = _RecordingMemorialPageRepository();
+    await tester.pumpWidget(_settingsApp(repository));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextFormField>(find.byType(TextFormField).at(2))
+          .controller!
+          .text,
+      'اسم محفوظ سابقًا',
+    );
+    expect(
+      tester
+          .widget<TextFormField>(find.byType(TextFormField).at(3))
+          .controller!
+          .text,
+      'رسالة محفوظة سابقًا',
+    );
+    await tester.enterText(find.byType(TextFormField).at(2), 'أحمد محمد');
+    await tester.enterText(
+      find.byType(TextFormField).at(3),
+      'نسألكم الدعاء له بالرحمة.',
+    );
+    final save = find.widgetWithText(FilledButton, 'حفظ التغييرات');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    expect(repository.updates.single.deceasedName, 'أحمد محمد');
+    expect(
+      repository.updates.single.dedicationMessage,
+      'نسألكم الدعاء له بالرحمة.',
+    );
+  });
+
   testWidgets('changing a slug requires confirmation before saving', (
     tester,
   ) async {
@@ -131,6 +169,8 @@ const _page = MemorialPage(
   ownerUserId: 'owner-id',
   slug: 'owner-page',
   title: 'صدقة جارية على روح والدي.',
+  deceasedName: 'اسم محفوظ سابقًا',
+  dedicationMessage: 'رسالة محفوظة سابقًا',
 );
 
 class _RecordingMemorialPageRepository implements MemorialPageRepository {

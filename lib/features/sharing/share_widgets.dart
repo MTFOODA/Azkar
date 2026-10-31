@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/providers/app_providers.dart';
+import '../memorial/domain/memorial_page.dart';
 import 'sharing_service.dart';
 
 /// Shows a short Arabic confirmation after copy/share actions.
@@ -10,32 +14,107 @@ void showShareFeedback(BuildContext context, String message) {
 }
 
 /// The prominent homepage share-website action.
-class ShareWebsiteButton extends StatelessWidget {
+class ShareWebsiteButton extends ConsumerWidget {
   const ShareWebsiteButton({super.key, this.compact = false});
 
   final bool compact;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slug = GoRouterState.of(context).pathParameters['slug'];
+    if (slug != null) {
+      final page = ref.watch(publicMemorialPageProvider(slug));
+      return page.when(
+        loading: () => _button(
+          context,
+          onPressed: null,
+          compact: compact,
+          label: 'مشاركة الصفحة',
+        ),
+        error: (_, _) => _button(
+          context,
+          onPressed: null,
+          compact: compact,
+          label: 'مشاركة الصفحة',
+        ),
+        data: (value) => value == null
+            ? _button(
+                context,
+                onPressed: null,
+                compact: compact,
+                label: 'مشاركة الصفحة',
+              )
+            : _memorialButton(context, value, compact: compact),
+      );
+    }
+    return _button(
+      context,
+      onPressed: () => _shareWebsite(context),
+      compact: compact,
+      label: 'شارك الموقع',
+    );
+  }
+
+  Widget _button(
+    BuildContext context, {
+    required VoidCallback? onPressed,
+    required bool compact,
+    required String label,
+  }) {
     if (compact) {
       return IconButton(
         tooltip: 'مشاركة',
-        onPressed: () => _shareWebsite(context),
+        onPressed: onPressed,
         color: Theme.of(context).colorScheme.primary,
         icon: const Icon(Icons.share_outlined),
       );
     }
     return FilledButton.icon(
-      onPressed: () => _shareWebsite(context),
+      onPressed: onPressed,
       icon: const Icon(Icons.ios_share_outlined),
-      label: const Text('شارك الموقع'),
+      label: Text(label),
     );
   }
+
+  Widget _memorialButton(
+    BuildContext context,
+    MemorialPage page, {
+    required bool compact,
+  }) => _button(
+    context,
+    onPressed: () => _shareMemorial(context, page),
+    compact: compact,
+    label: 'مشاركة الصفحة',
+  );
 
   Future<void> _shareWebsite(BuildContext context) => showShareSheet(
     context,
     text: SharingService.websiteText,
     link: SharingService.websiteLink(),
+  );
+
+  Future<void> _shareMemorial(BuildContext context, MemorialPage page) =>
+      showShareSheet(
+        context,
+        text: SharingService.memorialText(page),
+        link: SharingService.memorialLink(page),
+      );
+}
+
+class ShareMemorialButton extends StatelessWidget {
+  const ShareMemorialButton({super.key, required this.page});
+
+  final MemorialPage page;
+
+  @override
+  Widget build(BuildContext context) => FilledButton.icon(
+    onPressed: () => showShareSheet(
+      context,
+      text: SharingService.memorialText(page),
+      link: SharingService.memorialLink(page),
+    ),
+    icon: const Icon(Icons.ios_share_outlined),
+    label: const Text('مشاركة الصفحة'),
   );
 }
 
@@ -99,42 +178,44 @@ Future<void> showShareSheet(
     showDragHandle: true,
     builder: (sheetContext) {
       return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'شارك الأجر مع من تحب',
-                style: Theme.of(sheetContext).textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              for (final target in ShareTarget.values)
-                ListTile(
-                  leading: Icon(_iconFor(target)),
-                  title: Text(target.labelAr),
-                  onTap: () async {
-                    final ok = await SharingService.share(
-                      target,
-                      text: text,
-                      link: link,
-                    );
-                    if (sheetContext.mounted) {
-                      Navigator.of(sheetContext).pop();
-                      showShareFeedback(
-                        sheetContext,
-                        target == ShareTarget.copy
-                            ? (ok ? 'تم نسخ الرابط' : 'تعذّر النسخ')
-                            : (ok
-                                  ? 'تم فتح ${target.labelAr}'
-                                  : 'تعذّر فتح التطبيق'),
-                      );
-                    }
-                  },
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'شارك الأجر مع من تحب',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
                 ),
-            ],
+                const SizedBox(height: 16),
+                for (final target in ShareTarget.values)
+                  ListTile(
+                    leading: Icon(_iconFor(target)),
+                    title: Text(target.labelAr),
+                    onTap: () async {
+                      final ok = await SharingService.share(
+                        target,
+                        text: text,
+                        link: link,
+                      );
+                      if (sheetContext.mounted) {
+                        Navigator.of(sheetContext).pop();
+                        showShareFeedback(
+                          sheetContext,
+                          target == ShareTarget.copy
+                              ? (ok ? 'تم نسخ الرابط' : 'تعذّر النسخ')
+                              : (ok
+                                    ? 'تم فتح ${target.labelAr}'
+                                    : 'تعذّر فتح التطبيق'),
+                        );
+                      }
+                    },
+                  ),
+              ],
+            ),
           ),
         ),
       );
