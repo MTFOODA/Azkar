@@ -13,10 +13,11 @@ import '../../../content/domain/card_style.dart';
 import '../../../content/domain/content_item.dart';
 import '../../../content/domain/content_type.dart';
 import '../../../content/domain/content_validation.dart';
+import '../../../content/data/content_homepage_lifecycle.dart';
 import '../../../content/widgets/content_card.dart';
 import '../../../quran/domain/quran_dataset.dart';
-import '../providers/admin_providers.dart';
 import '../../dashboard/presentation/admin_shell.dart';
+import '../providers/admin_providers.dart';
 import 'card_style_editor.dart';
 
 /// Create/edit screen with draft/publish workflow and a live public-renderer
@@ -305,7 +306,11 @@ class _AdminContentEditorPageState
       _warnings = validation.warnings;
     });
     try {
-      await ref.read(contentRepositoryProvider).save(item);
+      if (widget.isNew) {
+        await ref.read(contentHomepageLifecycleProvider).saveNew(item);
+      } else {
+        await ref.read(contentRepositoryProvider).save(item);
+      }
       ref.invalidate(adminContentProvider(widget.type));
       ref.invalidate(adminDashboardProvider);
       ref.invalidate(adminHomepageProvider);
@@ -318,6 +323,10 @@ class _AdminContentEditorPageState
         context.go('${widget.basePath}/content/${widget.type.id}');
       }
     } catch (error) {
+      if (error is ContentHomepageLinkException) {
+        _base = error.savedItem;
+        _draft = error.savedItem;
+      }
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(friendlyMessage(error))));

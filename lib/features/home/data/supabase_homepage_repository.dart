@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/design/theme_settings.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/app_exception.dart';
 import '../../content/data/supabase_content_repository.dart';
 import '../../content/domain/content_item.dart';
 import '../../content/domain/content_mappers.dart';
@@ -133,14 +134,40 @@ class SupabaseHomepageRepository implements HomepageRepository {
     required ContentType contentType,
     required String contentId,
   }) async {
+    final current = await fetchEntries();
+    for (final entry in current) {
+      if (entry.contentType == contentType && entry.contentId == contentId) {
+        return entry;
+      }
+    }
+
     try {
-      final current = await fetchEntries();
+      var contentQuery = _client
+          .from(contentType.table)
+          .select('id')
+          .eq('id', contentId);
+      if (_pageId == null) {
+        contentQuery = contentQuery.isFilter('page_id', null);
+      } else {
+        contentQuery = contentQuery.eq('page_id', _pageId);
+      }
+      if (await contentQuery.maybeSingle() == null) {
+        throw const NotFoundException();
+      }
+
+      final nextOrder =
+          current.fold<int>(
+            -1,
+            (maximum, entry) =>
+                entry.displayOrder > maximum ? entry.displayOrder : maximum,
+          ) +
+          1;
       final row = await _client
           .from('homepage_cards')
           .insert(<String, dynamic>{
             'content_type': contentType.id,
             'content_id': contentId,
-            'display_order': current.length,
+            'display_order': nextOrder,
             'is_enabled': true,
             if (_pageId != null) 'page_id': _pageId,
           })
@@ -148,6 +175,15 @@ class SupabaseHomepageRepository implements HomepageRepository {
           .single();
       return HomepageEntry.fromRow(row);
     } on PostgrestException catch (error, stackTrace) {
+      if (error.code == '23505') {
+        final refreshed = await fetchEntries();
+        for (final entry in refreshed) {
+          if (entry.contentType == contentType &&
+              entry.contentId == contentId) {
+            return entry;
+          }
+        }
+      }
       AppLogger.error('Homepage entry add failed', error, stackTrace);
       throw translatePostgrestError(error);
     }

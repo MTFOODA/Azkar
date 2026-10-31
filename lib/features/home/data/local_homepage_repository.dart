@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/storage/local_database.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/app_exception.dart';
 import '../../content/data/content_repository.dart';
 import '../../content/domain/content_item.dart';
 import '../../content/domain/content_type.dart';
@@ -32,6 +33,7 @@ class LocalHomepageRepository implements HomepageRepository {
       StoreRef<String, Object?>(LocalStores.preferences);
 
   List<HomepageEntry>? _cache;
+  final Map<String, Future<HomepageEntry>> _pendingAdds = {};
 
   @override
   Future<List<HomepageEntry>> fetchEntries() async {
@@ -108,17 +110,49 @@ class LocalHomepageRepository implements HomepageRepository {
     required ContentType contentType,
     required String contentId,
   }) async {
+    final key = '${contentType.id}:$contentId';
+    final pending = _pendingAdds[key];
+    if (pending != null) return pending;
+
+    final operation = _add(contentType: contentType, contentId: contentId);
+    _pendingAdds[key] = operation;
+    try {
+      return await operation;
+    } finally {
+      if (identical(_pendingAdds[key], operation)) _pendingAdds.remove(key);
+    }
+  }
+
+  Future<HomepageEntry> _add({
+    required ContentType contentType,
+    required String contentId,
+  }) async {
     final entries = await fetchEntries();
     for (final entry in entries) {
       if (entry.contentType == contentType && entry.contentId == contentId) {
         return entry;
       }
     }
+    if (await _contentRepository.fetchById(contentType, contentId) == null) {
+      throw const NotFoundException();
+    }
+    for (final entry in await fetchEntries()) {
+      if (entry.contentType == contentType && entry.contentId == contentId) {
+        return entry;
+      }
+    }
+    final nextOrder =
+        entries.fold<int>(
+          -1,
+          (maximum, entry) =>
+              entry.displayOrder > maximum ? entry.displayOrder : maximum,
+        ) +
+        1;
     final created = HomepageEntry(
       id: _uuid.v4(),
       contentType: contentType,
       contentId: contentId,
-      displayOrder: entries.length,
+      displayOrder: nextOrder,
     );
     _cache = <HomepageEntry>[...entries, created];
     await _persist();

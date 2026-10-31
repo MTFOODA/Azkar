@@ -44,14 +44,18 @@ class HomepageEntryTile extends StatelessWidget {
         subtitle: Text(
           item == null
               ? 'يُتجاهل في العرض العام حتى تتم إزالته'
-              : '${entry.contentType.pluralLabelAr}${item!.isPublished ? '' : ' • مسودة'}',
+              : '${entry.contentType.pluralLabelAr} • '
+                    '${item!.isPublished ? 'منشور' : 'مسودة'} • '
+                    '${entry.isEnabled ? 'مضاف للرئيسية' : 'مخفي من الرئيسية'}',
         ),
         trailing: Wrap(
           spacing: 4,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             StatusBadge(
-              label: entry.isEnabled ? 'ظاهر' : 'مخفي',
+              label: entry.isEnabled
+                  ? 'مفعّل في الرئيسية'
+                  : 'معطّل في الرئيسية',
               color: entry.isEnabled
                   ? AppPalette.success
                   : AppPalette.lightMuted,

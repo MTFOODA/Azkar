@@ -199,7 +199,9 @@ class _AdminHomepagePageState extends ConsumerState<AdminHomepagePage> {
                 children: [
                   SectionHeader(
                     title: 'إدارة الصفحة الرئيسية',
-                    subtitle: 'تحكم في البطاقات الظاهرة وترتيبها. البطاقات غير المنشورة لا تظهر للزوار.',
+                    subtitle:
+                        'النشر يحدد إتاحة المحتوى، والظهور يحدد إدراجه في الرئيسية. '
+                        'المسودات لا تظهر للزوار حتى بعد إضافتها.',
                     trailing: FilledButton.icon(
                       onPressed: () => _addContent(data),
                       icon: const Icon(Icons.add),

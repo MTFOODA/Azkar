@@ -6,6 +6,7 @@ import '../../../../core/design/app_palette.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../../../core/utils/app_exception.dart';
 import '../../../../core/widgets/state_views.dart';
+import '../../../content/data/content_homepage_lifecycle.dart';
 import '../../../content/domain/content_item.dart';
 import '../../../content/domain/content_type.dart';
 import '../../../content/domain/content_validation.dart';
@@ -46,6 +47,11 @@ class _AdminContentListPageState extends ConsumerState<AdminContentListPage> {
       await action();
       await _refresh();
     } catch (error) {
+      if (error is ContentHomepageLinkException) {
+        ref.invalidate(adminContentProvider(widget.type));
+        ref.invalidate(adminDashboardProvider);
+        ref.invalidate(adminHomepageProvider);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(friendlyMessage(error))));
@@ -197,7 +203,7 @@ class _AdminContentListPageState extends ConsumerState<AdminContentListPage> {
                         onTogglePublish: () => _togglePublish(filtered[index]),
                         onDuplicate: () => _run(() async {
                           await ref
-                              .read(contentRepositoryProvider)
+                              .read(contentHomepageLifecycleProvider)
                               .duplicate(filtered[index]);
                         }),
                         onDelete: () => _delete(filtered[index]),

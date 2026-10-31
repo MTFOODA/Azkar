@@ -18,6 +18,7 @@ import '../../features/admin/authentication/domain/admin_auth_service.dart';
 import '../../features/account/data/supabase_account_auth_service.dart';
 import '../../features/account/domain/account_auth_service.dart';
 import '../../features/content/data/content_repository.dart';
+import '../../features/content/data/content_homepage_lifecycle.dart';
 import '../../features/content/data/local_content_repository.dart';
 import '../../features/content/data/supabase_content_repository.dart';
 import '../../features/content/domain/content_item.dart';
@@ -103,6 +104,15 @@ final pageHomepageRepositoryProvider =
               themeProvider: () => ref.read(themeSettingsProvider),
             );
     }, dependencies: [pageContentRepositoryProvider, themeSettingsProvider]);
+
+final contentHomepageLifecycleProvider = Provider<ContentHomepageLifecycle>((
+  ref,
+) {
+  return ContentHomepageLifecycle(
+    contentRepository: ref.watch(contentRepositoryProvider),
+    homepageRepository: ref.watch(homepageRepositoryProvider),
+  );
+}, dependencies: [contentRepositoryProvider, homepageRepositoryProvider]);
 
 final pageThemeRepositoryProvider = Provider.family<ThemeRepository, String>((
   ref,
