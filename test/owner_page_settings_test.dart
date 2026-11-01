@@ -2,6 +2,7 @@ import 'package:azkar/core/providers/app_providers.dart';
 import 'package:azkar/features/account/presentation/owner_dashboard_pages.dart';
 import 'package:azkar/features/memorial/data/memorial_page_repository.dart';
 import 'package:azkar/features/memorial/domain/memorial_page.dart';
+import 'package:azkar/features/memorial/presentation/memorial_gender_segmented_control.dart';
 import 'package:azkar/core/utils/app_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,6 +100,90 @@ void main() {
       'نسألكم الدعاء له بالرحمة.',
     );
   });
+
+  testWidgets('saved gender is shown as two segments and can be changed', (
+    tester,
+  ) async {
+    final repository = _RecordingMemorialPageRepository();
+    await tester.pumpWidget(_settingsApp(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('جنس المتوفى'), findsNothing);
+    expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+    expect(find.text('المرحوم'), findsOneWidget);
+    expect(find.text('المرحومة'), findsOneWidget);
+    MemorialGenderSegmentedControl control() =>
+        tester.widget(find.byType(MemorialGenderSegmentedControl));
+    expect(control().value, 'male');
+
+    await tester.tap(find.byKey(const ValueKey('memorial-gender-male')));
+    await tester.pump();
+    expect(control().value, 'male');
+
+    await tester.tap(find.byKey(const ValueKey('memorial-gender-female')));
+    await tester.pump();
+    expect(control().value, 'female');
+
+    final save = find.widgetWithText(FilledButton, 'حفظ التغييرات');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    expect(repository.updates.single.deceasedGender, 'female');
+    expect(repository.updates.single.isPublished, _page.isPublished);
+  });
+
+  testWidgets('a page without a saved gender requires an explicit choice', (
+    tester,
+  ) async {
+    final repository = _RecordingMemorialPageRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          selectedMemorialPageProvider.overrideWithValue(
+            MemorialPage(
+              id: _page.id,
+              ownerUserId: _page.ownerUserId,
+              slug: _page.slug,
+              title: _page.title,
+              deceasedName: _page.deceasedName,
+            ),
+          ),
+          memorialPageRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(home: Scaffold(body: OwnerPageSettingsPage())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final save = find.widgetWithText(FilledButton, 'حفظ التغييرات');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(find.text('اختر المرحوم أو المرحومة.'), findsOneWidget);
+    expect(repository.updates, isEmpty);
+
+    await tester.tap(find.byKey(const ValueKey('memorial-gender-female')));
+    await tester.pump();
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(repository.updates.single.deceasedGender, 'female');
+  });
+
+  for (final width in [360.0, 430.0, 1440.0]) {
+    testWidgets('gender selector does not overflow at ${width.toInt()}px', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_settingsApp(_RecordingMemorialPageRepository()));
+      await tester.pumpAndSettle();
+      expect(find.byType(MemorialGenderSegmentedControl), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('changing a slug requires confirmation before saving', (
     tester,

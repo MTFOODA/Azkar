@@ -20,6 +20,7 @@ import '../../content/domain/content_type.dart';
 import '../../content/widgets/content_card.dart';
 import '../../memorial/domain/memorial_page.dart';
 import '../../memorial/domain/page_slug.dart';
+import '../../memorial/presentation/memorial_gender_segmented_control.dart';
 import '../../memorial/presentation/memorial_section_navigation.dart';
 import '../../home/data/bismillah_loader.dart';
 import '../../home/domain/homepage_entry.dart';
@@ -519,22 +520,36 @@ class _OwnerPageSettingsPageState extends ConsumerState<OwnerPageSettingsPage> {
                       : null,
                 ),
                 const SizedBox(height: AppPalette.spaceMd),
-                DropdownButtonFormField<String>(
+                FormField<String>(
                   initialValue: _gender,
-                  decoration: const InputDecoration(labelText: 'جنس المتوفى'),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'male',
-                      child: Text('ذكر — المرحوم'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'female',
-                      child: Text('أنثى — المرحومة'),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => _gender = value),
                   validator: (value) =>
-                      value == null ? 'اختر جنس المتوفى.' : null,
+                      value == null ? 'اختر المرحوم أو المرحومة.' : null,
+                  builder: (field) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      MemorialGenderSegmentedControl(
+                        value: field.value,
+                        onChanged: (value) {
+                          setState(() => _gender = value);
+                          field.didChange(value);
+                        },
+                      ),
+                      if (field.errorText != null)
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: AppPalette.spaceXs,
+                            left: AppPalette.spaceMd,
+                            right: AppPalette.spaceMd,
+                          ),
+                          child: Text(
+                            field.errorText!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppPalette.spaceMd),
                 TextFormField(
