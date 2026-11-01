@@ -178,7 +178,7 @@ void main() {
 
     await tester.tap(find.byTooltip('القائمة'));
     await tester.pumpAndSettle();
-    expect(find.text('الأذكار').first, findsOneWidget);
+    expect(find.text('الأذكار'), findsNothing);
     expect(tester.getRect(find.byType(Drawer)).right, 360);
     Navigator.of(tester.element(find.byType(Drawer))).pop();
     await tester.pumpAndSettle();

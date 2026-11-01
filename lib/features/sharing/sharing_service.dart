@@ -39,14 +39,10 @@ class SharingService {
     final deceasedName = page.deceasedName?.trim() ?? '';
     final dedication = page.dedicationMessage?.trim() ?? '';
     final memorialPhrase = switch (page.deceasedGender) {
-      'male' =>
-        deceasedName.isEmpty
-            ? 'صدقة جارية على روح المرحوم'
-            : 'صدقة جارية على روح المرحوم $deceasedName',
       'female' =>
         deceasedName.isEmpty
-            ? 'صدقة جارية على روح المرحومة'
-            : 'صدقة جارية على روح المرحومة $deceasedName',
+            ? 'صدقة جارية على روح عزيزةٍ رحلت'
+            : 'صدقة جارية على روح عزيزةٍ رحلت: $deceasedName',
       _ =>
         deceasedName.isEmpty
             ? 'صدقة جارية على روح عزيزٍ رحل'
@@ -56,9 +52,14 @@ class SharingService {
       memorialPhrase,
       if (dedication.isNotEmpty) dedication,
       switch (page.deceasedGender) {
+        'female' => 'اللهم اغفر لها وارحمها',
+        'male' => 'اللهم اغفر له وارحمه',
+        _ => 'اللهم اغفر للفقيد وارحمه',
+      },
+      switch (page.deceasedGender) {
         'male' => 'نسألكم الدعاء له بالرحمة والمغفرة.',
         'female' => 'نسألكم الدعاء لها بالرحمة والمغفرة.',
-        _ => 'نسألكم الدعاء له/لها بالرحمة والمغفرة.',
+        _ => 'نسألكم الدعاء بالرحمة والمغفرة.',
       },
     ].join('\n\n');
   }

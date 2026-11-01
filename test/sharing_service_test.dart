@@ -4,7 +4,7 @@ import 'package:azkar/features/sharing/sharing_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('memorial share contains configured name and dedication only', () {
+  test('male memorial share uses the configured identity and wording', () {
     const page = MemorialPage(
       id: 'page-id',
       ownerUserId: 'private-owner@example.test',
@@ -19,8 +19,9 @@ void main() {
 
     expect(
       message,
-      'صدقة جارية على روح المرحوم أحمد محمد\n\n'
+      'صدقة جارية على روح عزيزٍ رحل: أحمد محمد\n\n'
       'صدقة جارية عن روحه.\n\n'
+      'اللهم اغفر له وارحمه\n\n'
       'نسألكم الدعاء له بالرحمة والمغفرة.',
     );
     expect(message, isNot(contains(page.ownerUserId)));
@@ -40,7 +41,8 @@ void main() {
       expect(
         SharingService.memorialText(page),
         'صدقة جارية على روح عزيزٍ رحل\n\n'
-        'نسألكم الدعاء له/لها بالرحمة والمغفرة.',
+        'اللهم اغفر للفقيد وارحمه\n\n'
+        'نسألكم الدعاء بالرحمة والمغفرة.',
       );
       expect(
         SharingService.memorialLink(page),
@@ -62,8 +64,10 @@ void main() {
 
     final message = SharingService.memorialText(page);
 
-    expect(message, contains('المرحومة فاطمة'));
+    expect(message, contains('صدقة جارية على روح عزيزةٍ رحلت: فاطمة'));
+    expect(message, contains('اللهم اغفر لها وارحمها'));
     expect(message, contains('نسألكم الدعاء لها بالرحمة والمغفرة.'));
+    expect(message, isNot(contains('له/لها')));
     expect(message, contains(page.dedicationMessage!));
     expect(message, isNot(contains(page.ownerUserId)));
     expect(message, isNot(contains(page.title)));

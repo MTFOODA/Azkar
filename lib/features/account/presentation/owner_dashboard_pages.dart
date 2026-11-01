@@ -106,7 +106,7 @@ class OwnerDashboardShell extends ConsumerWidget {
     final isWide = MediaQuery.sizeOf(context).width >= 1000;
     final basePath = '/dashboard/pages/${page.id}';
     final location = GoRouterState.of(context).matchedLocation;
-    final isRoot = location == basePath;
+    final isRoot = location == '/dashboard';
     final entries = <({String label, IconData icon, String path})>[
       (label: 'لوحة الصفحة', icon: Icons.dashboard_outlined, path: basePath),
       (
@@ -514,9 +514,15 @@ class _OwnerPageSettingsPageState extends ConsumerState<OwnerPageSettingsPage> {
                 TextFormField(
                   controller: _deceased,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(labelText: 'اسم المتوفى'),
+                  decoration: InputDecoration(
+                    labelText: _gender == 'female'
+                        ? 'اسم المتوفاة'
+                        : 'اسم المتوفى',
+                  ),
                   validator: (text) => (text?.trim().isEmpty ?? true)
-                      ? 'أدخل اسم المتوفى.'
+                      ? _gender == 'female'
+                            ? 'أدخل اسم المتوفاة.'
+                            : 'أدخل اسم المتوفى.'
                       : null,
                 ),
                 const SizedBox(height: AppPalette.spaceMd),
@@ -831,7 +837,11 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
   @override
   Widget build(BuildContext context) {
     final cards = ref.watch(publicMemorialLayoutProvider(page.id));
-    final deceasedName = _publicDeceasedName(page.deceasedName);
+    final deceasedName = switch (page.deceasedGender) {
+      'male' => _withHonorific('المرحوم', page),
+      'female' => _withHonorific('المرحومة', page),
+      _ => _publicDeceasedName(page),
+    };
     final dedicationMessage = _publicDedicationMessage(page.dedicationMessage);
     return SingleChildScrollView(
       child: PageContent(
@@ -1059,9 +1069,21 @@ class _MemorialIdentityCard extends StatelessWidget {
   }
 }
 
-String _publicDeceasedName(String? value) {
-  final name = value?.trim() ?? '';
-  return name.isEmpty ? 'اسم الفقيد/الفقيدة غير محدد' : name;
+String _publicDeceasedName(MemorialPage page) {
+  final name = page.deceasedName?.trim() ?? '';
+  if (name.isNotEmpty) return name;
+  return page.deceasedGender == 'female'
+      ? 'اسم الفقيدة غير محدد'
+      : 'اسم الفقيد غير محدد';
+}
+
+/// Adds the honorific for display only, never twice and never to a placeholder.
+String _withHonorific(String honorific, MemorialPage page) {
+  final name = page.deceasedName?.trim() ?? '';
+  if (name.isEmpty || name.startsWith('المرحوم')) {
+    return _publicDeceasedName(page);
+  }
+  return '$honorific $name';
 }
 
 String _publicDedicationMessage(String? value) {

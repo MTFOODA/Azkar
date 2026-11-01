@@ -3,11 +3,39 @@ import 'package:azkar/features/content/domain/content_item.dart';
 import 'package:azkar/features/content/domain/content_type.dart';
 import 'package:azkar/features/content/widgets/content_card.dart';
 import 'package:azkar/features/home/domain/homepage_entry.dart';
+import 'package:azkar/features/home/presentation/home_page.dart';
+import 'package:azkar/features/content/providers/content_providers.dart';
 import 'package:azkar/core/widgets/adaptive_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('general homepage keeps branding without loading content', (
+    tester,
+  ) async {
+    var homepageLoads = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          homeLayoutProvider.overrideWith((ref) async {
+            homepageLoads++;
+            return const [];
+          }),
+        ],
+        child: const MaterialApp(home: Scaffold(body: HomePage())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(homepageLoads, 0);
+    expect(find.byType(AzkarBrandLockup), findsOneWidget);
+    expect(find.byType(ContentCard), findsNothing);
+    expect(find.byType(ActionChip), findsNothing);
+    expect(find.text('لم تُضف بطاقات للرئيسية بعد'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('AZKAR wordmark exposes an accessible bilingual brand label', (
     tester,
   ) async {

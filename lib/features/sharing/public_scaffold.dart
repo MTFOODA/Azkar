@@ -139,7 +139,7 @@ class PublicNavigationDrawer extends ConsumerWidget {
         ? null
         : AppConfig.memorialPagePath(memorialSlug);
     final categories = memorialSlug == null
-        ? ContentType.values
+        ? const <ContentType>[]
         : MemorialSectionNavigation.visibleTypes(memorialSlug);
     return Drawer(
       child: SafeArea(
@@ -200,27 +200,5 @@ class PublicNavigationDrawer extends ConsumerWidget {
     }
     Navigator.of(context).maybePop();
     MemorialSectionNavigation.scrollTo(memorialSlug, type);
-  }
-}
-
-/// Compact navigation row for the home page on large screens.
-class PublicQuickNav extends StatelessWidget {
-  const PublicQuickNav({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final type in ContentType.values)
-          ActionChip(
-            avatar: Icon(type.icon, size: 18),
-            label: Text(type.pluralLabelAr),
-            onPressed: () => context.go(type.route),
-          ),
-      ],
-    );
   }
 }

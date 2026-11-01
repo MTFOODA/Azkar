@@ -4,6 +4,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
+  test('owner Back targets retain the selected memorial context', () {
+    expect(
+      routeBackFallback('/dashboard/pages/page-a/settings'),
+      '/dashboard/pages/page-a',
+    );
+    expect(
+      routeBackFallback('/dashboard/pages/page-a/content/quran/item/edit'),
+      '/dashboard/pages/page-a/content/quran',
+    );
+    expect(
+      routeBackFallback('/dashboard/pages/page-a/content/quran'),
+      '/dashboard/pages/page-a',
+    );
+    expect(routeBackFallback('/dashboard/pages/page-a'), '/dashboard');
+  });
+
   testWidgets('dirty routes confirm before using the fallback destination', (
     tester,
   ) async {

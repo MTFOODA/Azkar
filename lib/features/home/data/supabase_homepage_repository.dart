@@ -26,7 +26,11 @@ class SupabaseHomepageRepository implements HomepageRepository {
   Future<List<HomepageEntry>> fetchEntries() async {
     try {
       var query = _client.from('homepage_cards').select();
-      if (_pageId != null) query = query.eq('page_id', _pageId);
+      if (_pageId == null) {
+        query = query.isFilter('page_id', null);
+      } else {
+        query = query.eq('page_id', _pageId);
+      }
       final rows = await query.order('display_order', ascending: true);
       return (rows as List<dynamic>)
           .map((row) => HomepageEntry.fromRow(row as Map<String, dynamic>))
@@ -60,7 +64,11 @@ class SupabaseHomepageRepository implements HomepageRepository {
             .select()
             .inFilter('id', ids)
             .eq('is_published', true);
-        if (_pageId != null) query = query.eq('page_id', _pageId);
+        if (_pageId == null) {
+          query = query.isFilter('page_id', null);
+        } else {
+          query = query.eq('page_id', _pageId);
+        }
         final rows = await query;
         for (final raw in rows as List<dynamic>) {
           final item = ContentMapper.fromRow(
@@ -93,7 +101,11 @@ class SupabaseHomepageRepository implements HomepageRepository {
             .from('homepage_cards')
             .update(<String, dynamic>{'display_order': index})
             .eq('id', entries[index].id);
-        if (_pageId != null) query = query.eq('page_id', _pageId);
+        if (_pageId == null) {
+          query = query.isFilter('page_id', null);
+        } else {
+          query = query.eq('page_id', _pageId);
+        }
         await query;
       }
     } on PostgrestException catch (error, stackTrace) {
@@ -109,7 +121,11 @@ class SupabaseHomepageRepository implements HomepageRepository {
           .from('homepage_cards')
           .update(<String, dynamic>{'is_enabled': enabled})
           .eq('id', entryId);
-      if (_pageId != null) query = query.eq('page_id', _pageId);
+      if (_pageId == null) {
+        query = query.isFilter('page_id', null);
+      } else {
+        query = query.eq('page_id', _pageId);
+      }
       await query;
     } on PostgrestException catch (error, stackTrace) {
       AppLogger.error('Homepage enable toggle failed', error, stackTrace);
@@ -121,7 +137,11 @@ class SupabaseHomepageRepository implements HomepageRepository {
   Future<void> remove(String entryId) async {
     try {
       var query = _client.from('homepage_cards').delete().eq('id', entryId);
-      if (_pageId != null) query = query.eq('page_id', _pageId);
+      if (_pageId == null) {
+        query = query.isFilter('page_id', null);
+      } else {
+        query = query.eq('page_id', _pageId);
+      }
       await query;
     } on PostgrestException catch (error, stackTrace) {
       AppLogger.error('Homepage entry delete failed', error, stackTrace);

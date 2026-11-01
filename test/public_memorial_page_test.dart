@@ -25,7 +25,7 @@ void main() {
     await tester.pumpWidget(_app(router, _page));
     await tester.pumpAndSettle();
 
-    expect(find.text('أحمد محمد'), findsOneWidget);
+    expect(find.text('المرحوم أحمد محمد'), findsOneWidget);
     expect(find.text('نسألكم الدعاء له ولأسرته.'), findsOneWidget);
     expect(find.byKey(const ValueKey('first-memorial-card')), findsOneWidget);
     expect(find.byKey(const ValueKey('bottom-memorial-card')), findsNothing);
@@ -46,9 +46,33 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('اسم الفقيد/الفقيدة غير محدد'), findsOneWidget);
+    expect(find.text('اسم الفقيد غير محدد'), findsOneWidget);
     expect(find.text('رسالة الإهداء لم تُضف بعد.'), findsOneWidget);
   });
+
+  for (final (gender, stored, shown) in [
+    ('male', 'المرحوم جمال فودة', 'المرحوم جمال فودة'),
+    ('female', 'المرحومة فاطمة', 'المرحومة فاطمة'),
+    ('female', 'فاطمة', 'المرحومة فاطمة'),
+  ]) {
+    testWidgets('honorific is never duplicated: $gender / $stored', (
+      tester,
+    ) async {
+      final router = _router();
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        _app(
+          router,
+          _page.copyWith(deceasedName: stored, deceasedGender: gender),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(shown), findsOneWidget);
+      expect(find.textContaining('المرحوم المرحوم'), findsNothing);
+      expect(find.textContaining('المرحومة المرحومة'), findsNothing);
+    });
+  }
 
   testWidgets('published sections share one page in configured order', (
     tester,
@@ -72,7 +96,7 @@ void main() {
     expect(find.text('محتوى tasbeeh-page'), findsOneWidget);
     expect(find.text('محتوى dua-page'), findsOneWidget);
     expect(find.byKey(const ValueKey('bottom-memorial-card')), findsOneWidget);
-    expect(find.text('أحمد محمد'), findsNWidgets(2));
+    expect(find.text('المرحوم أحمد محمد'), findsNWidgets(2));
     expect(find.text('نسألكم الدعاء له ولأسرته.'), findsNWidgets(2));
     expect(
       tester
@@ -320,7 +344,17 @@ void main() {
       await tester.pumpWidget(_app(router, _page));
       await tester.pumpAndSettle();
 
-      expect(find.text('أحمد محمد'), findsOneWidget, reason: 'width: $width');
+      expect(
+        find.text('أحمد محمد'),
+        findsNothing,
+        reason:
+            'the public title includes the saved honorific at width: $width',
+      );
+      expect(
+        find.text('المرحوم أحمد محمد'),
+        findsOneWidget,
+        reason: 'width: $width',
+      );
       expect(tester.takeException(), isNull, reason: 'width: $width');
       await tester.pumpWidget(const SizedBox.shrink());
       router.dispose();
@@ -335,6 +369,7 @@ const _page = MemorialPage(
   slug: 'member-page',
   title: 'حساب صاحب الصفحة',
   deceasedName: 'أحمد محمد',
+  deceasedGender: 'male',
   dedicationMessage: 'نسألكم الدعاء له ولأسرته.',
   isPublished: true,
 );
@@ -432,9 +467,7 @@ GoRouter _router({
     GoRoute(
       path: '/m/:slug/:type',
       builder: (context, state) {
-        final page = PublicMemorialPage(
-          slug: state.pathParameters['slug']!,
-        );
+        final page = PublicMemorialPage(slug: state.pathParameters['slug']!);
         return scaffoldPublicPage ? PublicScaffold(child: page) : page;
       },
     ),

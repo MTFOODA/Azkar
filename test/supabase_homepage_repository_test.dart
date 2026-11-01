@@ -10,6 +10,29 @@ import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  test(
+    'global homepage reads only entries without a memorial page ID',
+    () async {
+      Uri? requested;
+      final transport = MockClient((request) async {
+        requested = request.url;
+        return _json([], request: request);
+      });
+      final client = _client(transport);
+      addTearDown(() async {
+        await client.dispose();
+        transport.close();
+      });
+      final repository = SupabaseHomepageRepository(
+        client: client,
+        themeProvider: () => ThemeSettings.defaults,
+      );
+
+      expect(await repository.fetchEntries(), isEmpty);
+      expect(requested?.queryParameters['page_id'], 'is.null');
+    },
+  );
+
   test('add validates page ownership, appends after current order, and deduplicates', () async {
     final entries = <Map<String, dynamic>>[
       _entry(

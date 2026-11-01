@@ -159,24 +159,7 @@ class LocalHomepageRepository implements HomepageRepository {
     return created;
   }
 
-  Future<List<HomepageEntry>> _createInitialLayout() async {
-    final result = <HomepageEntry>[];
-    var order = 0;
-    for (final type in ContentType.values) {
-      final published = await _contentRepository.fetchPublished(type);
-      for (final item in published) {
-        result.add(
-          HomepageEntry(
-            id: _uuid.v4(),
-            contentType: type,
-            contentId: item.id,
-            displayOrder: order++,
-          ),
-        );
-      }
-    }
-    return result;
-  }
+  Future<List<HomepageEntry>> _createInitialLayout() async => <HomepageEntry>[];
 
   Future<void> _persist() async {
     try {

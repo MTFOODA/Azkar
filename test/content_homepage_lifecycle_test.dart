@@ -136,6 +136,35 @@ void main() {
   });
 
   test(
+    'new local homepage does not expose historical published content',
+    () async {
+      final database = await openNewInMemoryDatabase();
+      addTearDown(database.close);
+      final content = LocalContentRepository(
+        pageId: 'page-a',
+        databaseProvider: () async => database,
+        themeProvider: () => ThemeSettings.defaults,
+      );
+      await content.save(
+        const ContentItem(
+          id: '',
+          type: ContentType.tasbeeh,
+          title: 'Historical content',
+          isPublished: true,
+        ),
+      );
+      final homepage = LocalHomepageRepository(
+        pageId: 'page-a',
+        databaseProvider: () async => database,
+        contentRepository: content,
+      );
+
+      expect(await homepage.fetchEntries(), isEmpty);
+      expect(await homepage.fetchPublishedLayout(), isEmpty);
+    },
+  );
+
+  test(
     'page-specific content and homepage configuration remain independent',
     () async {
       final contentA = _MemoryContentRepository('page-a');
@@ -207,6 +236,34 @@ void main() {
         (await content.fetchById(original.type, original.id))?.title,
         'Original',
       );
+    },
+  );
+
+  test(
+    'existing published content can be added and add is idempotent',
+    () async {
+      final content = _MemoryContentRepository('page-a');
+      final homepage = _MemoryHomepageRepository(content);
+      final existing = await content.save(
+        const ContentItem(
+          id: '',
+          type: ContentType.tasbeeh,
+          title: 'Existing published content',
+          isPublished: true,
+        ),
+      );
+      final first = await homepage.add(
+        contentType: existing.type,
+        contentId: existing.id,
+      );
+      final repeated = await homepage.add(
+        contentType: existing.type,
+        contentId: existing.id,
+      );
+
+      expect(repeated.id, first.id);
+      expect(homepage.entries, hasLength(1));
+      expect(await homepage.fetchPublishedLayout(), hasLength(1));
     },
   );
 }

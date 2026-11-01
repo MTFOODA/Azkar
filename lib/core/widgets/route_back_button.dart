@@ -54,6 +54,17 @@ String routeBackFallback(String location) {
     };
     return routes[type] ?? '/';
   }
+  if (location.startsWith('/dashboard/pages/')) {
+    final segments = location.split('/');
+    if (segments.length >= 4) {
+      final pagePath = '/dashboard/pages/${segments[3]}';
+      if (segments.length == 4) return '/dashboard';
+      if (segments.length > 6 && segments[4] == 'content') {
+        return '$pagePath/content/${segments[5]}';
+      }
+      return pagePath;
+    }
+  }
   if (location == '/register' || location == '/reset-password') return '/login';
   if (location.startsWith('/admin/content/')) {
     final segments = location.split('/');
