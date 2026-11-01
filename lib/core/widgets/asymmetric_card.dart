@@ -139,10 +139,7 @@ class _AsymmetricCardState extends State<AsymmetricCard> {
             : 400.0;
         final padding =
             widget.padding ??
-            CardShapeGeometry.contentInsets(
-              widget.shape,
-              Size(width, 400),
-            );
+            CardShapeGeometry.contentInsets(widget.shape, Size(width, 400));
         return CustomPaint(
           painter: CardSurfacePainter(
             shape: widget.shape,

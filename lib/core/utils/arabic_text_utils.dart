@@ -12,7 +12,9 @@ class ArabicTextUtils {
     '[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640\\uFEFF]',
   );
 
-  static final RegExp _arabicLetters = RegExp('[\\u0600-\\u06FF\\u0750-\\u077F]');
+  static final RegExp _arabicLetters = RegExp(
+    '[\\u0600-\\u06FF\\u0750-\\u077F]',
+  );
   static final RegExp _whitespaceRun = RegExp(r'\s+');
   static final RegExp _arabicIndicDigits = RegExp('[\\u0660-\\u0669]');
 
@@ -37,8 +39,7 @@ class ArabicTextUtils {
 
   /// Counts the diacritic marks in [text] (used by the admin Quran validator to
   /// warn when a verse was pasted without its vowel marks).
-  static int diacriticCount(String text) =>
-      _diacritics.allMatches(text).length;
+  static int diacriticCount(String text) => _diacritics.allMatches(text).length;
 
   /// Collapses every whitespace run (including non-breaking spaces) into a
   /// single space and trims the ends.

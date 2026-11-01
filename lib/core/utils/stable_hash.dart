@@ -24,7 +24,8 @@ class StableHash {
   }
 
   /// Hashes a normalised version of [input].
-  static String ofNormalized(String input, String Function(String) normalizer) =>
-      fingerprint(normalizer(input));
+  static String ofNormalized(
+    String input,
+    String Function(String) normalizer,
+  ) => fingerprint(normalizer(input));
 }
-

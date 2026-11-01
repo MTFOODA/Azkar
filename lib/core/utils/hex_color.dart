@@ -7,9 +7,7 @@ import 'package:flutter/material.dart';
 class HexColor {
   HexColor._();
 
-  static final RegExp _pattern = RegExp(
-    r'^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$',
-  );
+  static final RegExp _pattern = RegExp(r'^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$');
 
   /// Whether [value] is a valid hex colour.
   static bool isValid(String? value) =>

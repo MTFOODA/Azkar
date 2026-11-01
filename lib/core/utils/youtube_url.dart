@@ -86,7 +86,8 @@ class YoutubeUrl {
       if (segments.isNotEmpty) videoId = segments.first;
     } else if (uri.queryParameters['v'] != null) {
       videoId = uri.queryParameters['v'];
-    } else if (segments.length >= 2 && _idPathPrefixes.contains(segments.first)) {
+    } else if (segments.length >= 2 &&
+        _idPathPrefixes.contains(segments.first)) {
       videoId = segments[1];
     } else if (segments.length == 1) {
       videoId = segments.first;
@@ -94,10 +95,7 @@ class YoutubeUrl {
 
     if (videoId == null || !_idPattern.hasMatch(videoId)) return null;
 
-    return YoutubeVideoRef(
-      videoId: videoId,
-      startAt: _parseStart(uri),
-    );
+    return YoutubeVideoRef(videoId: videoId, startAt: _parseStart(uri));
   }
 
   /// Convenience accessor used across the app.
@@ -123,7 +121,8 @@ class YoutubeUrl {
     final numeric = int.tryParse(value);
     if (numeric != null) return numeric;
     // Formats such as 1m30s or 1h2m3s.
-    final match = RegExp(r'^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$').firstMatch(value);
+    final match = RegExp(r'^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$')
+        .firstMatch(value);
     if (match == null) return null;
     final hours = int.tryParse(match.group(1) ?? '') ?? 0;
     final minutes = int.tryParse(match.group(2) ?? '') ?? 0;

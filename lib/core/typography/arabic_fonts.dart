@@ -134,7 +134,10 @@ class ArabicFonts {
           path: 'assets/fonts/tajawal/Tajawal-Medium.ttf',
           weight: 500,
         ),
-        FontAssetRef(path: 'assets/fonts/tajawal/Tajawal-Bold.ttf', weight: 700),
+        FontAssetRef(
+          path: 'assets/fonts/tajawal/Tajawal-Bold.ttf',
+          weight: 700,
+        ),
       ],
       variable: false,
       license: '$_ofl — Tajawal (SIL International)',
@@ -211,7 +214,10 @@ class ArabicFonts {
       labelEn: 'Lateef',
       descriptionAr: 'خفيف وسريع التحميل، مناسب للنصوص الكثيفة.',
       assets: <FontAssetRef>[
-        FontAssetRef(path: 'assets/fonts/lateef/Lateef-Regular.ttf', weight: 400),
+        FontAssetRef(
+          path: 'assets/fonts/lateef/Lateef-Regular.ttf',
+          weight: 400,
+        ),
         FontAssetRef(path: 'assets/fonts/lateef/Lateef-Bold.ttf', weight: 700),
       ],
       variable: false,
@@ -244,11 +250,13 @@ class ArabicFonts {
       descriptionAr: 'خط واجهات حديث عالي الوضوح للأحجام الصغيرة.',
       assets: <FontAssetRef>[
         FontAssetRef(
-          path: 'assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Regular.ttf',
+          path:
+              'assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Regular.ttf',
           weight: 400,
         ),
         FontAssetRef(
-          path: 'assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Medium.ttf',
+          path:
+              'assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Medium.ttf',
           weight: 500,
         ),
         FontAssetRef(
@@ -259,7 +267,6 @@ class ArabicFonts {
       variable: false,
       license: '$_ofl — IBM Plex Sans Arabic (IBM)',
     ),
-
   ];
 
   static final Map<String, ArabicFontSpec> _byId = <String, ArabicFontSpec>{
@@ -288,4 +295,3 @@ class ArabicFonts {
   /// Whether [id] is one of the ten supported families (exactly ten).
   static bool isSupported(String id) => _byId.containsKey(id);
 }
-

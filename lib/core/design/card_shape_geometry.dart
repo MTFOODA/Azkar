@@ -88,12 +88,8 @@ class CardShapeGeometry {
 
     final w = size.width;
     final h = size.height;
-    final rx = [
-      for (final r in radii) (r.rx * w).clamp(0.0, w / 2),
-    ];
-    final ry = [
-      for (final r in radii) (r.ry * h).clamp(0.0, h / 2),
-    ];
+    final rx = [for (final r in radii) (r.rx * w).clamp(0.0, w / 2)];
+    final ry = [for (final r in radii) (r.ry * h).clamp(0.0, h / 2)];
 
     final tl = Radius.elliptical(rx[0], ry[0]);
     final tr = Radius.elliptical(rx[1], ry[1]);
@@ -118,8 +114,8 @@ class CardShapeGeometry {
   static EdgeInsets contentInsets(CardShapeId shape, Size size) {
     final blend = fallbackBlend(size);
     final horizontal = switch (shape) {
-      CardShapeId.primary || CardShapeId.secondary =>
-        size.width * (0.09 * (1 - blend) + 0.05 * blend),
+      CardShapeId.primary ||
+      CardShapeId.secondary => size.width * (0.09 * (1 - blend) + 0.05 * blend),
       _ => size.width * 0.05,
     };
     final vertical = switch (shape) {

@@ -88,8 +88,7 @@ class ContentValidation {
         } else if (url.length > maxUrlLength) {
           errors['videoUrl'] = 'الرابط طويل جدًا.';
         } else if (!YoutubeUrl.isValid(url)) {
-          errors['videoUrl'] =
-              'رابط يوتيوب غير صالح. الصيغ المدعومة: youtube.com/watch?v=… أو youtu.be/… أو /shorts/…';
+          errors['videoUrl'] = 'رابط يوتيوب غير صالح. الصيغ المدعومة: youtube.com/watch?v=… أو youtu.be/… أو /shorts/…';
         }
         break;
       case ContentType.dedication:
@@ -176,8 +175,7 @@ class ContentValidation {
       errors['hadithNumber'] =
           'أدخل رقم الحديث أو الراوي على الأقل لتوثيق المصدر.';
     }
-    if (forPublication &&
-        item.authenticity == HadithAuthenticity.unverified) {
+    if (forPublication && item.authenticity == HadithAuthenticity.unverified) {
       warnings.add(
         'الحديث غير مُصنّف. سيظهر للزائر بوسم "قيد المراجعة" ولن يُعرض على أنه صحيح.',
       );

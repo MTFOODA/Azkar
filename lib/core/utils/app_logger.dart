@@ -35,8 +35,11 @@ class AppLogger {
   static void info(String message, [Object? error, StackTrace? stackTrace]) =>
       _log(AppLogLevel.info, message, error, stackTrace);
 
-  static void warning(String message, [Object? error, StackTrace? stackTrace]) =>
-      _log(AppLogLevel.warning, message, error, stackTrace);
+  static void warning(
+    String message, [
+    Object? error,
+    StackTrace? stackTrace,
+  ]) => _log(AppLogLevel.warning, message, error, stackTrace);
 
   static void error(String message, [Object? error, StackTrace? stackTrace]) =>
       _log(AppLogLevel.error, message, error, stackTrace);
@@ -46,7 +49,9 @@ class AppLogger {
     var result = value;
     final bearer = RegExp(r'Bearer\s+[A-Za-z0-9\-\._~\+/=]+');
     result = result.replaceAll(bearer, 'Bearer <redacted>');
-    final jwt = RegExp(r'eyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}');
+    final jwt = RegExp(
+      r'eyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}',
+    );
     result = result.replaceAll(jwt, '<redacted-jwt>');
     for (final key in _redactedKeys) {
       result = result.replaceAll(

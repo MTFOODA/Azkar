@@ -164,7 +164,9 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isLight ? AppPalette.lightText : AppPalette.darkSurface,
+        backgroundColor: isLight
+            ? AppPalette.lightText
+            : AppPalette.darkSurface,
         contentTextStyle: textTheme.bodyMedium?.copyWith(
           color: isLight ? Colors.white : AppPalette.darkText,
         ),
@@ -210,15 +212,12 @@ class AppTheme {
   }
 
   /// Picks black or white text for [background] using WCAG luminance.
-  static Color onColor(Color background) =>
-      background.computeLuminance() > 0.55 ? AppPalette.lightText : Colors.white;
+  static Color onColor(Color background) => background.computeLuminance() > 0.55
+      ? AppPalette.lightText
+      : Colors.white;
 
   /// A single Arabic-first text theme used by both themes.
-  static TextTheme buildTextTheme(
-    String? fontFamily,
-    Color text,
-    Color muted,
-  ) {
+  static TextTheme buildTextTheme(String? fontFamily, Color text, Color muted) {
     TextStyle style(
       double size,
       FontWeight weight, {
