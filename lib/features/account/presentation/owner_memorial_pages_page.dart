@@ -11,9 +11,11 @@ import '../../../core/config/app_config.dart';
 import '../../../core/design/app_palette.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/app_exception.dart';
+import '../../../core/widgets/adaptive_layout.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../memorial/domain/memorial_page.dart';
 import '../../memorial/domain/page_slug.dart';
+import '../../memorial/presentation/memorial_gender_segmented_control.dart';
 import '../../sharing/share_widgets.dart';
 import '../../sharing/sharing_service.dart';
 
@@ -34,58 +36,88 @@ class OwnerMemorialPagesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pages = ref.watch(ownedMemorialPagesProvider);
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(AppPalette.spaceLg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SectionHeader(
-              title: 'صفحاتي وروابطي',
-              subtitle: 'أنشئ صفحات تذكارية مستقلة وأدر روابطها من مكان واحد.',
-              trailing: FilledButton.icon(
-                key: const ValueKey('create-memorial-page'),
-                onPressed: () => _createPage(context, ref),
-                icon: const Icon(Icons.add),
-                label: const Text('إنشاء صفحة جديدة'),
-              ),
-            ),
-            const SizedBox(height: AppPalette.spaceLg),
-            pages.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => ErrorView(
-                error: error,
-                onRetry: () => ref.invalidate(ownedMemorialPagesProvider),
-              ),
-              data: (items) {
-                if (items.isEmpty) {
-                  return EmptyView(
-                    title: 'لا توجد صفحات تذكارية بعد',
-                    message: 'أنشئ أول صفحة لتبدأ بإضافة المحتوى ومشاركته.',
-                    action: FilledButton.icon(
-                      onPressed: () => _createPage(context, ref),
-                      icon: const Icon(Icons.add),
-                      label: const Text('إنشاء صفحة جديدة'),
-                    ),
-                  );
-                }
-                return Column(
-                  children: [
-                    for (final page in items)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: AppPalette.spaceMd,
+      child: PageContent(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final createButton = _createPageButton(context, ref);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (constraints.maxWidth < AppBreakpoints.mobile) ...[
+                  const SectionHeader(
+                    title: 'صفحاتي وروابطي',
+                    subtitle:
+                        'أنشئ صفحات تذكارية مستقلة وأدر روابطها من مكان واحد.',
+                  ),
+                  const SizedBox(height: AppPalette.spaceMd),
+                  createButton,
+                ] else
+                  SectionHeader(
+                    title: 'صفحاتي وروابطي',
+                    subtitle:
+                        'أنشئ صفحات تذكارية مستقلة وأدر روابطها من مكان واحد.',
+                    trailing: createButton,
+                  ),
+                const SizedBox(height: AppPalette.spaceLg),
+                pages.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stackTrace) => ErrorView(
+                    error: error,
+                    onRetry: () => ref.invalidate(ownedMemorialPagesProvider),
+                  ),
+                  data: (items) {
+                    if (items.isEmpty) {
+                      return const EmptyView(
+                        title: 'لا توجد صفحات تذكارية بعد',
+                        message: 'أنشئ أول صفحة لتبدأ بإضافة المحتوى ومشاركته.',
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppPalette.spaceSm,
+                          ),
+                          child: Text(
+                            'عدد الصفحات: ${items.length}',
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
                         ),
-                        child: _MemorialPageManagementCard(page: page),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ],
+                        AdaptiveCardGrid(
+                          spacing: AppPalette.spaceMd,
+                          runSpacing: AppPalette.spaceMd,
+                          minCardWidth: 340,
+                          children: [
+                            for (final page in items)
+                              _MemorialPageManagementCard(page: page),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
+
+  Widget _createPageButton(BuildContext context, WidgetRef ref) =>
+      FilledButton.icon(
+        key: const ValueKey('create-memorial-page'),
+        onPressed: () => _createPage(context, ref),
+        icon: const Icon(Icons.add),
+        label: const Text('إنشاء صفحة جديدة'),
+      );
 
   Future<void> _createPage(BuildContext context, WidgetRef ref) async {
     final identity = await showDialog<_MemorialPageIdentity>(
@@ -121,6 +153,10 @@ class _MemorialPageManagementCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final statusColor = page.isPublished
+        ? theme.colorScheme.primary
+        : theme.colorScheme.secondary;
     final sectionCount = ref.watch(pageVisibleSectionCountProvider(page.id));
     final publicUrl = AppConfig.memorialPageLink(page.slug);
     final basePath = '/dashboard/pages/${page.id}';
@@ -134,6 +170,26 @@ class _MemorialPageManagementCard extends ConsumerWidget {
     };
     final deceasedName = page.deceasedName?.trim();
     final dedication = page.dedicationMessage?.trim();
+
+    Widget actionButton({
+      required String label,
+      required IconData icon,
+      required VoidCallback onPressed,
+      bool primary = false,
+    }) {
+      if (primary) {
+        return FilledButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          label: Text(label),
+        );
+      }
+      return OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+      );
+    }
 
     return Card(
       key: ValueKey('memorial-page-${page.id}'),
@@ -149,9 +205,15 @@ class _MemorialPageManagementCard extends ConsumerWidget {
               ),
               title: Text(
                 '$titlePrefix${deceasedName == null || deceasedName.isEmpty ? '' : ' $deceasedName'}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              subtitle: Text(
-                page.isPublished ? 'منشورة' : 'مسودة — الرابط غير متاح للعامة',
+              subtitle: StatusBadge(
+                label: page.isPublished ? 'منشورة' : 'مسودة',
+                color: statusColor,
+                icon: page.isPublished
+                    ? Icons.public_outlined
+                    : Icons.lock_outline,
               ),
               trailing: IconButton(
                 tooltip: page.isPublished ? 'إلغاء النشر' : 'نشر',
@@ -163,32 +225,55 @@ class _MemorialPageManagementCard extends ConsumerWidget {
                 ),
               ),
             ),
-            if (dedication != null && dedication.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppPalette.spaceSm),
-                child: Text(
-                  dedication,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+            if (dedication != null && dedication.isNotEmpty) ...[
+              const SizedBox(height: AppPalette.spaceSm),
+              Text(
+                dedication,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            SelectableText(
-              publicUrl,
+            ],
+            const SizedBox(height: AppPalette.spaceSm),
+            Directionality(
               textDirection: TextDirection.ltr,
-              textAlign: TextAlign.left,
+              child: SelectableText(
+                publicUrl,
+                maxLines: 2,
+                textAlign: TextAlign.left,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
             ),
             if (!page.isPublished)
               const Padding(
-                padding: EdgeInsets.only(top: AppPalette.spaceXs),
-                child: Text(
-                  'المعاينة خاصة بك؛ لن يتمكن الزوار من فتح الرابط قبل النشر.',
+                padding: EdgeInsets.only(top: AppPalette.spaceSm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('مسودة — الرابط غير متاح للعامة'),
+                    SizedBox(height: AppPalette.spaceXs),
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 16),
+                        SizedBox(width: AppPalette.spaceXs),
+                        Expanded(
+                          child: Text(
+                            'المعاينة خاصة بك؛ لن يتمكن الزوار من فتح الرابط قبل النشر.',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            const SizedBox(height: AppPalette.spaceSm),
+            const SizedBox(height: AppPalette.spaceMd),
             Wrap(
               spacing: AppPalette.spaceSm,
-              runSpacing: AppPalette.spaceSm,
-              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: AppPalette.spaceXs,
               children: [
                 sectionCount.when(
                   loading: () => const Chip(
@@ -220,35 +305,36 @@ class _MemorialPageManagementCard extends ConsumerWidget {
                   ),
               ],
             ),
-            const SizedBox(height: AppPalette.spaceSm),
+            const SizedBox(height: AppPalette.spaceMd),
             Wrap(
               spacing: AppPalette.spaceSm,
               runSpacing: AppPalette.spaceSm,
               children: [
-                OutlinedButton.icon(
+                actionButton(
+                  label: 'فتح الصفحة',
+                  icon: Icons.open_in_new_outlined,
                   onPressed: () => context.go(openedPath),
-                  icon: const Icon(Icons.open_in_new_outlined),
-                  label: const Text('فتح الصفحة'),
+                  primary: true,
                 ),
-                OutlinedButton.icon(
+                actionButton(
+                  label: 'تعديل الصفحة',
+                  icon: Icons.edit_outlined,
                   onPressed: () => context.go(basePath),
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('تعديل الصفحة'),
                 ),
-                OutlinedButton.icon(
+                actionButton(
+                  label: 'نسخ الرابط',
+                  icon: Icons.copy_outlined,
                   onPressed: () => _copyLink(context, publicUrl),
-                  icon: const Icon(Icons.copy_outlined),
-                  label: const Text('نسخ الرابط'),
                 ),
-                OutlinedButton.icon(
+                actionButton(
+                  label: 'مشاركة',
+                  icon: Icons.ios_share_outlined,
                   onPressed: () => _sharePage(context, page, publicUrl),
-                  icon: const Icon(Icons.ios_share_outlined),
-                  label: const Text('مشاركة'),
                 ),
-                OutlinedButton.icon(
+                actionButton(
+                  label: 'نسخ الصفحة',
+                  icon: Icons.copy_all_outlined,
                   onPressed: () => _duplicatePage(context, ref),
-                  icon: const Icon(Icons.copy_all_outlined),
-                  label: const Text('نسخ الصفحة'),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: () => _togglePublished(context, ref),
@@ -394,25 +480,48 @@ class _MemorialPageIdentityDialogState
               TextFormField(
                 controller: _name,
                 autofocus: true,
-                decoration: const InputDecoration(labelText: 'اسم المتوفى'),
+                decoration: InputDecoration(
+                  labelText: _gender == 'female'
+                      ? 'اسم المتوفاة'
+                      : 'اسم المتوفى',
+                ),
                 validator: (value) => (value?.trim().isEmpty ?? true)
-                    ? 'أدخل اسم المتوفى.'
+                    ? _gender == 'female'
+                          ? 'أدخل اسم المتوفاة.'
+                          : 'أدخل اسم المتوفى.'
                     : null,
               ),
               const SizedBox(height: AppPalette.spaceMd),
-              DropdownButtonFormField<String>(
+              FormField<String>(
                 initialValue: _gender,
-                decoration: const InputDecoration(labelText: 'جنس المتوفى'),
-                items: const [
-                  DropdownMenuItem(value: 'male', child: Text('ذكر — المرحوم')),
-                  DropdownMenuItem(
-                    value: 'female',
-                    child: Text('أنثى — المرحومة'),
-                  ),
-                ],
-                onChanged: (value) => setState(() => _gender = value),
                 validator: (value) =>
-                    value == null ? 'اختر جنس المتوفى.' : null,
+                    value == null ? 'اختر المرحوم أو المرحومة.' : null,
+                builder: (field) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    MemorialGenderSegmentedControl(
+                      value: field.value,
+                      onChanged: (value) {
+                        setState(() => _gender = value);
+                        field.didChange(value);
+                      },
+                    ),
+                    if (field.errorText != null)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: AppPalette.spaceXs,
+                          left: AppPalette.spaceMd,
+                          right: AppPalette.spaceMd,
+                        ),
+                        child: Text(
+                          field.errorText!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: AppPalette.spaceMd),
               TextFormField(

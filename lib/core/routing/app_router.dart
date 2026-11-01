@@ -182,7 +182,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/dashboard',
-            builder: (context, state) => const OwnerMemorialPagesPage(),
+            builder: (context, state) =>
+                const PublicScaffold(child: OwnerMemorialPagesPage()),
           ),
           GoRoute(
             path: '/dashboard/settings',
