@@ -345,12 +345,44 @@ class _MemorialPageManagementCard extends ConsumerWidget {
                   ),
                   label: Text(page.isPublished ? 'إلغاء النشر' : 'نشر'),
                 ),
+                TextButton.icon(
+                  key: ValueKey('delete-memorial-page-${page.id}'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.colorScheme.error,
+                  ),
+                  onPressed: () => _deletePage(context, ref),
+                  icon: const Icon(Icons.delete_forever_outlined),
+                  label: const Text('حذف الصفحة'),
+                ),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _deletePage(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => _DeleteMemorialPageDialog(
+        displayName: page.deceasedName?.trim().isNotEmpty == true
+            ? page.deceasedName!.trim()
+            : page.title,
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(memorialPageRepositoryProvider).delete(page.id);
+      ref.invalidate(ownedMemorialPageProvider(page.id));
+      ref.invalidate(pageVisibleSectionCountProvider(page.id));
+      ref.invalidate(ownedMemorialPagesProvider);
+      if (context.mounted) _showMessage(context, 'تم حذف الصفحة نهائيًا.');
+    } catch (error) {
+      if (context.mounted) {
+        _showMessage(context, friendlyMessage(error), isError: true);
+      }
+    }
   }
 
   Future<void> _copyLink(BuildContext context, String url) async {
@@ -410,6 +442,73 @@ class _MemorialPageManagementCard extends ConsumerWidget {
         _showMessage(context, friendlyMessage(error), isError: true);
       }
     }
+  }
+}
+
+class _DeleteMemorialPageDialog extends StatefulWidget {
+  const _DeleteMemorialPageDialog({required this.displayName});
+
+  final String displayName;
+
+  @override
+  State<_DeleteMemorialPageDialog> createState() =>
+      _DeleteMemorialPageDialogState();
+}
+
+class _DeleteMemorialPageDialogState extends State<_DeleteMemorialPageDialog> {
+  final _confirmation = TextEditingController();
+
+  @override
+  void dispose() {
+    _confirmation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: Text('هل أنت متأكد من حذف صفحة ${widget.displayName} نهائيًا؟'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'سيتم حذف الصفحة وجميع محتوياتها المرتبطة بها، ولن تتمكن من استعادتها من داخل التطبيق.',
+            ),
+            const SizedBox(height: AppPalette.spaceSm),
+            const Text('سيتوقف رابط الصفحة العام عن العمل.'),
+            const SizedBox(height: AppPalette.spaceMd),
+            TextField(
+              key: const ValueKey('delete-confirmation-field'),
+              controller: _confirmation,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'اكتب "حذف" للتأكيد',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          key: const ValueKey('confirm-delete-memorial-page'),
+          style: FilledButton.styleFrom(
+            backgroundColor: theme.colorScheme.error,
+            foregroundColor: theme.colorScheme.onError,
+          ),
+          onPressed: _confirmation.text.trim() == 'حذف'
+              ? () => Navigator.of(context).pop(true)
+              : null,
+          child: const Text('حذف نهائي'),
+        ),
+      ],
+    );
   }
 }
 

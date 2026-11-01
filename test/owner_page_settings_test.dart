@@ -216,4 +216,7 @@ class _RecordingMemorialPageRepository implements MemorialPageRepository {
     updates.add(page);
     return page;
   }
+
+  @override
+  Future<void> delete(String pageId) async {}
 }

@@ -24,6 +24,8 @@ abstract class MemorialPageRepository {
   });
 
   Future<MemorialPage> update(MemorialPage page);
+
+  Future<void> delete(String pageId);
 }
 
 class UnconfiguredMemorialPageRepository implements MemorialPageRepository {
@@ -62,4 +64,7 @@ class UnconfiguredMemorialPageRepository implements MemorialPageRepository {
 
   @override
   Future<MemorialPage> update(MemorialPage page) async => throw _unavailable;
+
+  @override
+  Future<void> delete(String pageId) async => throw _unavailable;
 }

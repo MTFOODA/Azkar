@@ -1,5 +1,6 @@
 import 'package:azkar/core/design/app_theme.dart';
 import 'package:azkar/core/providers/app_providers.dart';
+import 'package:azkar/core/utils/app_exception.dart';
 import 'package:azkar/core/design/theme_settings.dart';
 import 'package:azkar/features/account/presentation/owner_memorial_pages_page.dart';
 import 'package:azkar/features/content/domain/content_item.dart';
@@ -384,6 +385,83 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('delete requires typed confirmation and targets one page', (
+    tester,
+  ) async {
+    final repository = _RecordingMemorialPageRepository();
+    await tester.pumpWidget(
+      _app([
+        _page(id: 'page-a', slug: 'memorial-a', deceasedName: 'أحمد'),
+        _page(id: 'page-b', slug: 'memorial-b', deceasedName: 'محمد'),
+      ], repository: repository),
+    );
+    await tester.pumpAndSettle();
+
+    final deleteA = find.byKey(const ValueKey('delete-memorial-page-page-a'));
+    await tester.ensureVisible(deleteA);
+    await tester.tap(deleteA);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('أحمد'), findsWidgets);
+    expect(find.textContaining('لن تتمكن من استعادتها'), findsOneWidget);
+
+    final confirm = find.byKey(const ValueKey('confirm-delete-memorial-page'));
+    expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
+
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+    expect(repository.deletedPageIds, isEmpty);
+
+    await tester.ensureVisible(deleteA);
+    await tester.tap(deleteA);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('delete-confirmation-field')),
+      'حذف',
+    );
+    await tester.pump();
+    expect(tester.widget<FilledButton>(confirm).onPressed, isNotNull);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+
+    expect(repository.deletedPageIds, ['page-a']);
+    expect(find.text('تم حذف الصفحة نهائيًا.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('delete failure shows an error and deletes nothing', (
+    tester,
+  ) async {
+    final repository = _RecordingMemorialPageRepository()
+      ..deleteError = const AppException(
+        'تعذّر حذف الصفحة. يُرجى المحاولة مرة أخرى.',
+      );
+    await tester.pumpWidget(
+      _app([_page(id: 'page-a', slug: 'memorial-a')], repository: repository),
+    );
+    await tester.pumpAndSettle();
+
+    final deleteA = find.byKey(const ValueKey('delete-memorial-page-page-a'));
+    await tester.ensureVisible(deleteA);
+    await tester.tap(deleteA);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('delete-confirmation-field')),
+      'حذف',
+    );
+    await tester.pump();
+    await tester.tap(
+      find.byKey(const ValueKey('confirm-delete-memorial-page')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository.deletedPageIds, isEmpty);
+    expect(
+      find.text('تعذّر حذف الصفحة. يُرجى المحاولة مرة أخرى.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('memorial-page-page-a')), findsOneWidget);
+  });
+
   testWidgets('new memorial requires one of the two gender segments', (
     tester,
   ) async {
@@ -533,6 +611,8 @@ class _RecordingMemorialPageRepository implements MemorialPageRepository {
   final updates = <MemorialPage>[];
   final duplicates = <MemorialPage>[];
   final duplicatedSourcePageIds = <String>[];
+  final deletedPageIds = <String>[];
+  Object? deleteError;
 
   @override
   Future<List<MemorialPage>> fetchOwnedPages() async => const [];
@@ -577,5 +657,12 @@ class _RecordingMemorialPageRepository implements MemorialPageRepository {
   Future<MemorialPage> update(MemorialPage page) async {
     updates.add(page);
     return page;
+  }
+
+  @override
+  Future<void> delete(String pageId) async {
+    final error = deleteError;
+    if (error != null) throw error;
+    deletedPageIds.add(pageId);
   }
 }

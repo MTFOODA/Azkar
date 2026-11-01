@@ -139,14 +139,53 @@ class SupabaseMemorialPageRepository implements MemorialPageRepository {
     }
   }
 
-  static AppException _translatePageWriteError(PostgrestException error) {
-    if (error.code == '23505' || error.message.toLowerCase().contains('slug')) {
-      return AppException(
-        'هذا الرابط مستخدم بالفعل. اختر رابطًا آخر.',
+  @override
+  Future<void> delete(String pageId) async {
+    if (_client.auth.currentUser == null) {
+      throw const NotAuthorizedException();
+    }
+    try {
+      await _client.rpc(
+        'delete_memorial_page',
+        params: <String, dynamic>{'p_page_id': pageId},
+      );
+    } on PostgrestException catch (error) {
+      if (error.code == '42501') {
+        throw AppException(
+          'ليس لديك صلاحية حذف هذه الصفحة.',
+          technical: error.message,
+        );
+      }
+      throw AppException(
+        'تعذّر حذف الصفحة. يُرجى المحاولة مرة أخرى.',
         technical: error.message,
       );
     }
-    return translatePostgrestError(error);
+  }
+
+  static AppException _translatePageWriteError(PostgrestException error) {
+    final message = error.message.toLowerCase();
+    if (error.code == '23505' || message.contains('slug')) {
+      return AppException(
+        'اسم الرابط مستخدم بالفعل، اختر رابطًا آخر.',
+        technical: error.message,
+      );
+    }
+    if (error.code == '42501') {
+      return AppException(
+        'ليس لديك صلاحية تنفيذ هذا الإجراء على الصفحة.',
+        technical: error.message,
+      );
+    }
+    if (error.code == '22023' ||
+        error.code == '23514' ||
+        error.code == 'PGRST116') {
+      return translatePostgrestError(error);
+    }
+    return AppException(
+      'تعذّر تنفيذ العملية على الصفحة. يُرجى المحاولة مرة أخرى.',
+      technical: error.message,
+    );
   }
 
   static String? _nullIfBlank(String? value) {
