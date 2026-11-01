@@ -8,7 +8,12 @@ import '../../../content/domain/content_item.dart';
 import '../../../content/domain/content_type.dart';
 
 class SummaryCard extends StatelessWidget {
-  const SummaryCard({super.key, required this.label, required this.value, this.color});
+  const SummaryCard({
+    super.key,
+    required this.label,
+    required this.value,
+    this.color,
+  });
 
   final String label;
   final int value;
@@ -28,7 +33,10 @@ class SummaryCard extends StatelessWidget {
             children: [
               Text(label, style: theme.textTheme.bodyMedium),
               const SizedBox(height: 8),
-              Text('$value', style: theme.textTheme.displaySmall?.copyWith(color: color)),
+              Text(
+                '$value',
+                style: theme.textTheme.displaySmall?.copyWith(color: color),
+              ),
             ],
           ),
         ),
@@ -62,8 +70,14 @@ class TypeCountCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(type.pluralLabelAr, style: theme.textTheme.titleMedium),
-                    Text('${value.published} منشور • ${value.drafts} مسودة', style: theme.textTheme.bodySmall),
+                    Text(
+                      type.pluralLabelAr,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    Text(
+                      '${value.published} منشور • ${value.drafts} مسودة',
+                      style: theme.textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ),
@@ -82,7 +96,9 @@ class RecentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = item.displayTitle.isEmpty ? item.type.labelAr : item.displayTitle;
+    final title = item.displayTitle.isEmpty
+        ? item.type.labelAr
+        : item.displayTitle;
     return ListTile(
       leading: Icon(item.type.icon),
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),

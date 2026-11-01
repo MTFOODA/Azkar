@@ -23,7 +23,9 @@ class ContentStyleResolver {
       fontSize: fontSize ?? style.fontSize,
       fontWeight: spec.variable ? null : resolvedWeight,
       fontVariations: spec.variable
-          ? <FontVariation>[FontVariation('wght', _axisWeight(spec, style.fontWeight))]
+          ? <FontVariation>[
+              FontVariation('wght', _axisWeight(spec, style.fontWeight)),
+            ]
           : null,
       height: resolvedHeight,
       color: color ?? style.textColorValue,

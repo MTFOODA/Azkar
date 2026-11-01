@@ -58,7 +58,11 @@ class _YoutubeCardState extends State<YoutubeCard> {
         _failed = false;
       });
     } catch (error, stackTrace) {
-      AppLogger.warning('YouTube player initialization failed', error, stackTrace);
+      AppLogger.warning(
+        'YouTube player initialization failed',
+        error,
+        stackTrace,
+      );
       setState(() => _failed = true);
     }
   }
@@ -102,7 +106,8 @@ class _YoutubeCardState extends State<YoutubeCard> {
             )
           else
             YoutubeThumbnail(video: video, failed: _failed, onPlay: _start),
-          if (item.description != null && item.description!.trim().isNotEmpty) ...[
+          if (item.description != null &&
+              item.description!.trim().isNotEmpty) ...[
             const SizedBox(height: AppPalette.spaceMd),
             ArabicText(
               item.description!,
@@ -216,4 +221,3 @@ class InvalidVideoView extends StatelessWidget {
     );
   }
 }
-

@@ -30,7 +30,8 @@ class AdminDashboardPage extends ConsumerWidget {
             children: [
               SectionHeader(
                 title: 'نظرة عامة',
-                subtitle: 'إحصاءات المحتوى المنشور والمسودات فقط، بدون تتبع الزوار.',
+                subtitle:
+                    'إحصاءات المحتوى المنشور والمسودات فقط، بدون تتبع الزوار.',
                 trailing: FilledButton.icon(
                   onPressed: () => context.go('/admin/content/azkar/new'),
                   icon: const Icon(Icons.add),
@@ -42,13 +43,27 @@ class AdminDashboardPage extends ConsumerWidget {
                 spacing: AppPalette.spaceMd,
                 runSpacing: AppPalette.spaceMd,
                 children: [
-                  SummaryCard(label: 'المحتوى المنشور', value: overview.published, color: AppPalette.success),
-                  SummaryCard(label: 'المسودات', value: overview.drafts, color: AppPalette.warning),
-                  SummaryCard(label: 'إجمالي السجلات', value: overview.published + overview.drafts),
+                  SummaryCard(
+                    label: 'المحتوى المنشور',
+                    value: overview.published,
+                    color: AppPalette.success,
+                  ),
+                  SummaryCard(
+                    label: 'المسودات',
+                    value: overview.drafts,
+                    color: AppPalette.warning,
+                  ),
+                  SummaryCard(
+                    label: 'إجمالي السجلات',
+                    value: overview.published + overview.drafts,
+                  ),
                 ],
               ),
               const SizedBox(height: AppPalette.spaceXl),
-              Text('المحتوى حسب النوع', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'المحتوى حسب النوع',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: AppPalette.spaceMd),
               AdaptiveCardGrid(
                 minCardWidth: 220,
@@ -58,7 +73,10 @@ class AdminDashboardPage extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: AppPalette.spaceXl),
-              Text('أحدث المحتوى', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'أحدث المحتوى',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: AppPalette.spaceMd),
               if (overview.recent.isEmpty)
                 const EmptyView(title: 'لا يوجد محتوى بعد')
@@ -67,7 +85,8 @@ class AdminDashboardPage extends ConsumerWidget {
                   elevation: 0,
                   child: Column(
                     children: [
-                      for (final item in overview.recent) RecentTile(item: item),
+                      for (final item in overview.recent)
+                        RecentTile(item: item),
                     ],
                   ),
                 ),

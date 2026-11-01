@@ -122,10 +122,10 @@ class CardStyle {
         _asString(row['font_family'], fallback.fontFamily),
       ).id,
       fontSize: readFontSize.clamp(minFontSize, maxFontSize),
-      fontWeight: _asInt(row['font_weight'], fallback.fontWeight).clamp(
-        300,
-        900,
-      ),
+      fontWeight: _asInt(
+        row['font_weight'],
+        fallback.fontWeight,
+      ).clamp(300, 900),
       lineHeight: readLineHeight.clamp(minLineHeight, maxLineHeight),
       textColor: HexColor.isValid(readTextColor)
           ? readTextColor

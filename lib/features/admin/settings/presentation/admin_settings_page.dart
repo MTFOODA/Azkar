@@ -21,7 +21,10 @@ class AdminSettingsPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SectionHeader(title: 'الإعدادات', subtitle: 'معلومات التشغيل والتكوين الآمن.'),
+            const SectionHeader(
+              title: 'الإعدادات',
+              subtitle: 'معلومات التشغيل والتكوين الآمن.',
+            ),
             const SizedBox(height: AppPalette.spaceLg),
             Card(
               elevation: 0,
@@ -44,7 +47,9 @@ class AdminSettingsPage extends ConsumerWidget {
                   ListTile(
                     leading: const Icon(Icons.storage_outlined),
                     title: const Text('تخزين عدّادات التسبيح'),
-                    subtitle: Text('${storage.backendLabel}\nلا تُرسل العدّادات إلى الخادم.'),
+                    subtitle: Text(
+                      '${storage.backendLabel}\nلا تُرسل العدّادات إلى الخادم.',
+                    ),
                   ),
                   ListTile(
                     leading: const Icon(Icons.link_outlined),
@@ -75,7 +80,10 @@ class AdminSettingsPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('تزويد المشرفين', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'تزويد المشرفين',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     SizedBox(height: 8),
                     Text(
                       'لا يوجد تسجيل ذاتي للمشرفين. أنشئ المستخدم في Supabase Auth، '
@@ -88,7 +96,8 @@ class AdminSettingsPage extends ConsumerWidget {
             ),
             const SizedBox(height: AppPalette.spaceLg),
             FilledButton.icon(
-              onPressed: () => ref.read(adminSessionProvider.notifier).signOut(),
+              onPressed: () =>
+                  ref.read(adminSessionProvider.notifier).signOut(),
               icon: const Icon(Icons.logout_outlined),
               label: const Text('تسجيل الخروج'),
             ),

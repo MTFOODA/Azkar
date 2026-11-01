@@ -25,9 +25,8 @@ class SharedContentPage extends ConsumerWidget {
           loading: () => const LoadingView(),
           error: (error, stackTrace) => ErrorView(
             error: error,
-            onRetry: () => ref.invalidate(
-              sharedContentProvider((type: type, id: id)),
-            ),
+            onRetry: () =>
+                ref.invalidate(sharedContentProvider((type: type, id: id))),
           ),
           data: (item) {
             if (item == null) {

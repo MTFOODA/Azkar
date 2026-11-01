@@ -88,18 +88,14 @@ class ContentMapper {
     return ContentItem(
       id: row['id']?.toString() ?? '',
       type: type,
-      arabicText: _text(
-        isDedication ? row['dua_text'] : row['arabic_text'],
-      ),
+      arabicText: _text(isDedication ? row['dua_text'] : row['arabic_text']),
       title: _text(row['title']),
       description: _textOrNull(row['description']),
       source: _textOrNull(row['source']),
       translation: _textOrNull(row['translation']),
       narrator: _textOrNull(row['narrator']),
       hadithNumber: _textOrNull(row['hadith_number']),
-      authenticity: HadithAuthenticityX.fromId(
-        row['authenticity']?.toString(),
-      ),
+      authenticity: HadithAuthenticityX.fromId(row['authenticity']?.toString()),
       explanation: _textOrNull(row['explanation']),
       surahNumber: _intOrNull(row['surah_number']),
       surahName: _textOrNull(row['surah_name']),
