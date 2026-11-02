@@ -56,7 +56,12 @@ $validSupabaseUrl = [Uri]::TryCreate(
     [UriKind]::Absolute,
     [ref]$supabaseUri
 ) -and $supabaseUri.Scheme -eq 'https' -and
-    -not [string]::IsNullOrWhiteSpace($supabaseUri.Host)
+    $supabaseUri.Host -eq 'akublcdzlmwyyelwtzrb.supabase.co' -and
+    [string]::IsNullOrEmpty($supabaseUri.UserInfo) -and
+    [string]::IsNullOrEmpty($supabaseUri.Query) -and
+    [string]::IsNullOrEmpty($supabaseUri.Fragment) -and
+    ($supabaseUri.AbsolutePath -eq '/' -or
+        [string]::IsNullOrEmpty($supabaseUri.AbsolutePath))
 $validPublicUrl = [Uri]::TryCreate(
     [string]$config.PUBLIC_BASE_URL,
     [UriKind]::Absolute,
@@ -73,7 +78,7 @@ $validPublicUrl = [Uri]::TryCreate(
 
 $problems = New-Object System.Collections.Generic.List[string]
 if (-not $validSupabaseUrl) {
-    $problems.Add('SUPABASE_URL must be a valid HTTPS URL.')
+    $problems.Add('SUPABASE_URL must target the approved Supabase project over HTTPS.')
 }
 if (-not (Test-PublishableSupabaseKey ([string]$config.SUPABASE_ANON_KEY))) {
     $problems.Add('SUPABASE_ANON_KEY must be an anon/publishable key; secret and service-role keys are not accepted.')
@@ -81,8 +86,8 @@ if (-not (Test-PublishableSupabaseKey ([string]$config.SUPABASE_ANON_KEY))) {
 if ([string]$config.AZKAR_DEMO_MODE -ne 'false') {
     $problems.Add('AZKAR_DEMO_MODE must be false.')
 }
-if ([string]$config.AZKAR_AUTH_SCHEMA_VERIFIED -ne 'true') {
-    $problems.Add('AZKAR_AUTH_SCHEMA_VERIFIED must be true only after production schema, provisioning, and RLS verification.')
+if ([string]$config.AZKAR_AUTH_SCHEMA_VERIFIED -notin @('true', 'false')) {
+    $problems.Add('AZKAR_AUTH_SCHEMA_VERIFIED must be explicitly true or false.')
 }
 if (-not $validPublicUrl) {
     $problems.Add('PUBLIC_BASE_URL must be https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev without a path, query, or fragment.')
@@ -93,6 +98,9 @@ if ($problems.Count -gt 0) {
 
 Set-Location $projectRoot
 Write-Output 'Building AZKAR Web release with validated production configuration (values redacted).'
+if (-not $config.AZKAR_AUTH_SCHEMA_VERIFIED) {
+    Write-Output 'Registration remains gated; no provisioning verification is being asserted.'
+}
 & flutter build web --release --base-href / --dart-define-from-file=config/production.json
 if ($LASTEXITCODE -ne 0) {
     throw "Flutter Web release build failed with exit code $LASTEXITCODE."

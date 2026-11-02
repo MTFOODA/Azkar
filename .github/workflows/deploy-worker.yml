@@ -69,7 +69,8 @@ jobs:
         env:
           AZKAR_SUPABASE_URL: ${{ secrets.AZKAR_SUPABASE_URL }}
           AZKAR_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.AZKAR_SUPABASE_PUBLISHABLE_KEY }}
-          AZKAR_AUTH_SCHEMA_VERIFIED: ${{ vars.AZKAR_AUTH_SCHEMA_VERIFIED }}
+          # Keep registration gated until production signup is verified.
+          AZKAR_AUTH_SCHEMA_VERIFIED: 'false'
           AZKAR_ANDROID_APK_URL: ${{ vars.AZKAR_ANDROID_APK_URL }}
         run: ./scripts/write_production_config.ps1
 
