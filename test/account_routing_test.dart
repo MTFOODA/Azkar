@@ -6,6 +6,7 @@ import 'package:azkar/features/account/presentation/account_access_pages.dart';
 import 'package:azkar/features/account/presentation/owner_dashboard_pages.dart';
 import 'package:azkar/features/admin/authentication/domain/admin_auth_service.dart';
 import 'package:azkar/features/admin/dashboard/presentation/admin_dashboard_page.dart';
+import 'package:azkar/features/mobile_platform/domain/mobile_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +21,12 @@ void main() {
       ProviderScope(
         overrides: [
           accountSessionProvider.overrideWith(_AnonymousAccountSession.new),
+          mobileRuntimeProvider.overrideWithValue(
+            const MobileRuntime(
+              isWeb: true,
+              targetPlatform: TargetPlatform.android,
+            ),
+          ),
         ],
         child: Consumer(
           builder: (context, ref, _) =>

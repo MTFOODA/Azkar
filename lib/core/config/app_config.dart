@@ -34,6 +34,37 @@ class AppConfig {
   /// canonical metadata and the generated sitemap.
   static const String publicBaseUrl = String.fromEnvironment('PUBLIC_BASE_URL');
 
+  /// Optional HTTPS release APK URL. Keep empty until a signed release exists.
+  static const String androidApkUrl = String.fromEnvironment(
+    'AZKAR_ANDROID_APK_URL',
+  );
+
+  static Uri? androidApkDownloadUriFor(String value) {
+    final uri = Uri.tryParse(value.trim());
+    if (uri == null ||
+        uri.scheme.toLowerCase() != 'https' ||
+        uri.host.isEmpty ||
+        _isLocalDownloadHost(uri.host) ||
+        uri.userInfo.isNotEmpty ||
+        !uri.path.toLowerCase().endsWith('.apk')) {
+      return null;
+    }
+    return uri;
+  }
+
+  static bool _isLocalDownloadHost(String host) {
+    final normalizedHost = host.toLowerCase().replaceFirst(RegExp(r'\.$'), '');
+    return normalizedHost == 'localhost' ||
+        normalizedHost.endsWith('.localhost') ||
+        normalizedHost == '::1' ||
+        normalizedHost == '[::1]' ||
+        normalizedHost == '0.0.0.0' ||
+        RegExp(r'^127(?:\.\d{1,3}){3}$').hasMatch(normalizedHost);
+  }
+
+  static Uri? get androidApkDownloadUri =>
+      androidApkDownloadUriFor(androidApkUrl);
+
   /// Forces the offline demo backend even when Supabase credentials exist.
   static const bool forceDemoMode = bool.fromEnvironment('AZKAR_DEMO_MODE');
 

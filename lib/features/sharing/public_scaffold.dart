@@ -6,10 +6,12 @@ import '../../core/design/app_palette.dart';
 import '../../core/design/azkar_brand.dart';
 import '../../core/config/app_config.dart';
 import '../../core/providers/app_providers.dart';
+import '../../core/widgets/adaptive_layout.dart';
 import '../../core/widgets/route_back_button.dart';
 import '../content/domain/content_type.dart';
 import '../memorial/presentation/memorial_section_navigation.dart';
-import '../sharing/share_widgets.dart';
+import 'sharing_service.dart';
+import 'share_widgets.dart';
 
 /// The public website chrome: responsive navigation, theme switch and sharing.
 class PublicScaffold extends ConsumerWidget {
@@ -142,6 +144,7 @@ class PublicNavigationDrawer extends ConsumerWidget {
         ? const <ContentType>[]
         : MemorialSectionNavigation.visibleTypes(memorialSlug);
     return Drawer(
+      width: adaptiveDrawerWidth(context),
       child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppPalette.spaceMd),
@@ -178,10 +181,58 @@ class PublicNavigationDrawer extends ConsumerWidget {
                 },
               ),
             ],
+            const Divider(),
+            ListTile(
+              key: const ValueKey('android-apk-download'),
+              leading: const Icon(Icons.android),
+              title: Text(
+                _isEnglish(context)
+                    ? 'Download AZKAR for Android'
+                    : 'تحميل تطبيق أذكار للأندرويد',
+              ),
+              onTap: () => _downloadAndroidApk(context),
+            ),
+            ListTile(
+              key: const ValueKey('about-developer'),
+              leading: const Icon(Icons.info_outline_rounded),
+              title: Text(
+                _isEnglish(context) ? 'About Developer' : 'عن المطوّر',
+              ),
+              onTap: () => _go(context, '/about-developer'),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  bool _isEnglish(BuildContext context) =>
+      Localizations.localeOf(context).languageCode == 'en';
+
+  Future<void> _downloadAndroidApk(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final isEnglish = _isEnglish(context);
+    final uri = AppConfig.androidApkDownloadUri;
+    Navigator.of(context).maybePop();
+    if (uri == null) {
+      messenger.showSnackBar(_downloadSnackBar(isEnglish, unavailable: true));
+      return;
+    }
+    final opened = await SharingService.openExternal(uri.toString());
+    if (!opened && messenger.mounted) {
+      messenger.showSnackBar(_downloadSnackBar(isEnglish));
+    }
+  }
+
+  SnackBar _downloadSnackBar(bool isEnglish, {bool unavailable = false}) {
+    final message = isEnglish
+        ? unavailable
+              ? 'The Android release download is not available yet.'
+              : 'Unable to open the Android download link.'
+        : unavailable
+        ? 'رابط تحميل نسخة أندرويد غير متاح حالياً.'
+        : 'تعذّر فتح رابط تحميل أندرويد.';
+    return SnackBar(content: Text(message));
   }
 
   void _go(BuildContext context, String location) {

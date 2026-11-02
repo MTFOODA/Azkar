@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/design/app_palette.dart';
 import '../../../../core/design/azkar_brand.dart';
 import '../../../../core/providers/app_providers.dart';
+import '../../../../core/widgets/adaptive_layout.dart';
 import '../../../../core/widgets/route_back_button.dart';
 import '../../../content/domain/content_type.dart';
 
@@ -105,6 +106,7 @@ class AdminShell extends ConsumerWidget {
           ),
         ),
         drawer: Drawer(
+          width: adaptiveDrawerWidth(context),
           child: Material(child: _NavigationList(location: location)),
         ),
         body: SafeArea(child: child),

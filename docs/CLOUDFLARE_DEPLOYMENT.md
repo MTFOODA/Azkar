@@ -31,6 +31,7 @@ JavaScript. The protected GitHub environment therefore supplies:
 | `AZKAR_SUPABASE_URL` secret | Existing production Supabase HTTPS URL |
 | `AZKAR_SUPABASE_PUBLISHABLE_KEY` secret | Supabase anon/publishable client key only |
 | `AZKAR_AUTH_SCHEMA_VERIFIED` variable | Must be `true` only after production schema, provisioning, and RLS checks |
+| `AZKAR_ANDROID_APK_URL` variable | Optional direct HTTPS URL ending in `.apk`; leave unset until a signed release is hosted |
 | `CLOUDFLARE_API_TOKEN` secret | Least-privilege token for deploying the existing Worker |
 | `CLOUDFLARE_ACCOUNT_ID` secret | Account that owns the Worker |
 
@@ -39,7 +40,9 @@ It sets `AZKAR_DEMO_MODE` to `false` and the existing public origin to
 `https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev`. It fails closed unless
 the Supabase URL/key are valid and `AZKAR_AUTH_SCHEMA_VERIFIED` is explicitly
 `true`. Do not put a service-role key, database password, Cloudflare token, or
-other privileged secret in Flutter defines.
+other privileged secret in Flutter defines. The optional APK URL is validated
+as HTTPS and must end in `.apk`; while unset, the app keeps its graceful
+unavailable-download message.
 
 For a local release build, copy
 [`config/production.example.json`](../config/production.example.json) to the

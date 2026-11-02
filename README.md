@@ -17,6 +17,10 @@ videos, and other remembrance content.
   content only, subject to Supabase Row Level Security (RLS).
 - Public collections for Azkar, Quran, Hadith, Duas, dedications, and videos.
 - Tasbeeh counters stored locally on the visitor's device/browser.
+- Authenticated worship dashboard with AlAdhan prayer times, completion tracking,
+  reminder preferences, location controls, and a personal Tasbeeh counter.
+- Native first-launch onboarding; the Web root and public/deep-link routes do
+  not require or display the onboarding flow.
 - Sharing and copy-link actions using the configured public site URL.
 
 ## Technology and supported platforms
@@ -35,6 +39,45 @@ homepage cards, and appearance settings are scoped to that page. Database RLS
 controls owner access and anonymous reads of published content. Public pages
 use `/m/:slug`; changing the web path strategy does not add a second backend or
 page-provisioning mechanism.
+
+## Worship features
+
+The authenticated worship routes are `/worship`, `/worship/reminders`,
+`/worship/location`, `/worship/notifications`, and `/worship/tasbeeh`. Login
+redirects back to a requested worship route. The separate `/dashboard` routes
+remain for memorial management.
+
+Prayer calendars come from the replaceable AlAdhan provider and are validated
+before caching in the existing Sembast database. Egypt defaults to calculation
+method 5 (Egyptian General Authority of Survey). Manual city/country selection
+does not request location permission. Device coordinates are saved only in the
+local database and are excluded from Supabase payloads; GPS is used only after
+the user selects it and accepts the in-app explanation. For a GPS-selected
+location, coordinates are sent to AlAdhan over HTTPS as prayer-calendar request
+parameters; they are not synchronized to Supabase.
+
+Prayer completion, notification schedules, and the durable post-prayer
+Tasbeeh-event outbox are device-local and account-scoped. Reminder preferences
+and custom reminder configurations are locally persisted and designed to sync
+through the owner-only Supabase migration
+[`20261103_reminder_preferences.sql`](supabase/migrations/20261103_reminder_preferences.sql).
+The project owner reports executing the corresponding SQL update in production.
+Do not rerun it; authenticated integration and cross-device sync still require
+read-only verification against the live project. No prayer times are fabricated
+when both the provider and valid local cache are unavailable.
+
+The scheduling horizon is bounded and reconciled when the app or account state
+changes. Android uses inexact alarms, and iOS/background delivery is subject to
+OS behavior; neither platform guarantees exact delivery or indefinite
+background refresh. Notification permission is explained and requested only
+after an explicit user action. The Web build stays compatible but does not
+schedule browser notifications.
+
+The native onboarding is shown on an incomplete first visit to `/` on Android
+or iOS only. Completion is stored in the existing local database. Public
+memorial links, other deep links, and Web bypass the gate. There is no memorial
+home-screen widget or widget content cache yet. No Hijri date is displayed
+because the project has no validated Hijri-date source.
 
 ## Run locally
 
@@ -168,11 +211,19 @@ schema and RLS verification boundaries.
 
 ## Project status
 
-The Flutter application, Supabase integration, memorial-page workflows, tests,
-and Workers deployment preparation are present. The Worker exists, but its
-current deployed assets fail direct-route acceptance. A production build with
-approved Supabase configuration, live RLS acceptance, GitHub/Cloudflare
-configuration, and the first corrected deployment remain pending.
+Phases 1–7 of the mobile worship work are implemented in the repository,
+including local prayer tracking, scheduling infrastructure, authenticated
+screens, and native onboarding. Automated and device-specific validation is
+tracked separately; iOS notification behavior, physical-device delivery,
+widgets, and production reminder-schema synchronization are not verified.
+
+The last recorded production acceptance check, dated 2026-10-31 in
+[`docs/PRODUCTION_ACCEPTANCE_REPORT.md`](docs/PRODUCTION_ACCEPTANCE_REPORT.md),
+found the Worker homepage and direct memorial route failing acceptance. Treat
+that as a historical observation until the deployment workflow completes and
+the live site is checked again. Production configuration and the protected
+GitHub `production` environment remain required; do not infer current live
+status from a local build.
 
 ## Security
 

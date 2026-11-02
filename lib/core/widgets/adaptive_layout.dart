@@ -18,6 +18,11 @@ class AppBreakpoints {
   }
 }
 
+double adaptiveDrawerWidth(BuildContext context) {
+  final responsiveWidth = MediaQuery.sizeOf(context).width * 0.88;
+  return responsiveWidth < 360 ? responsiveWidth : 360;
+}
+
 /// A masonry-like, height-flexible card grid.
 ///
 /// `Wrap` is used instead of a fixed-height `GridView` so every card can grow
