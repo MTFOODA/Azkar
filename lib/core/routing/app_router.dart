@@ -15,8 +15,15 @@ import '../../features/admin/settings/presentation/admin_settings_page.dart';
 import '../../features/content/domain/content_type.dart';
 import '../../features/content/presentation/content_collection_page.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/onboarding/data/onboarding_completion_store.dart';
+import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/sharing/public_scaffold.dart';
+import '../../features/sharing/about_developer_page.dart';
 import '../../features/sharing/shared_content_page.dart';
+import '../../features/worship/presentation/prayer_dashboard_page.dart';
+import '../../features/worship/presentation/prayer_location_settings_page.dart';
+import '../../features/worship/presentation/personal_tasbeeh_page.dart';
+import '../../features/worship/presentation/reminder_settings_page.dart';
 import '../providers/app_providers.dart';
 
 /// Central route table. Both dashboard areas require their verified session.
@@ -30,16 +37,34 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     refreshListenable: refresh,
     debugLogDiagnostics: false,
-    redirect: (context, state) {
+    redirect: (context, state) async {
       final session = ref.read(adminSessionProvider);
       final account = ref.read(accountSessionProvider);
       final location = state.matchedLocation;
+      final isWorshipArea =
+          location == '/worship' || location.startsWith('/worship/');
       final isAdminArea =
           location == '/admin' || location.startsWith('/admin/');
       final isAdminLoginAlias = location == '/admin/login';
       final isOwnerArea =
           location == '/dashboard' || location.startsWith('/dashboard/');
       final isAccountEntry = location == '/login' || location == '/register';
+      final runtime = ref.read(mobileRuntimeProvider);
+      if (location == '/' &&
+          runtime.isNativeMobile &&
+          shouldShowFirstLaunchOnboarding(
+            runtime: runtime,
+            location: location,
+            completed: await ref
+                .read(onboardingCompletionStoreProvider)
+                .isCompleted(),
+          )) {
+        return '/onboarding';
+      }
+      if (isWorshipArea && account == null) {
+        final destination = Uri.encodeComponent(state.uri.toString());
+        return '/login?redirect=$destination';
+      }
       if (isAdminLoginAlias) {
         return session != null ? '/admin/dashboard' : '/login';
       }
@@ -57,6 +82,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => PublicScaffold(child: child),
         routes: [
           GoRoute(path: '/', builder: (context, state) => const HomePage()),
+          GoRoute(
+            path: '/about-developer',
+            builder: (context, state) => const AboutDeveloperPage(),
+          ),
           for (final type in ContentType.values)
             GoRoute(
               path: type.route,
@@ -93,7 +122,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => const AccountLoginPage(),
+        builder: (context, state) => AccountLoginPage(
+          redirectPath: state.uri.queryParameters['redirect'],
+        ),
       ),
       GoRoute(
         path: '/register',
@@ -108,6 +139,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const PasswordResetPage(),
       ),
       GoRoute(path: '/admin/login', redirect: (context, state) => '/login'),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingPage(),
+      ),
+      GoRoute(
+        path: '/worship',
+        builder: (context, state) => const PrayerDashboardPage(),
+      ),
+      GoRoute(
+        path: '/worship/reminders',
+        builder: (context, state) => const ReminderSettingsPage(),
+      ),
+      GoRoute(
+        path: '/worship/location',
+        builder: (context, state) => const PrayerLocationSettingsPage(),
+      ),
+      GoRoute(
+        path: '/worship/notifications',
+        builder: (context, state) => const NotificationPermissionPage(),
+      ),
+      GoRoute(
+        path: '/worship/tasbeeh',
+        builder: (context, state) => const PersonalTasbeehPage(),
+      ),
       GoRoute(path: '/admin', redirect: (context, state) => '/admin/dashboard'),
       GoRoute(
         path: '/admin/content',

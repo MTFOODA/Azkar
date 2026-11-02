@@ -3,5 +3,6 @@
   "SUPABASE_ANON_KEY": "sb_publishable_REPLACE_WITH_THE_PROJECT_PUBLISHABLE_KEY",
   "AZKAR_DEMO_MODE": false,
   "AZKAR_AUTH_SCHEMA_VERIFIED": false,
-  "PUBLIC_BASE_URL": "https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev"
+  "PUBLIC_BASE_URL": "https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev",
+  "AZKAR_ANDROID_APK_URL": ""
 }

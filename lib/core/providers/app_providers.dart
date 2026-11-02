@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:sembast/sembast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,6 +31,28 @@ import '../../features/home/domain/homepage_entry.dart';
 import '../../features/memorial/data/memorial_page_repository.dart';
 import '../../features/memorial/data/supabase_memorial_page_repository.dart';
 import '../../features/memorial/domain/memorial_page.dart';
+import '../../features/mobile_platform/domain/mobile_runtime.dart';
+import '../../features/onboarding/data/onboarding_completion_store.dart';
+import '../../features/notifications/data/flutter_local_notification_platform.dart';
+import '../../features/notifications/data/local_notification_service.dart';
+import '../../features/notifications/data/notification_schedule_registry.dart';
+import '../../features/prayer_times/data/aladhan_prayer_times_provider.dart';
+import '../../features/prayer_times/data/local_prayer_calendar_cache.dart';
+import '../../features/prayer_times/data/prayer_times_provider.dart';
+import '../../features/prayer_times/data/prayer_times_service.dart';
+import '../../features/prayer_tracking/data/local_prayer_completion_store.dart';
+import '../../features/prayer_tracking/data/local_prayer_completion_reminder_scheduler.dart';
+import '../../features/prayer_tracking/data/prayer_completion_notification_coordinator.dart';
+import '../../features/prayer_tracking/data/tasbeeh_event_notification_consumer.dart';
+import '../../features/prayer_tracking/data/tasbeeh_outbox_coordinator.dart';
+import '../../features/prayer_tracking/domain/prayer_completion_state_machine.dart';
+import '../../features/reminders/data/local_prayer_schedule_location_store.dart';
+import '../../features/reminders/data/local_reminder_scheduling_engine.dart';
+import '../../features/reminders/data/local_reminder_preferences_store.dart';
+import '../../features/reminders/data/reminder_preferences_remote_store.dart';
+import '../../features/reminders/data/reminder_preferences_sync_service.dart';
+import '../../features/reminders/data/supabase_reminder_preferences_store.dart';
+import '../../features/reminders/domain/reminder_preferences.dart';
 import '../../features/quran/data/quran_dataset_repository.dart';
 import '../../features/tasbeeh/data/local_tasbeeh_counter_store.dart';
 import '../../features/tasbeeh/domain/tasbeeh_counter_store.dart';
@@ -40,6 +63,162 @@ final supabaseClientProvider = Provider<SupabaseClient?>((ref) {
   if (AppConfig.useDemoBackend) return null;
   return Supabase.instance.client;
 });
+
+final prayerCalendarCacheProvider = Provider<PrayerCalendarCache>((ref) {
+  return LocalPrayerCalendarCache();
+});
+
+final mobileRuntimeProvider = Provider<MobileRuntime>(
+  (ref) => MobileRuntime.current(),
+);
+
+final onboardingCompletionStoreProvider = Provider<OnboardingCompletionStore>(
+  (ref) => OnboardingCompletionStore(),
+);
+
+final prayerTimesProvider = Provider<PrayerTimesProvider>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return AlAdhanPrayerTimesProvider(client: client);
+});
+
+final prayerTimesServiceProvider = Provider<PrayerTimesService>((ref) {
+  return PrayerTimesService(
+    provider: ref.watch(prayerTimesProvider),
+    cache: ref.watch(prayerCalendarCacheProvider),
+  );
+});
+
+final reminderPreferencesLocalStoreProvider =
+    Provider<ReminderPreferencesLocalStore>((ref) {
+      return SembastReminderPreferencesStore(
+        currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+      );
+    });
+
+final reminderPreferencesRemoteStoreProvider =
+    Provider<ReminderPreferencesRemoteStore>((ref) {
+      final client = ref.watch(supabaseClientProvider);
+      if (client == null) {
+        return const _OfflineReminderPreferencesRemoteStore();
+      }
+      return SupabaseReminderPreferencesStore(client);
+    });
+
+final reminderPreferencesSyncServiceProvider =
+    Provider<ReminderPreferencesSyncService>((ref) {
+      return ReminderPreferencesSyncService(
+        localStore: ref.watch(reminderPreferencesLocalStoreProvider),
+        remoteStore: ref.watch(reminderPreferencesRemoteStoreProvider),
+        currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+      );
+    });
+
+final localPrayerCompletionStoreProvider = Provider<LocalPrayerCompletionStore>(
+  (ref) {
+    return LocalPrayerCompletionStore(
+      currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+    );
+  },
+);
+
+final localNotificationServiceProvider = Provider<LocalNotificationService>((
+  ref,
+) {
+  final service = LocalNotificationService(
+    platform: FlutterLocalNotificationPlatform(),
+    registry: SembastNotificationScheduleRegistry(),
+    currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+    runtime: MobileRuntime.current(),
+  );
+  ref.onDispose(() => unawaited(service.dispose()));
+  return service;
+});
+
+final prayerCompletionStateMachineProvider =
+    Provider<PrayerCompletionStateMachine>((ref) {
+      final machine = PrayerCompletionStateMachine(
+        store: ref.watch(localPrayerCompletionStoreProvider),
+        scheduler: LocalPrayerCompletionReminderScheduler(
+          ref.watch(localNotificationServiceProvider),
+        ),
+        currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+      );
+      ref.onDispose(() => unawaited(machine.dispose()));
+      return machine;
+    });
+
+final prayerCompletionNotificationCoordinatorProvider =
+    Provider<PrayerCompletionNotificationCoordinator>((ref) {
+      final coordinator = PrayerCompletionNotificationCoordinator(
+        stateMachine: ref.watch(prayerCompletionStateMachineProvider),
+        notifications: ref.watch(localNotificationServiceProvider),
+        currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+      );
+      ref.onDispose(() => unawaited(coordinator.dispose()));
+      return coordinator;
+    });
+
+final tasbeehEventNotificationConsumerProvider =
+    Provider<TasbeehEventNotificationConsumer>((ref) {
+      return TasbeehEventNotificationConsumer(
+        notifications: ref.watch(localNotificationServiceProvider),
+        preferencesStore: ref.watch(reminderPreferencesLocalStoreProvider),
+        currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+      );
+    });
+
+final tasbeehOutboxCoordinatorProvider = Provider<TasbeehOutboxCoordinator>((
+  ref,
+) {
+  final coordinator = TasbeehOutboxCoordinator(
+    stateMachine: ref.watch(prayerCompletionStateMachineProvider),
+    consumer: ref.watch(tasbeehEventNotificationConsumerProvider).handle,
+    currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+  );
+  ref.onDispose(() => unawaited(coordinator.dispose()));
+  return coordinator;
+});
+
+final localPrayerScheduleLocationStoreProvider =
+    Provider<LocalPrayerScheduleLocationStore>((ref) {
+      return LocalPrayerScheduleLocationStore(
+        currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+      );
+    });
+
+final localReminderSchedulingEngineProvider =
+    Provider<LocalReminderSchedulingEngine>((ref) {
+      return LocalReminderSchedulingEngine(
+        preferencesStore: ref.watch(reminderPreferencesLocalStoreProvider),
+        locationStore: ref.watch(localPrayerScheduleLocationStoreProvider),
+        prayerTimesService: ref.watch(prayerTimesServiceProvider),
+        notifications: ref.watch(localNotificationServiceProvider),
+        prayerCompletionStateMachine: ref.watch(
+          prayerCompletionStateMachineProvider,
+        ),
+        currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+      );
+    });
+
+class _OfflineReminderPreferencesRemoteStore
+    implements ReminderPreferencesRemoteStore {
+  const _OfflineReminderPreferencesRemoteStore();
+
+  Never _offline() => throw http.ClientException(
+    'Reminder preference sync requires a configured authenticated backend.',
+  );
+
+  @override
+  Future<ReminderPreferencesSnapshot?> fetch(String userId) async => _offline();
+
+  @override
+  Future<ReminderPreferencesSaveResult> save({
+    required String userId,
+    required ReminderPreferences preferences,
+    required int expectedRevision,
+  }) async => _offline();
+}
 
 final themeRepositoryProvider = Provider<ThemeRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);

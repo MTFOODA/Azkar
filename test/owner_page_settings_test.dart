@@ -184,7 +184,6 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
-
   testWidgets('changing a slug requires confirmation before saving', (
     tester,
   ) async {

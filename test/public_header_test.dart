@@ -1,10 +1,13 @@
 import 'package:azkar/core/providers/app_providers.dart';
 import 'package:azkar/core/design/azkar_brand.dart';
 import 'package:azkar/features/admin/authentication/domain/admin_auth_service.dart';
+import 'package:azkar/features/sharing/about_developer_page.dart';
 import 'package:azkar/features/sharing/public_scaffold.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -179,7 +182,7 @@ void main() {
     await tester.tap(find.byTooltip('القائمة'));
     await tester.pumpAndSettle();
     expect(find.text('الأذكار'), findsNothing);
-    expect(tester.getRect(find.byType(Drawer)).right, 360);
+    expect(tester.getRect(find.byType(Drawer)).width, lessThanOrEqualTo(360));
     Navigator.of(tester.element(find.byType(Drawer))).pop();
     await tester.pumpAndSettle();
 
@@ -189,27 +192,223 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('login-route')), findsOneWidget);
   });
+
+  for (final width in [280.0, 320.0, 360.0]) {
+    testWidgets(
+      'public drawer fits and footer navigates at ${width.toInt()}px',
+      (tester) async {
+        tester.view.physicalSize = Size(width, 360);
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        final router = _createRouter();
+        addTearDown(router.dispose);
+        await tester.pumpWidget(_createApp(router));
+        await tester.pump();
+
+        await tester.tap(find.byTooltip('القائمة'));
+        await tester.pumpAndSettle();
+        final drawer = tester.getRect(find.byType(Drawer));
+        expect(drawer.width, lessThanOrEqualTo(width * 0.88 + 1));
+        expect(drawer.left, greaterThanOrEqualTo(-1));
+        expect(drawer.right, lessThanOrEqualTo(width + 1));
+        expect(tester.takeException(), isNull);
+
+        final about = find.byKey(const ValueKey('about-developer'));
+        await tester.scrollUntilVisible(
+          about,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.ensureVisible(about);
+        await tester.pump();
+        await tester.tap(about);
+        await tester.pumpAndSettle();
+
+        expect(
+          router.routeInformationProvider.value.uri.path,
+          '/about-developer',
+        );
+        expect(find.byType(AboutDeveloperPage), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('missing APK URL reports unavailable without opening a link', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final router = _createRouter();
+    addTearDown(router.dispose);
+    await tester.pumpWidget(_createApp(router));
+    await tester.pump();
+    await tester.tap(find.byTooltip('القائمة'));
+    await tester.pumpAndSettle();
+    final download = find.byKey(const ValueKey('android-apk-download'));
+    await tester.ensureVisible(download);
+    await tester.tap(download);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('رابط تحميل نسخة أندرويد غير متاح حالياً.'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'about page shows supplied profiles and supports back navigation',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 540);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final router = _createRouter();
+      addTearDown(router.dispose);
+      await tester.pumpWidget(_createApp(router));
+      await tester.pump();
+      router.push('/about-developer');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mohamed Fooda'), findsOneWidget);
+      expect(find.text('Flutter Developer'), findsOneWidget);
+      expect(find.text('LinkedIn'), findsOneWidget);
+      expect(find.text('GitHub'), findsOneWidget);
+      expect(
+        AboutDeveloperPage.linkedInUrl,
+        'https://www.linkedin.com/in/mohamed-fooda-08b00132a',
+      );
+      expect(AboutDeveloperPage.githubUrl, 'https://github.com/MTFOODA');
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byKey(const ValueKey('route-back-button')));
+      await tester.pumpAndSettle();
+      expect(router.routeInformationProvider.value.uri.path, '/');
+    },
+  );
+
+  testWidgets('about page renders English copy in left-to-right direction', (
+    tester,
+  ) async {
+    final router = _createRouter();
+    addTearDown(router.dispose);
+    await tester.pumpWidget(_createApp(router, locale: const Locale('en')));
+    await tester.pump();
+    router.push('/about-developer');
+    await tester.pumpAndSettle();
+
+    expect(find.text('About the Developer'), findsOneWidget);
+    expect(find.textContaining('AZKAR was developed'), findsOneWidget);
+    final pageDirection = tester.widget<Directionality>(
+      find
+          .ancestor(
+            of: find.text('About the Developer'),
+            matching: find.byType(Directionality),
+          )
+          .first,
+    );
+    expect(pageDirection.textDirection, TextDirection.ltr);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final locale in [const Locale('ar'), const Locale('en')]) {
+    for (final width in [
+      280.0,
+      320.0,
+      360.0,
+      375.0,
+      390.0,
+      430.0,
+      768.0,
+      1200.0,
+    ]) {
+      testWidgets(
+        'about social brand buttons fit ${locale.languageCode} at ${width.toInt()}px',
+        (tester) async {
+          tester.view.physicalSize = Size(width, 800);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+
+          final router = _createRouter();
+          addTearDown(router.dispose);
+          await tester.pumpWidget(_createApp(router, locale: locale));
+          await tester.pump();
+          router.push('/about-developer');
+          await tester.pumpAndSettle();
+
+          final linkedInButton = find.widgetWithText(
+            OutlinedButton,
+            'LinkedIn',
+          );
+          final githubButton = find.widgetWithText(OutlinedButton, 'GitHub');
+          expect(linkedInButton, findsOneWidget);
+          expect(githubButton, findsOneWidget);
+          expect(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is FaIcon &&
+                  widget.icon == FontAwesomeIcons.linkedinIn.data,
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is FaIcon &&
+                  widget.icon == FontAwesomeIcons.github.data,
+            ),
+            findsOneWidget,
+          );
+          for (final button in [linkedInButton, githubButton]) {
+            final rect = tester.getRect(button);
+            expect(rect.left, greaterThanOrEqualTo(0));
+            expect(rect.right, lessThanOrEqualTo(width));
+            expect(rect.height, greaterThanOrEqualTo(48));
+          }
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
 }
 
-Widget _createApp(GoRouter router, {bool authenticated = false}) =>
-    ProviderScope(
-      overrides: [
-        accountSessionProvider.overrideWith(
-          authenticated
-              ? _AuthenticatedAccountSession.new
-              : _AnonymousAccountSession.new,
-        ),
-        adminSessionProvider.overrideWith(_AnonymousAdminSession.new),
-        themeModeProvider.overrideWith(_FixedThemeMode.new),
-      ],
-      child: MaterialApp.router(
-        routerConfig: router,
-        builder: (context, child) =>
-            Directionality(textDirection: TextDirection.rtl, child: child!),
-        theme: ThemeData(useMaterial3: true),
-        darkTheme: ThemeData.dark(useMaterial3: true),
-      ),
-    );
+Widget _createApp(
+  GoRouter router, {
+  bool authenticated = false,
+  Locale locale = const Locale('ar'),
+}) => ProviderScope(
+  overrides: [
+    accountSessionProvider.overrideWith(
+      authenticated
+          ? _AuthenticatedAccountSession.new
+          : _AnonymousAccountSession.new,
+    ),
+    adminSessionProvider.overrideWith(_AnonymousAdminSession.new),
+    themeModeProvider.overrideWith(_FixedThemeMode.new),
+  ],
+  child: MaterialApp.router(
+    routerConfig: router,
+    locale: locale,
+    supportedLocales: const [Locale('ar'), Locale('en')],
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    builder: (context, child) =>
+        Directionality(textDirection: TextDirection.rtl, child: child!),
+    theme: ThemeData(useMaterial3: true),
+    darkTheme: ThemeData.dark(useMaterial3: true),
+  ),
+);
 
 GoRouter _createRouter({String initialLocation = '/'}) => GoRouter(
   initialLocation: initialLocation,
@@ -228,6 +427,11 @@ GoRouter _createRouter({String initialLocation = '/'}) => GoRouter(
       path: '/azkar',
       builder: (context, state) =>
           const PublicScaffold(child: SizedBox.expand()),
+    ),
+    GoRoute(
+      path: '/about-developer',
+      builder: (context, state) =>
+          const PublicScaffold(child: AboutDeveloperPage()),
     ),
     GoRoute(
       path: '/m/:slug',

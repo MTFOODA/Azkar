@@ -51,4 +51,19 @@ class LocalStores {
 
   /// Cached published content for the demo/offline backend.
   static const String demoContent = 'demo_content';
+
+  /// Validated monthly prayer-time calendars, keyed by location and settings.
+  static const String prayerCalendars = 'prayer_calendars';
+
+  /// Account-namespaced reminder settings and pending synchronization state.
+  static const String reminderPreferences = 'reminder_preferences';
+
+  /// Device-local prayer completions; never synchronized to Supabase.
+  static const String prayerCompletions = 'prayer_completions';
+
+  /// Durable, account-scoped post-prayer Tasbeeh events in the same database.
+  static const String prayerCompletionOutbox = 'prayer_completion_outbox';
+
+  /// Account-scoped notification identifiers for cancellation on account change.
+  static const String notificationSchedules = 'notification_schedules';
 }

@@ -9,7 +9,9 @@ import '../../../core/utils/app_exception.dart';
 import '../../../core/widgets/route_back_button.dart';
 
 class AccountLoginPage extends ConsumerStatefulWidget {
-  const AccountLoginPage({super.key});
+  const AccountLoginPage({super.key, this.redirectPath});
+
+  final String? redirectPath;
 
   @override
   ConsumerState<AccountLoginPage> createState() => _AccountLoginPageState();
@@ -72,6 +74,12 @@ class _AccountLoginPageState extends ConsumerState<AccountLoginPage> {
         .read(adminSessionProvider.notifier)
         .refreshCurrentUser()
         .catchError((_) => null);
+    final redirectPath = widget.redirectPath;
+    if (administrator == null &&
+        redirectPath != null &&
+        (redirectPath == '/worship' || redirectPath.startsWith('/worship/'))) {
+      return redirectPath;
+    }
     return administrator == null ? '/dashboard' : '/admin/dashboard';
   }
 

@@ -95,4 +95,44 @@ void main() {
       '${AppConfig.siteBaseUrl}/m/owner%20name%2Fpreview',
     );
   });
+
+  test('APK download links must be public HTTPS APK URLs', () {
+    expect(AppConfig.androidApkDownloadUriFor(''), isNull);
+    expect(
+      AppConfig.androidApkDownloadUriFor('http://downloads.example/app.apk'),
+      isNull,
+    );
+    expect(
+      AppConfig.androidApkDownloadUriFor('https://localhost/app.apk'),
+      isNull,
+    );
+    expect(
+      AppConfig.androidApkDownloadUriFor('https://127.0.0.1/app.apk'),
+      isNull,
+    );
+    expect(AppConfig.androidApkDownloadUriFor('https://[::1]/app.apk'), isNull);
+    expect(
+      AppConfig.androidApkDownloadUriFor('https://downloads.example/app.zip'),
+      isNull,
+    );
+    expect(
+      AppConfig.androidApkDownloadUriFor(
+        'https://user:password@downloads.example/app.apk',
+      ),
+      isNull,
+    );
+    expect(
+      AppConfig.androidApkDownloadUriFor(
+        'https://downloads.example/releases/azkar.apk',
+      ),
+      Uri.parse('https://downloads.example/releases/azkar.apk'),
+    );
+  });
+
+  test('configured APK URL is exposed only when it passes validation', () {
+    expect(
+      AppConfig.androidApkDownloadUri,
+      AppConfig.androidApkDownloadUriFor(AppConfig.androidApkUrl),
+    );
+  });
 }

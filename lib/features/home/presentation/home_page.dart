@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design/app_palette.dart';
 import '../../../core/design/azkar_brand.dart';
@@ -69,6 +70,12 @@ class HomeHero extends StatelessWidget {
               ],
             );
           },
+        ),
+        const SizedBox(height: AppPalette.spaceLg),
+        FilledButton.icon(
+          onPressed: () => context.push('/worship'),
+          icon: const Icon(Icons.mosque_outlined),
+          label: const Text('مواقيت الصلاة والعبادة'),
         ),
       ],
     );

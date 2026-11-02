@@ -219,7 +219,10 @@ class OwnerDashboardShell extends ConsumerWidget {
             ),
           ),
         ),
-        drawer: Drawer(child: SafeArea(child: navigation)),
+        drawer: Drawer(
+          width: adaptiveDrawerWidth(context),
+          child: SafeArea(child: navigation),
+        ),
         body: SafeArea(child: child),
       );
     }
