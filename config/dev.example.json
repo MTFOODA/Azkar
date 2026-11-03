@@ -2,5 +2,6 @@
   "SUPABASE_URL": "https://your-project.supabase.co",
   "SUPABASE_ANON_KEY": "your-supabase-publishable-key",
   "AZKAR_DEMO_MODE": "false",
-  "AZKAR_AUTH_SCHEMA_VERIFIED": "false"
+  "AZKAR_AUTH_SCHEMA_VERIFIED": "false",
+  "AZKAR_ANDROID_APK_URL": "https://github.com/MTFOODA/Azkar/releases/download/v1.0.2/AZKAR-v1.0.2-android.apk"
 }
