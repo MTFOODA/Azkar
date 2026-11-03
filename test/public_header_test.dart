@@ -1,6 +1,7 @@
 import 'package:azkar/core/providers/app_providers.dart';
 import 'package:azkar/core/design/azkar_brand.dart';
 import 'package:azkar/features/admin/authentication/domain/admin_auth_service.dart';
+import 'package:azkar/features/mobile_platform/domain/mobile_runtime.dart';
 import 'package:azkar/features/sharing/about_developer_page.dart';
 import 'package:azkar/features/sharing/public_scaffold.dart';
 import 'package:flutter/material.dart';
@@ -237,6 +238,38 @@ void main() {
     );
   }
 
+  for (final platform in [
+    (name: 'Web', nativeAndroid: false),
+    (name: 'Android', nativeAndroid: true),
+  ]) {
+    testWidgets(
+      'drawer shows APK download and developer actions on ${platform.name}',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final router = _createRouter();
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          _createApp(router, nativeAndroid: platform.nativeAndroid),
+        );
+        await tester.pump();
+        await tester.tap(find.byTooltip('القائمة'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('android-apk-download')),
+          findsOneWidget,
+        );
+        expect(find.text('تحميل تطبيق أذكار للأندرويد'), findsOneWidget);
+        expect(find.byIcon(Icons.android), findsOneWidget);
+        expect(find.byKey(const ValueKey('about-developer')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets('missing APK URL reports unavailable without opening a link', (
     tester,
   ) async {
@@ -384,8 +417,15 @@ Widget _createApp(
   GoRouter router, {
   bool authenticated = false,
   Locale locale = const Locale('ar'),
+  bool nativeAndroid = false,
 }) => ProviderScope(
   overrides: [
+    mobileRuntimeProvider.overrideWithValue(
+      MobileRuntime(
+        isWeb: !nativeAndroid,
+        targetPlatform: TargetPlatform.android,
+      ),
+    ),
     accountSessionProvider.overrideWith(
       authenticated
           ? _AuthenticatedAccountSession.new
