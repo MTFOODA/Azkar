@@ -47,6 +47,8 @@ if ($apkDownloadUrl.Length -gt 0) {
     if (-not $validApkDownloadUrl) {
         throw 'AZKAR_ANDROID_APK_URL must be a public HTTPS URL ending in .apk, or left empty until a signed release is hosted.'
     }
+} else {
+    $apkDownloadUrl = 'https://github.com/MTFOODA/Azkar/releases/download/v1.0.2/AZKAR-v1.0.2-android.apk'
 }
 
 $config = [ordered]@{
