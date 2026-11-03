@@ -28,13 +28,17 @@ void main() {
     });
 
     test('production builds stay closed until the schema is verified', () {
-      expect(
-        AppConfig.schemaGateMessage(
-          schemaVerified: false,
-          productionBuild: true,
-        ),
-        contains('AZKAR_AUTH_SCHEMA_VERIFIED=true'),
+      final message = AppConfig.schemaGateMessage(
+        schemaVerified: false,
+        productionBuild: true,
       );
+      expect(
+        message,
+        'خدمة إنشاء الحسابات غير متاحة مؤقتًا. يرجى المحاولة لاحقًا.',
+      );
+      expect(message, isNot(contains('azkar_provision_owner_page')));
+      expect(message, isNot(contains('RLS')));
+      expect(message, isNot(contains('AZKAR_AUTH_SCHEMA_VERIFIED')));
       expect(
         AppConfig.schemaGateMessage(
           schemaVerified: true,

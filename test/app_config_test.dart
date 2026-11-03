@@ -135,4 +135,17 @@ void main() {
       AppConfig.androidApkDownloadUriFor(AppConfig.androidApkUrl),
     );
   });
+
+  test('production registration gate keeps internal details private', () {
+    final message = AppConfig.schemaGateMessage(
+      schemaVerified: false,
+      productionBuild: true,
+    );
+
+    expect(message, isNotNull);
+    expect(message, isNot(contains('azkar_provision_owner_page')));
+    expect(message, isNot(contains('RLS')));
+    expect(message, isNot(contains('AZKAR_AUTH_SCHEMA_VERIFIED')));
+    expect(message, isNot(contains('dart-define')));
+  });
 }

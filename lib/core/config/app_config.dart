@@ -196,9 +196,7 @@ class AppConfig {
     required bool productionBuild,
   }) {
     if (productionBuild && !schemaVerified) {
-      return 'التسجيل مغلق حتى التحقق من جداول قاعدة البيانات ومشغّل '
-          'azkar_provision_owner_page وسياسات RLS، ثم البناء مع '
-          '--dart-define=AZKAR_AUTH_SCHEMA_VERIFIED=true.';
+      return 'خدمة إنشاء الحسابات غير متاحة مؤقتًا. يرجى المحاولة لاحقًا.';
     }
     return null;
   }
