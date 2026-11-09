@@ -242,28 +242,32 @@ void main() {
     (name: 'Web', nativeAndroid: false),
     (name: 'Android', nativeAndroid: true),
   ]) {
-    testWidgets('drawer shows APK download and developer actions on ${platform.name}', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'drawer shows APK download and developer actions on ${platform.name}',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final router = _createRouter();
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        _createApp(router, nativeAndroid: platform.nativeAndroid),
-      );
-      await tester.pump();
-      await tester.tap(find.byTooltip('القائمة'));
-      await tester.pumpAndSettle();
+        final router = _createRouter();
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          _createApp(router, nativeAndroid: platform.nativeAndroid),
+        );
+        await tester.pump();
+        await tester.tap(find.byTooltip('القائمة'));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('android-apk-download')), findsOneWidget);
-      expect(find.text('تحميل تطبيق أذكار للأندرويد'), findsOneWidget);
-      expect(find.byIcon(Icons.android), findsOneWidget);
-      expect(find.byKey(const ValueKey('about-developer')), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        expect(
+          find.byKey(const ValueKey('android-apk-download')),
+          findsOneWidget,
+        );
+        expect(find.text('تحميل تطبيق أذكار للأندرويد'), findsOneWidget);
+        expect(find.byIcon(Icons.android), findsOneWidget);
+        expect(find.byKey(const ValueKey('about-developer')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   testWidgets('missing APK URL reports unavailable without opening a link', (
