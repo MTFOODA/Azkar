@@ -58,12 +58,29 @@ class QuickContentPreset {
 }
 
 class QuickContentLibrary {
+  static const supportedTypes = {
+    ContentType.azkar,
+    ContentType.tasbeeh,
+    ContentType.dua,
+    ContentType.hadith,
+    ContentType.quran,
+  };
+
+  static bool supports(ContentType type) => supportedTypes.contains(type);
+
+  static Future<List<QuickContentPreset>> forType(ContentType type) async {
+    if (!supports(type)) return const [];
+    final items = await load();
+    return List.unmodifiable(items.where((item) => item.type == type));
+  }
+
   static List<QuickContentPreset>? _items;
   static Future<List<QuickContentPreset>>? _pending;
   static Future<List<QuickContentPreset>> load() {
     if (_items != null) return Future.value(_items);
     return _pending ??= _load().whenComplete(() => _pending = null);
   }
+
   static Future<List<QuickContentPreset>> _load() async {
     final json = jsonDecode(
       await rootBundle.loadString('assets/data/quick_content_presets.json'),

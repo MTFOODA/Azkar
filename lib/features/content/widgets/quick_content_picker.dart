@@ -12,8 +12,24 @@ class QuickContentPicker extends StatefulWidget {
 }
 
 class _QuickContentPickerState extends State<QuickContentPicker> {
-  final _loader = QuickContentLibrary.load();
+  late Future<List<QuickContentPreset>> _loader;
   String _search = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loader = QuickContentLibrary.forType(widget.type);
+  }
+
+  @override
+  void didUpdateWidget(covariant QuickContentPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.type != widget.type) {
+      _loader = QuickContentLibrary.forType(widget.type);
+      _search = '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) => SafeArea(
     child: DraggableScrollableSheet(
@@ -42,6 +58,7 @@ class _QuickContentPickerState extends State<QuickContentPicker> {
             ),
             const SizedBox(height: 12),
             TextField(
+              key: ValueKey('quick-content-search-${widget.type.id}'),
               decoration: const InputDecoration(
                 labelText: 'ابحث عن نص أو عنوان',
                 prefixIcon: Icon(Icons.search),
@@ -53,6 +70,7 @@ class _QuickContentPickerState extends State<QuickContentPicker> {
             const SizedBox(height: 12),
             Expanded(
               child: FutureBuilder<List<QuickContentPreset>>(
+                key: ValueKey(widget.type),
                 future: _loader,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {

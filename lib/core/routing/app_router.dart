@@ -239,7 +239,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     state.pathParameters['type'],
                   );
                   if (type == null) return const RouteNotFoundPage();
-                  return AdminContentEditorPage(type: type, itemId: 'new');
+                  return AdminContentEditorPage(
+                    key: ValueKey((type, 'new')),
+                    type: type,
+                    itemId: 'new',
+                  );
                 },
               ),
               GoRoute(
@@ -250,6 +254,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   );
                   if (type == null) return const RouteNotFoundPage();
                   return AdminContentEditorPage(
+                    key: ValueKey((type, state.pathParameters['id'])),
                     type: type,
                     itemId: state.pathParameters['id'],
                   );

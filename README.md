@@ -23,7 +23,8 @@ videos, and other remembrance content.
 - Tasbeeh counters stored locally on the visitor's device/browser.
 - Authenticated worship dashboard with AlAdhan prayer times, completion tracking,
   reminder preferences, automatic device location, and a personal Tasbeeh counter.
-- Editable quick-add library with 49 Azkar, Duas, Hadith and Quran presets.
+- Editable quick-add library with 55 Azkar, Tasbeeh, Duas, Hadith and Quran presets,
+  scoped to the content category being edited.
 - Native first-launch onboarding; the Web root and public/deep-link routes do
   not require or display the onboarding flow.
 - Sharing and copy-link actions using the configured public site URL.

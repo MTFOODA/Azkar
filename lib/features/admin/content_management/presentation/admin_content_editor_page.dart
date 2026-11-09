@@ -235,13 +235,19 @@ class _AdminContentEditorPageState
   }
 
   Future<void> _choosePreset() async {
+    final type = widget.type;
     final preset = await showModalBottomSheet<QuickContentPreset>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (context) => QuickContentPicker(type: widget.type),
+      builder: (context) => QuickContentPicker(type: type),
     );
-    if (preset == null || !mounted) return;
+    if (preset == null ||
+        !mounted ||
+        widget.type != type ||
+        preset.type != type) {
+      return;
+    }
     if (_hasEdits) {
       final replace = await showDialog<bool>(
         context: context,
@@ -262,13 +268,14 @@ class _AdminContentEditorPageState
           ],
         ),
       );
-      if (replace != true || !mounted) return;
+      if (replace != true || !mounted || widget.type != type) return;
     }
     setState(() => _busy = true);
     try {
-      final dataset = widget.type == ContentType.quran
+      final dataset = type == ContentType.quran
           ? await ref.read(quranDatasetRepositoryProvider).dataset()
           : null;
+      if (!mounted || widget.type != type) return;
       final item = preset.createDraft(dataset: dataset);
       if (!mounted) return;
       _applyingPreset = true;
@@ -560,12 +567,7 @@ class _AdminContentEditorPageState
       children: [
         Text('المحتوى', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppPalette.spaceMd),
-        if ([
-          ContentType.azkar,
-          ContentType.dua,
-          ContentType.hadith,
-          ContentType.quran,
-        ].contains(widget.type)) ...[
+        if (QuickContentLibrary.supports(widget.type)) ...[
           OutlinedButton.icon(
             key: const ValueKey('quick-content-picker'),
             onPressed: _busy ? null : _choosePreset,

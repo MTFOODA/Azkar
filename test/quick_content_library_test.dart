@@ -10,11 +10,102 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
+    'category lookup never returns a preset from another category',
+    () async {
+      for (final type in ContentType.values) {
+        final items = await QuickContentLibrary.forType(type);
+        if (QuickContentLibrary.supports(type)) {
+          expect(items, isNotEmpty, reason: type.name);
+          expect(items.every((item) => item.type == type), isTrue);
+        } else {
+          expect(items, isEmpty);
+        }
+      }
+      final tasbeeh = await QuickContentLibrary.forType(ContentType.tasbeeh);
+      expect(tasbeeh, hasLength(6));
+      for (final preset in tasbeeh) {
+        expect(preset.createDraft().type, ContentType.tasbeeh);
+        expect(preset.createDraft().arabicText, isNotEmpty);
+      }
+    },
+  );
+
+  for (final type in QuickContentLibrary.supportedTypes) {
+    testWidgets('picker search and selection stay inside ${type.id}', (
+      tester,
+    ) async {
+      final items = await tester.runAsync(
+        () => QuickContentLibrary.forType(type),
+      );
+      QuickContentPreset? selected;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                child: const Text('open'),
+                onPressed: () async {
+                  selected = await showModalBottomSheet<QuickContentPreset>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => QuickContentPicker(type: type),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('اختيارات سريعة — ${type.pluralLabelAr}'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.byType(TextField), 'سورة الفاتحة');
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(ListTile),
+        type == ContentType.quran ? findsOneWidget : findsNothing,
+      );
+      await tester.enterText(find.byType(TextField), items!.first.title);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, items.first.title).first);
+      await tester.pumpAndSettle();
+      expect(selected?.type, type);
+      expect(selected?.id, items.first.id);
+    });
+  }
+
+  testWidgets('changing category clears old results and the search field', (
+    tester,
+  ) async {
+    await tester.runAsync(() => QuickContentLibrary.load());
+    Widget app(ContentType type) => MaterialApp(
+      home: Scaffold(body: QuickContentPicker(type: type)),
+    );
+    await tester.pumpWidget(app(ContentType.quran));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'الكرسي');
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'آية الكرسي'), findsOneWidget);
+    await tester.pumpWidget(app(ContentType.tasbeeh));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+      isEmpty,
+    );
+    expect(find.text('آية الكرسي'), findsNothing);
+    expect(find.widgetWithText(ListTile, 'التسبيح'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  test(
     'presets have unique IDs and create unpublished editable drafts',
     () async {
       final items = await QuickContentLibrary.load();
       final dataset = await QuranDatasetRepository().dataset();
-      expect(items, hasLength(49));
+      expect(items, hasLength(55));
       expect(items.map((item) => item.id).toSet(), hasLength(items.length));
       for (final preset in items) {
         final draft = preset.createDraft(dataset: dataset);
