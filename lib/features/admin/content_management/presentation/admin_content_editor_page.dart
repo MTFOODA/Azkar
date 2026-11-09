@@ -388,9 +388,7 @@ class _AdminContentEditorPageState
       } else {
         await ref.read(contentRepositoryProvider).save(item);
       }
-      ref.invalidate(adminContentProvider(widget.type));
-      ref.invalidate(adminDashboardProvider);
-      ref.invalidate(adminHomepageProvider);
+      invalidateContentViews(ref);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -401,6 +399,7 @@ class _AdminContentEditorPageState
       }
     } catch (error) {
       if (error is ContentHomepageLinkException) {
+        invalidateContentViews(ref);
         _base = error.savedItem;
         _draft = error.savedItem;
       }

@@ -263,10 +263,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           ShellRoute(
-            builder: (context, state, child) => OwnerDashboardScope(
-              pageId: state.pathParameters['pageId'],
-              child: child,
-            ),
+            // Keep the Navigator mounted outside page data/loading scopes.
+            builder: (context, state, child) => child,
             routes: [
               GoRoute(
                 path: '/dashboard',
@@ -299,67 +297,64 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
               GoRoute(
                 path: '/dashboard/pages/:pageId',
-                builder: (context, state) => const OwnerDashboardHomePage(),
-              ),
-              GoRoute(
-                path: '/dashboard/pages/:pageId/settings',
-                builder: (context, state) => const OwnerPageSettingsPage(),
-              ),
-              GoRoute(
-                path: '/dashboard/pages/:pageId/homepage',
-                builder: (context, state) => const OwnerDashboardHomepagePage(),
-              ),
-              GoRoute(
-                path: '/dashboard/pages/:pageId/appearance',
                 builder: (context, state) =>
-                    const OwnerDashboardAppearancePage(),
-              ),
-              GoRoute(
-                path: '/dashboard/pages/:pageId/content/:type',
-                builder: (context, state) {
-                  final type = ContentTypeX.fromId(
-                    state.pathParameters['type'],
-                  );
-                  if (type == null) return const RouteNotFoundPage();
-                  return OwnerDashboardContentListPage(
-                    type: type,
-                    pageId: state.pathParameters['pageId'] ?? '',
-                  );
-                },
-              ),
-              GoRoute(
-                path: '/dashboard/pages/:pageId/content/:type/new',
-                builder: (context, state) {
-                  final type = ContentTypeX.fromId(
-                    state.pathParameters['type'],
-                  );
-                  if (type == null) return const RouteNotFoundPage();
-                  return OwnerDashboardContentEditorPage(
-                    type: type,
-                    itemId: 'new',
-                    pageId: state.pathParameters['pageId'] ?? '',
-                  );
-                },
-              ),
-              GoRoute(
-                path: '/dashboard/pages/:pageId/content/:type/:id/edit',
-                builder: (context, state) {
-                  final type = ContentTypeX.fromId(
-                    state.pathParameters['type'],
-                  );
-                  if (type == null) return const RouteNotFoundPage();
-                  return OwnerDashboardContentEditorPage(
-                    type: type,
-                    itemId: state.pathParameters['id'] ?? '',
-                    pageId: state.pathParameters['pageId'] ?? '',
-                  );
-                },
-              ),
-              GoRoute(
-                path: '/dashboard/pages/:pageId/preview',
-                builder: (context, state) => OwnerMemorialPreviewPage(
-                  pageId: state.pathParameters['pageId'] ?? '',
-                ),
+                    _ownerPage(state, const OwnerDashboardHomePage()),
+                routes: [
+                  GoRoute(
+                    path: 'settings',
+                    builder: (context, state) =>
+                        _ownerPage(state, const OwnerPageSettingsPage()),
+                  ),
+                  GoRoute(
+                    path: 'homepage',
+                    builder: (context, state) =>
+                        _ownerPage(state, const OwnerDashboardHomepagePage()),
+                  ),
+                  GoRoute(
+                    path: 'appearance',
+                    builder: (context, state) =>
+                        _ownerPage(state, const OwnerDashboardAppearancePage()),
+                  ),
+                  GoRoute(
+                    path: 'content/:type',
+                    builder: (context, state) {
+                      final type = ContentTypeX.fromId(
+                        state.pathParameters['type'],
+                      );
+                      if (type == null) return const RouteNotFoundPage();
+                      return _ownerPage(
+                        state,
+                        OwnerDashboardContentListPage(
+                          type: type,
+                          pageId: state.pathParameters['pageId']!,
+                        ),
+                      );
+                    },
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) =>
+                            _ownerContentEditor(state, 'new'),
+                      ),
+                      GoRoute(
+                        path: ':id/edit',
+                        builder: (context, state) => _ownerContentEditor(
+                          state,
+                          state.pathParameters['id']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'preview',
+                    builder: (context, state) => _ownerPage(
+                      state,
+                      OwnerMemorialPreviewPage(
+                        pageId: state.pathParameters['pageId']!,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -370,6 +365,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         const PublicScaffold(child: RouteNotFoundPage()),
   );
 });
+
+// Scope each route body, never the Navigator that owns its back stack. A
+// loading/replaced page scope must not reparent routes during their transitions.
+Widget _ownerPage(GoRouterState state, Widget child) => OwnerDashboardScope(
+  key: ValueKey(state.pathParameters['pageId']),
+  pageId: state.pathParameters['pageId'],
+  child: child,
+);
+
+Widget _ownerContentEditor(GoRouterState state, String itemId) {
+  final type = ContentTypeX.fromId(state.pathParameters['type']);
+  if (type == null) return const RouteNotFoundPage();
+  return _ownerPage(
+    state,
+    OwnerDashboardContentEditorPage(
+      type: type,
+      itemId: itemId,
+      pageId: state.pathParameters['pageId']!,
+    ),
+  );
+}
 
 class _RouterRefreshNotifier extends ChangeNotifier {
   void ping() => notifyListeners();

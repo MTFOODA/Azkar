@@ -201,11 +201,12 @@ Future<void> navigateToLocation(
   BuildContext context,
   String location, {
   bool closeDrawer = false,
+  bool replace = false,
 }) async {
   if (!await confirmUnsavedChanges(context) || !context.mounted) return;
   if (closeDrawer) Scaffold.maybeOf(context)?.closeDrawer();
   if (context.mounted) {
-    if (location == '/') {
+    if (location == '/' || replace) {
       context.go(location);
     } else if (GoRouterState.of(context).uri.toString() != location) {
       context.push(location);
