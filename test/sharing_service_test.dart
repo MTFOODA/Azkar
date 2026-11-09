@@ -21,7 +21,6 @@ void main() {
       message,
       'صدقة جارية على روح عزيزٍ رحل: أحمد محمد\n\n'
       'صدقة جارية عن روحه.\n\n'
-      'اللهم اغفر له وارحمه\n\n'
       'نسألكم الدعاء له بالرحمة والمغفرة.',
     );
     expect(message, isNot(contains(page.ownerUserId)));
@@ -41,7 +40,6 @@ void main() {
       expect(
         SharingService.memorialText(page),
         'صدقة جارية على روح عزيزٍ رحل\n\n'
-        'اللهم اغفر للفقيد وارحمه\n\n'
         'نسألكم الدعاء بالرحمة والمغفرة.',
       );
       expect(
@@ -65,7 +63,7 @@ void main() {
     final message = SharingService.memorialText(page);
 
     expect(message, contains('صدقة جارية على روح عزيزةٍ رحلت: فاطمة'));
-    expect(message, contains('اللهم اغفر لها وارحمها'));
+    expect(message, isNot(contains('اللهم اغفر لها وارحمها')));
     expect(message, contains('نسألكم الدعاء لها بالرحمة والمغفرة.'));
     expect(message, isNot(contains('له/لها')));
     expect(message, contains(page.dedicationMessage!));
@@ -73,4 +71,23 @@ void main() {
     expect(message, isNot(contains(page.title)));
     expect(SharingService.memorialLink(page), endsWith('/m/fatemah-memorial'));
   });
+
+  test(
+    'the user-written prayer is shared once without an automatic duplicate',
+    () {
+      const prayer = 'اللهم اغفر له وارحمه وأسكنه الفردوس الأعلى';
+      const page = MemorialPage(
+        id: 'page',
+        ownerUserId: 'owner',
+        slug: 'example',
+        title: 'Example',
+        deceasedName: 'أحمد',
+        deceasedGender: 'male',
+        dedicationMessage: prayer,
+      );
+      final message = SharingService.memorialText(page);
+      expect(message, contains(prayer));
+      expect(message.split('اللهم اغفر له وارحمه').length - 1, 1);
+    },
+  );
 }

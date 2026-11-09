@@ -15,6 +15,10 @@ videos, and other remembrance content.
   content, homepage layout, and appearance.
 - Public `/m/:slug` pages that load without authentication and expose published
   content only, subject to Supabase Row Level Security (RLS).
+- The signed-in homepage shows only that account's named memorial dedications,
+  using the same Azkar card surface as the memorial pages. Shared memorial entry
+  pages have no back-to-account-home action, and sharing preserves the user's
+  dedication without adding an automatic duplicate prayer.
 - Public collections for Azkar, Quran, Hadith, Duas, dedications, and videos.
 - Tasbeeh counters stored locally on the visitor's device/browser.
 - Authenticated worship dashboard with AlAdhan prayer times, completion tracking,
@@ -87,6 +91,11 @@ home-screen widgets are implemented for Android (AppWidget) and iOS (WidgetKit),
 with setup at `/worship/widget`. The compact prayer widget shares the current
 location and display calendar; background maintenance renews it. A second widget
 shows published Azkar, Duas, dedications and the user's published memorial pages.
+Prayer widget add/refresh actions are below the prayer calendar at `/worship`.
+The `/worship/widget` screen combines remembrance-widget installation and all
+content filters; the older `/worship/widget/content` URL redirects there.
+The main drawer's notification action checks the current system permission and
+shows an already-enabled message when appropriate, without requesting it again.
 Android's StackView advances every seven seconds while the device permits it and
 supports manual swipes. Its cards fill the widget, skip unavailable content, and
 repeat without blank frames. Users can select categories and individual items.

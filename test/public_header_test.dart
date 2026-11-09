@@ -2,6 +2,8 @@ import 'package:azkar/core/providers/app_providers.dart';
 import 'package:azkar/core/design/azkar_brand.dart';
 import 'package:azkar/features/admin/authentication/domain/admin_auth_service.dart';
 import 'package:azkar/features/mobile_platform/domain/mobile_runtime.dart';
+import 'package:azkar/features/notifications/data/local_notification_service.dart';
+import 'package:azkar/features/notifications/domain/local_notification.dart';
 import 'package:azkar/features/sharing/about_developer_page.dart';
 import 'package:azkar/features/sharing/public_scaffold.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +15,72 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  for (final authenticated in [false, true]) {
+    testWidgets(
+      'shared memorial has no back or account-home action (signed in: $authenticated)',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final router = _createRouter(initialLocation: '/m/example');
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          _createApp(router, authenticated: authenticated),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('route-back-button')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('public-header-account-action')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('public-header-share')),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final permission in NotificationPermissionState.values) {
+    testWidgets(
+      'drawer checks actual notification permission before navigating: ${permission.name}',
+      (tester) async {
+        final service = _PermissionService(permission);
+        final router = _createRouter();
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          _createApp(router, notificationService: service),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('public-header-menu')));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('navigation-notifications')),
+        );
+        await tester.pumpAndSettle();
+        if (permission == NotificationPermissionState.granted) {
+          expect(find.text('الإشعارات مفعّلة بالفعل.'), findsOneWidget);
+          expect(router.routeInformationProvider.value.uri.path, '/');
+        } else if (permission == NotificationPermissionState.denied) {
+          expect(
+            router.routeInformationProvider.value.uri.path,
+            '/worship/notifications',
+          );
+        } else {
+          expect(
+            find.text('الإشعارات متاحة من تطبيق الموبايل.'),
+            findsOneWidget,
+          );
+          expect(router.routeInformationProvider.value.uri.path, '/');
+        }
+        expect(service.requests, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   for (final width in [320.0, 360.0, 393.0, 412.0, 600.0, 768.0, 1024.0]) {
     testWidgets(
       'public header fits and orders controls at ${width.toInt()}px',
@@ -418,8 +486,11 @@ Widget _createApp(
   bool authenticated = false,
   Locale locale = const Locale('ar'),
   bool nativeAndroid = false,
+  LocalNotificationService? notificationService,
 }) => ProviderScope(
   overrides: [
+    if (notificationService != null)
+      localNotificationServiceProvider.overrideWithValue(notificationService),
     mobileRuntimeProvider.overrideWithValue(
       MobileRuntime(
         isWeb: !nativeAndroid,
@@ -453,6 +524,10 @@ Widget _createApp(
 GoRouter _createRouter({String initialLocation = '/'}) => GoRouter(
   initialLocation: initialLocation,
   routes: [
+    GoRoute(
+      path: '/worship/notifications',
+      builder: (_, _) => const Scaffold(body: Text('Permission settings')),
+    ),
     GoRoute(
       path: '/',
       builder: (context, state) =>
@@ -515,5 +590,18 @@ class _FixedThemeMode extends ThemeModeNotifier {
   @override
   Future<void> setMode(ThemeMode mode) async {
     state = mode;
+  }
+}
+
+class _PermissionService extends Fake implements LocalNotificationService {
+  _PermissionService(this.permission);
+  final NotificationPermissionState permission;
+  int requests = 0;
+  @override
+  Future<NotificationPermissionState> permissionState() async => permission;
+  @override
+  Future<NotificationPermissionState> requestPermission() async {
+    requests++;
+    return permission;
   }
 }

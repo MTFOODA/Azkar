@@ -21,7 +21,6 @@ import '../../features/sharing/public_scaffold.dart';
 import '../../features/sharing/about_developer_page.dart';
 import '../../features/sharing/shared_content_page.dart';
 import '../../features/worship/presentation/prayer_dashboard_page.dart';
-import '../../features/home_widget/presentation/prayer_widget_page.dart';
 import '../../features/home_widget/presentation/remembrance_widget_settings_page.dart';
 import '../../features/worship/presentation/prayer_location_settings_page.dart';
 import '../../features/worship/presentation/personal_tasbeeh_page.dart';
@@ -165,11 +164,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/worship/widget',
-            builder: (context, state) => const PrayerWidgetPage(),
+            builder: (context, state) => const RemembranceWidgetSettingsPage(),
           ),
           GoRoute(
             path: '/worship/widget/content',
-            builder: (context, state) => const RemembranceWidgetSettingsPage(),
+            redirect: (context, state) => '/worship/widget',
           ),
           GoRoute(
             path: '/worship/location',

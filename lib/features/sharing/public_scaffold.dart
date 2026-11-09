@@ -6,10 +6,12 @@ import '../../core/design/app_palette.dart';
 import '../../core/design/azkar_brand.dart';
 import '../../core/config/app_config.dart';
 import '../../core/providers/app_providers.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/adaptive_layout.dart';
 import '../../core/widgets/route_back_button.dart';
 import '../content/domain/content_type.dart';
 import '../memorial/presentation/memorial_section_navigation.dart';
+import '../notifications/domain/local_notification.dart';
 import 'sharing_service.dart';
 import 'share_widgets.dart';
 
@@ -33,6 +35,8 @@ class PublicScaffold extends ConsumerWidget {
     final routeState = GoRouterState.of(context);
     final memorialSlug = routeState.pathParameters['slug'];
     final isMemorialPage = location.startsWith('/m/') && memorialSlug != null;
+    final isMemorialRoot =
+        isMemorialPage && routeState.pathParameters['type'] == null;
     final isHomePage = location == '/';
     return Scaffold(
       appBar: AppBar(
@@ -104,7 +108,7 @@ class PublicScaffold extends ConsumerWidget {
                             ),
                           ),
                         )
-                      else
+                      else if (!isMemorialRoot)
                         const RouteBackButton(),
                     ],
                   ),
@@ -166,6 +170,12 @@ class PublicNavigationDrawer extends ConsumerWidget {
               title: const Text('ويدجت الشاشة الرئيسية'),
               onTap: () => _go(context, '/worship/widget'),
             ),
+            ListTile(
+              key: const ValueKey('navigation-notifications'),
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('الإشعارات'),
+              onTap: () => _openNotifications(context, ref),
+            ),
             for (final type in categories)
               ListTile(
                 leading: Icon(type.icon),
@@ -219,6 +229,43 @@ class PublicNavigationDrawer extends ConsumerWidget {
 
   bool _isEnglish(BuildContext context) =>
       Localizations.localeOf(context).languageCode == 'en';
+
+  Future<void> _openNotifications(BuildContext context, WidgetRef ref) async {
+    final router = GoRouter.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    Scaffold.maybeOf(context)?.closeDrawer();
+    try {
+      final permission = await ref
+          .read(localNotificationServiceProvider)
+          .permissionState();
+      if (!context.mounted) return;
+      if (permission == NotificationPermissionState.granted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('الإشعارات مفعّلة بالفعل.')),
+        );
+      } else if (permission == NotificationPermissionState.unsupported) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('الإشعارات متاحة من تطبيق الموبايل.')),
+        );
+      } else if (router.routeInformationProvider.value.uri.path !=
+          '/worship/notifications') {
+        _go(context, '/worship/notifications');
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Could not open notification settings.',
+        error,
+        stackTrace,
+      );
+      if (messenger.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('تعذّر التحقق من الإشعارات. حاول مرة أخرى.'),
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _downloadAndroidApk(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
