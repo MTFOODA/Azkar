@@ -658,6 +658,7 @@ class OwnerDashboardContentEditorPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AdminContentEditorPage(
+    key: ValueKey((pageId, type, itemId)),
     type: type,
     itemId: itemId,
     basePath: ownerMemorialDashboardPath(pageId),

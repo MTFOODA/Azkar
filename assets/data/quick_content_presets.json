@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "items": [
     {"id":"dhikr-tasbih","type":"azkar","title":"التسبيح","text":"سبحان الله","source":"صحيح مسلم 2137","url":"https://sunnah.com/muslim:2137a"},
     {"id":"dhikr-tahmid","type":"azkar","title":"الحمد","text":"الحمد لله","source":"صحيح مسلم 2137","url":"https://sunnah.com/muslim:2137a"},
@@ -45,6 +45,12 @@
     {"id":"hadith-good","type":"hadith","title":"الدلالة على الخير","text":"من دل على خير فله مثل أجر فاعله","source":"صحيح مسلم","number":"1893","narrator":"أبو مسعود الأنصاري","authenticity":"sahih","excerpt":true,"url":"https://sunnah.com/muslim:1893a"},
     {"id":"hadith-purity","type":"hadith","title":"الطهور والإيمان","text":"الطهور شطر الإيمان","source":"صحيح مسلم","number":"223","narrator":"أبو مالك الأشعري","authenticity":"sahih","excerpt":true,"url":"https://sunnah.com/muslim:223"},
     {"id":"hadith-dhikr","type":"hadith","title":"كلمتان حبيبتان إلى الرحمن","text":"كلمتان خفيفتان على اللسان، ثقيلتان في الميزان، حبيبتان إلى الرحمن: سبحان الله وبحمده، سبحان الله العظيم","source":"صحيح البخاري","number":"6406","narrator":"أبو هريرة","authenticity":"sahih","url":"https://sunnah.com/bukhari:6406"},
+    {"id":"tasbeeh-tasbih","type":"tasbeeh","title":"التسبيح","text":"سبحان الله","source":"صحيح مسلم 2137","url":"https://sunnah.com/muslim:2137a"},
+    {"id":"tasbeeh-tahmid","type":"tasbeeh","title":"الحمد","text":"الحمد لله","source":"صحيح مسلم 2137","url":"https://sunnah.com/muslim:2137a"},
+    {"id":"tasbeeh-tahlil","type":"tasbeeh","title":"التهليل","text":"لا إله إلا الله","source":"صحيح مسلم 2137","url":"https://sunnah.com/muslim:2137a"},
+    {"id":"tasbeeh-takbir","type":"tasbeeh","title":"التكبير","text":"الله أكبر","source":"صحيح مسلم 2137","url":"https://sunnah.com/muslim:2137a"},
+    {"id":"tasbeeh-hawqala","type":"tasbeeh","title":"الحوقلة","text":"لا حول ولا قوة إلا بالله","source":"صحيح البخاري 6384","url":"https://sunnah.com/bukhari:6384"},
+    {"id":"tasbeeh-istighfar","type":"tasbeeh","title":"الاستغفار والتوبة","text":"أستغفر الله وأتوب إليه","source":"صحيح البخاري 6307","url":"https://sunnah.com/bukhari:6307"},
     {"id":"quran-kursi","type":"quran","title":"آية الكرسي","surah":2,"from":255,"to":255},
     {"id":"quran-fatiha","type":"quran","title":"سورة الفاتحة","surah":1,"from":1,"to":7},
     {"id":"quran-ikhlas","type":"quran","title":"سورة الإخلاص","surah":112,"from":1,"to":4},
