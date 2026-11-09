@@ -1,0 +1,18 @@
+name: azkar_mobile
+description: Native widget bridge for AZKAR, registered in foreground and background engines.
+version: 1.0.0
+publish_to: none
+environment:
+  sdk: ^3.13.5
+  flutter: '>=3.41.0'
+dependencies:
+  flutter:
+    sdk: flutter
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.azkar.mobile
+        pluginClass: AzkarMobilePlugin
+      ios:
+        pluginClass: AzkarMobilePlugin

@@ -23,6 +23,10 @@ class LocalReminderSchedulingEngine {
     required this.notifications,
     required this.prayerCompletionStateMachine,
     required this.currentUserIdProvider,
+    this.refreshHomeWidget,
+    this.persistBackgroundSnapshot,
+    this.backgroundMode = false,
+    this.foregroundCompletionUntil,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
@@ -31,7 +35,8 @@ class LocalReminderSchedulingEngine {
   static const int maxPendingNotifications =
       LocalNotificationService.maxPendingNotificationsPerAccount;
   static const Duration maxPrayerCalendarAge = Duration(days: 45);
-  static const String _keyPrefix = 'reminder-engine:v1:';
+  String get _keyPrefix =>
+      backgroundMode ? 'reminder-background:v1:' : 'reminder-engine:v1:';
 
   final ReminderPreferencesLocalStore preferencesStore;
   final LocalPrayerScheduleLocationStore locationStore;
@@ -39,6 +44,16 @@ class LocalReminderSchedulingEngine {
   final LocalNotificationService notifications;
   final PrayerCompletionStateMachine prayerCompletionStateMachine;
   final String? Function() currentUserIdProvider;
+  final Future<void> Function(String userId)? refreshHomeWidget;
+  final Future<void> Function(
+    String,
+    ReminderPreferences,
+    PrayerLocation?,
+    List<PrayerCalendar>,
+  )?
+  persistBackgroundSnapshot;
+  final bool backgroundMode;
+  final DateTime? foregroundCompletionUntil;
   final DateTime Function() _clock;
   final Map<String, Future<void>> _inFlight = <String, Future<void>>{};
 
@@ -57,6 +72,15 @@ class LocalReminderSchedulingEngine {
   }
 
   Future<ReminderScheduleReport> _reconcile(String userId) async {
+    try {
+      await refreshHomeWidget?.call(userId);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Could not refresh the home widget.',
+        error,
+        stackTrace,
+      );
+    }
     if (!notifications.isSupported) {
       return const ReminderScheduleReport(
         scheduledCount: 0,
@@ -79,6 +103,10 @@ class LocalReminderSchedulingEngine {
         notificationPermissionGranted: false,
       );
     }
+    await notifications.adoptNativeSchedules(
+      userId,
+      background: backgroundMode,
+    );
     await prayerCompletionStateMachine.cancelExpiredSchedules(userId);
     final local = await preferencesStore.read(userId);
     final preferences = local?.preferences ?? ReminderPreferences.defaults;
@@ -86,13 +114,12 @@ class LocalReminderSchedulingEngine {
       userId: userId,
       preferences: preferences,
     );
-    final needsPrayerCalendar =
-        preferences.prayerRemindersEnabled ||
-        preferences.prayerTimeNotificationsEnabled;
     final calendars = <String, PrayerCalendar>{};
     var prayerTimesAvailable = false;
-    String? resolvedTimezoneId = location?.timezoneId ?? preferences.timezoneId;
-    if (needsPrayerCalendar && location != null) {
+    String? resolvedTimezoneId =
+        location?.timezoneId ??
+        (location == null ? preferences.timezoneId : null);
+    if (location != null) {
       try {
         final calendar = await _calendarForCurrentDate(
           location: location,
@@ -191,7 +218,9 @@ class LocalReminderSchedulingEngine {
     final possibleCompletionCount =
         rollingHorizonDays * TrackedPrayer.values.length;
     final completionSlotsToReserve =
-        preferences.prayerRemindersEnabled && prayerTimesAvailable
+        !backgroundMode &&
+            preferences.prayerRemindersEnabled &&
+            prayerTimesAvailable
         ? (possibleCompletionCount - existingCompletionCount).clamp(
             0,
             possibleCompletionCount,
@@ -212,7 +241,9 @@ class LocalReminderSchedulingEngine {
     }
 
     var completionSkippedForCapacity = 0;
-    if (preferences.prayerRemindersEnabled && prayerTimesAvailable) {
+    if (!backgroundMode &&
+        preferences.prayerRemindersEnabled &&
+        prayerTimesAvailable) {
       completionSkippedForCapacity = await _scheduleCompletionReminders(
         userId: userId,
         preferences: preferences,
@@ -255,6 +286,12 @@ class LocalReminderSchedulingEngine {
       );
       scheduledCount++;
     }
+    await persistBackgroundSnapshot?.call(
+      userId,
+      preferences,
+      location,
+      calendars.values.toList(),
+    );
     return ReminderScheduleReport(
       scheduledCount: scheduledCount,
       cancelledCount: cancelledCount,
@@ -358,6 +395,27 @@ class LocalReminderSchedulingEngine {
       if (prayerDay != null && location != null) {
         for (final prayer in TrackedPrayer.values) {
           final prayerTime = prayerDay.timeFor(prayer.prayerTimeName);
+          final followup = prayerTime.add(
+            PrayerCompletionState.firstReminderDelay,
+          );
+          if (backgroundMode &&
+              preferences.prayerRemindersEnabled &&
+              followup.isAfter(localNow) &&
+              (foregroundCompletionUntil == null ||
+                  !prayerTime.isBefore(foregroundCompletionUntil!)) &&
+              !ReminderQuietHours.contains(followup, preferences)) {
+            candidates.add(
+              _Candidate(
+                key: _key(
+                  'prayer-followup',
+                  '${location.cacheIdentifier}|${prayer.id}|$dateKey',
+                ),
+                title: 'تذكير بالصلاة',
+                body: 'هل أتممت صلاة ${_prayerArabic(prayer)}؟',
+                scheduledAt: followup,
+              ),
+            );
+          }
           if (preferences.prayerTimeNotificationsEnabled &&
               !ReminderQuietHours.contains(prayerTime, preferences) &&
               prayerTime.isAfter(localNow)) {

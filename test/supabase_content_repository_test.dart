@@ -7,6 +7,24 @@ import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  test('PostgREST constraint details are not user-facing', () {
+    final exception = translatePostgrestError(
+      const PostgrestException(
+        message: 'check constraint failed: private_table',
+        code: '23514',
+        details: 'column private_column rejected value',
+      ),
+    );
+
+    expect(
+      exception.messageAr,
+      'بعض البيانات المدخلة غير صالحة. راجعها ثم أعد المحاولة.',
+    );
+    expect(exception.messageAr, isNot(contains('private_table')));
+    expect(exception.messageAr, isNot(contains('private_column')));
+    expect(exception.technical, contains('private_table'));
+  });
+
   test(
     'public category query is restricted to page and published items',
     () async {

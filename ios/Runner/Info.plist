@@ -26,8 +26,23 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.azkar.azkar.widget</string>
+			<key>CFBundleURLSchemes</key>
+			<array><string>azkar</string></array>
+		</dict>
+	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>AZKAR can use your approximate location to calculate prayer times when you request it.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>AZKAR updates prayer reminders for your current place while travelling when you allow background location.</string>
+	<key>UIBackgroundModes</key>
+	<array><string>fetch</string><string>location</string></array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array><string>com.azkar.azkar.refresh-reminders</string></array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

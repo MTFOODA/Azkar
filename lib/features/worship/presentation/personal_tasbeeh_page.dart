@@ -1,3 +1,5 @@
+import '../../../core/widgets/route_back_button.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -74,7 +76,10 @@ class _PersonalTasbeehPageState extends ConsumerState<PersonalTasbeehPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('تسبيح بعد الصلاة')),
+    appBar: AppBar(
+      leading: const RouteBackButton(),
+      title: const Text('تسبيح بعد الصلاة'),
+    ),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),

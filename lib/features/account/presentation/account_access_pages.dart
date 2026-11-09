@@ -218,17 +218,12 @@ class _AccountRegistrationPageState
   @override
   Widget build(BuildContext context) {
     final registrationEnabled = ref.watch(isRegistrationEnabledProvider);
-    final unavailableMessage = ref.watch(
-      registrationUnavailableMessageProvider,
-    );
     return _AccountAuthFrame(
       title: 'إنشاء حساب جديد',
       subtitle: 'أنشئ حسابًا وصفحة شخصية قابلة للمشاركة.',
       children: [
         if (!registrationEnabled)
-          _RegistrationUnavailableNotice(
-            message: unavailableMessage ?? 'التسجيل غير متاح حاليًا.',
-          )
+          const _RegistrationUnavailableNotice()
         else if (_complete)
           Column(
             children: [
@@ -567,12 +562,23 @@ class _SupabaseRequiredNotice extends StatelessWidget {
 }
 
 class _RegistrationUnavailableNotice extends StatelessWidget {
-  const _RegistrationUnavailableNotice({required this.message});
+  const _RegistrationUnavailableNotice();
 
-  final String message;
   @override
-  Widget build(BuildContext context) =>
-      Text(message, textAlign: TextAlign.center);
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const Text(
+        'خدمة إنشاء الحسابات غير متاحة مؤقتًا. نعمل على إتاحتها قريبًا.',
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: AppPalette.spaceLg),
+      FilledButton(
+        onPressed: () => context.go('/'),
+        child: const Text('العودة إلى الرئيسية'),
+      ),
+    ],
+  );
 }
 
 String? _emailError(String? value) {

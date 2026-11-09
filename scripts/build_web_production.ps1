@@ -75,6 +75,7 @@ $validPublicUrl = [Uri]::TryCreate(
         [string]::IsNullOrEmpty($publicUri.AbsolutePath)) -and
     $publicUri.GetLeftPart([UriPartial]::Authority) -eq
         'https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev'
+$expectedApkUrl = 'https://github.com/MTFOODA/Azkar/releases/download/v1.0.2/AZKAR-v1.0.2-android.apk'
 
 $problems = New-Object System.Collections.Generic.List[string]
 if (-not $validSupabaseUrl) {
@@ -91,6 +92,9 @@ if ([string]$config.AZKAR_AUTH_SCHEMA_VERIFIED -notin @('true', 'false')) {
 }
 if (-not $validPublicUrl) {
     $problems.Add('PUBLIC_BASE_URL must be https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev without a path, query, or fragment.')
+}
+if ([string]$config.AZKAR_ANDROID_APK_URL -cne $expectedApkUrl) {
+    $problems.Add('AZKAR_ANDROID_APK_URL must use the published v1.0.2 Android release asset.')
 }
 if ($problems.Count -gt 0) {
     throw ('Production configuration is not ready: ' + ($problems -join ' '))
@@ -155,10 +159,35 @@ $compiledApplication = [IO.File]::ReadAllText($applicationPath)
 if (-not $compiledApplication.Contains($publicBaseUrl)) {
     throw 'The compiled Flutter application does not contain the configured public site origin.'
 }
+if (-not $compiledApplication.Contains($expectedApkUrl)) {
+    throw 'The compiled Flutter application does not contain the verified Android release URL.'
+}
 if ($indexHtml -match 'pages\.dev|localhost|127\.0\.0\.1') {
     throw 'The generated Web metadata contains a non-production hostname.'
 }
 
 Write-Output 'Validated compiled Flutter application, bootstrap, manifest, icon, asset manifest, Arabic font, and production URL.'
+$sourceCommit = & git rev-parse HEAD
+if ($LASTEXITCODE -ne 0) {
+    throw 'Cannot identify the source commit for the production release.'
+}
+$versionMatch = [regex]::Match(
+    [IO.File]::ReadAllText((Join-Path $projectRoot 'pubspec.yaml')),
+    '(?m)^version:\s*(\S+)'
+)
+if (-not $versionMatch.Success) {
+    throw 'Cannot identify the application version for the production release.'
+}
+$releaseMetadata = [ordered]@{
+    commit = $sourceCommit.Trim()
+    version = $versionMatch.Groups[1].Value
+    builtAtUtc = [DateTime]::UtcNow.ToString('o')
+} | ConvertTo-Json
+[IO.File]::WriteAllText(
+    (Join-Path $buildDirectory 'release.json'),
+    $releaseMetadata,
+    (New-Object Text.UTF8Encoding($false))
+)
+Write-Output 'Generated public release metadata with the source commit and application version.'
 Write-Output 'Cloudflare Workers Static Assets will apply SPA fallback using wrangler.jsonc.'
 Write-Output ('Production Worker assets: ' + $buildDirectory)

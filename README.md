@@ -18,7 +18,8 @@ videos, and other remembrance content.
 - Public collections for Azkar, Quran, Hadith, Duas, dedications, and videos.
 - Tasbeeh counters stored locally on the visitor's device/browser.
 - Authenticated worship dashboard with AlAdhan prayer times, completion tracking,
-  reminder preferences, location controls, and a personal Tasbeeh counter.
+  reminder preferences, automatic device location, and a personal Tasbeeh counter.
+- Editable quick-add library with 49 Azkar, Duas, Hadith and Quran presets.
 - Native first-launch onboarding; the Web root and public/deep-link routes do
   not require or display the onboarding flow.
 - Sharing and copy-link actions using the configured public site URL.
@@ -49,8 +50,8 @@ remain for memorial management.
 
 Prayer calendars come from the replaceable AlAdhan provider and are validated
 before caching in the existing Sembast database. Egypt defaults to calculation
-method 5 (Egyptian General Authority of Survey). Manual city/country selection
-does not request location permission. Device coordinates are saved only in the
+method 5 (Egyptian General Authority of Survey). Prayer location now follows the
+authorized device position; the manual city form is removed. Coordinates are saved only in the
 local database and are excluded from Supabase payloads; GPS is used only after
 the user selects it and accepts the in-app explanation. For a GPS-selected
 location, coordinates are sent to AlAdhan over HTTPS as prayer-calendar request
@@ -66,18 +67,38 @@ Do not rerun it; authenticated integration and cross-device sync still require
 read-only verification against the live project. No prayer times are fabricated
 when both the provider and valid local cache are unavailable.
 
-The scheduling horizon is bounded and reconciled when the app or account state
-changes. Android uses inexact alarms, and iOS/background delivery is subject to
-OS behavior; neither platform guarantees exact delivery or indefinite
-background refresh. Notification permission is explained and requested only
-after an explicit user action. The Web build stays compatible but does not
-schedule browser notifications.
+The scheduling horizon is three days (subject to notification capacity), renewed
+automatically by Workmanager and on app, preference, account, location and clock
+changes. Its isolated worker uses an in-memory database and a device-local
+configuration snapshot, without opening the foreground Sembast file or using
+Supabase credentials. Android uses
+exact alarms when the user grants the separate Alarms & reminders permission,
+with inexact alarms otherwise. The notification-permission screen includes an
+explicit precision-permission control and a test notification. Notification
+permission does not need renewal every two days. Background scheduling remains
+subject to OS execution and battery policies. Background location updates require
+the user's Always-location permission. Permissions are requested only after an explicit
+user action. The Web build does not schedule browser notifications.
 
 The native onboarding is shown on an incomplete first visit to `/` on Android
 or iOS only. Completion is stored in the existing local database. Public
-memorial links, other deep links, and Web bypass the gate. There is no memorial
-home-screen widget or widget content cache yet. No Hijri date is displayed
-because the project has no validated Hijri-date source.
+memorial links, other deep links, and Web bypass the gate. Native prayer-time
+home-screen widgets are implemented for Android (AppWidget) and iOS (WidgetKit),
+with setup at `/worship/widget`. The compact prayer widget shares the current
+location and display calendar; background maintenance renews it. A second widget
+shows published Azkar, Duas, dedications and the user's published memorial pages.
+Android's StackView advances every seven seconds while the device permits it and
+supports manual swipes. Its cards fill the widget, skip unavailable content, and
+repeat without blank frames. Users can select categories and individual items.
+Memorial cards put the deceased's name on its own line in Aref Ruqaa and display
+only the user's dedication text, without an additional repeated prayer.
+iOS uses timeline rotation and interactive buttons on iOS 17+. Both clear
+on account changes. The local `packages/azkar_mobile` plugin makes the widget
+bridge available in foreground and background engines. iOS requires the shared
+App Group `group.com.azkar.azkar` for Runner and PrayerWidget in the signing
+team; its build still requires validation on macOS/Xcode. The compact Android
+prayer widget displays a centered clock, stacked Gregorian/Hijri dates, the app
+logo, and all six prayer times in one row, with fonts adapted to its bounds.
 
 ## Run locally
 
@@ -145,18 +166,19 @@ verifying that project's schema and RLS.
 ## Web deployment status
 
 The existing production Worker is `azkar-sadaqa` at
-`https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev`. A check on 2026-10-31
-found that its homepage returns the raw Flutter source template and a direct
-`/m/...` request returns HTTP 404; the production site is **not accepted as
-working**.
+[`azkar-sadaqa.mohamed-fooda-mtf.workers.dev`](https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev).
+The 2026-10-31 failure described in older acceptance reports is historical.
+Subsequent successful production runs are recorded in
+[GitHub Actions](https://github.com/MTFOODA/Azkar/actions/workflows/deploy-worker.yml).
 
 The production workflow is prepared at
 `.github/workflows/deploy-worker.yml`. It pins Flutter 3.47.7 and Wrangler
 4.156.0, runs analysis and tests, compiles Flutter Web into `build/web`, checks
-the compiled output, and deploys the existing Worker with SPA fallback. Before
-enabling it, disconnect the current Cloudflare Workers Build connection and
-configure the protected GitHub `production` environment. No deployment has
-been made from this workflow.
+the compiled output, and deploys the existing Worker with SPA fallback after
+approval through the protected GitHub `production` environment. Pull requests
+run analysis and tests; only `main` can deploy. The published APK download remains
+the v1.0.2 release; native widget changes in the source do not update an existing
+APK release automatically.
 
 Production Supabase settings are injected at build time from GitHub environment
 secrets; Cloudflare runtime variables do not configure Flutter's compiled
@@ -215,15 +237,14 @@ Phases 1–7 of the mobile worship work are implemented in the repository,
 including local prayer tracking, scheduling infrastructure, authenticated
 screens, and native onboarding. Automated and device-specific validation is
 tracked separately; iOS notification behavior, physical-device delivery,
-widgets, and production reminder-schema synchronization are not verified.
+physical widget delivery, and production reminder-schema synchronization need
+device/live acceptance testing. See the
+[mobile widgets and notification update](docs/MOBILE_WIDGETS_UPDATE_2026_11_08.md) for current checks.
 
-The last recorded production acceptance check, dated 2026-10-31 in
-[`docs/PRODUCTION_ACCEPTANCE_REPORT.md`](docs/PRODUCTION_ACCEPTANCE_REPORT.md),
-found the Worker homepage and direct memorial route failing acceptance. Treat
-that as a historical observation until the deployment workflow completes and
-the live site is checked again. Production configuration and the protected
-GitHub `production` environment remain required; do not infer current live
-status from a local build.
+The production build writes `release.json` with its source commit and application
+version. Compare that deployed file with `main` and the successful Actions run
+to identify the live build. Older acceptance reports describe the checks and
+limits at their original dates, rather than the current deployment status.
 
 ## Security
 

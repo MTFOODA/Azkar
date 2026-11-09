@@ -1,4 +1,8 @@
 {
+  "dart.analysisExcludedFolders": [
+    "_azkar_backup_20261101",
+    "Azkar-release-download"
+  ],
   "dart.flutterRunAdditionalArgs": [
     "--dart-define-from-file=config/dev.json"
   ]

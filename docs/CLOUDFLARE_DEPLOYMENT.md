@@ -7,14 +7,12 @@ Pages. The existing Worker is `azkar-sadaqa`, with the production hostname
 [`azkar-sadaqa.mohamed-fooda-mtf.workers.dev`](https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev).
 Supabase remains the authentication and data backend.
 
-The production pipeline is GitHub Actions. Cloudflare's current Git-connected
-Workers Build was configured with no build command and deployed `web/`; a
-production request returned the unbuilt Flutter template, and `/m/...` returned
-404. GitHub Actions is selected because it installs the project's pinned
-Flutter SDK with caching, runs analysis and tests, compiles Flutter Web, checks
-the compiled output, then deploys the existing Worker with a pinned Wrangler
-version. The Cloudflare Workers Build connection must be disconnected before
-the Actions workflow is enabled, so a commit cannot trigger two deployments.
+The production pipeline is GitHub Actions. The source-template and routing
+failures recorded on 2026-10-31 are historical; subsequent production Actions
+runs succeeded. The pipeline installs the pinned Flutter SDK, runs analysis
+and tests, builds Flutter Web, checks the compiled output, and deploys the
+existing Worker with pinned Wrangler. Keep the old Cloudflare Git build
+connection disabled to avoid competing deployments.
 
 This repository does not create a Worker or change its hostname. Production
 deployment is gated by the GitHub `production` environment and requires a
@@ -30,25 +28,26 @@ JavaScript. The protected GitHub environment therefore supplies:
 |---|---|
 | `AZKAR_SUPABASE_URL` secret | Existing production Supabase HTTPS URL |
 | `AZKAR_SUPABASE_PUBLISHABLE_KEY` secret | Supabase anon/publishable client key only |
-| `AZKAR_AUTH_SCHEMA_VERIFIED` variable | Must be `true` only after production schema, provisioning, and RLS checks |
-| `AZKAR_ANDROID_APK_URL` variable | Optional direct HTTPS URL ending in `.apk`; leave unset until a signed release is hosted |
+| `AZKAR_AUTH_SCHEMA_VERIFIED` workflow value | `true` in the approved production configuration after the recorded schema/RLS checks |
+| Android APK download URL | Published v1.0.2 release asset; update only after a newer APK is published |
 | `CLOUDFLARE_API_TOKEN` secret | Least-privilege token for deploying the existing Worker |
 | `CLOUDFLARE_ACCOUNT_ID` secret | Account that owns the Worker |
 
 The workflow writes the ignored `config/production.json` only on its runner.
 It sets `AZKAR_DEMO_MODE` to `false` and the existing public origin to
 `https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev`. It fails closed unless
-the Supabase URL/key are valid and `AZKAR_AUTH_SCHEMA_VERIFIED` is explicitly
-`true`. Do not put a service-role key, database password, Cloudflare token, or
-other privileged secret in Flutter defines. The optional APK URL is validated
-as HTTPS and must end in `.apk`; while unset, the app keeps its graceful
-unavailable-download message.
+the Supabase URL/key are valid and `AZKAR_AUTH_SCHEMA_VERIFIED` is an explicit
+boolean. The approved production workflow preserves its verified `true` value. Do not put a service-role
+key, database password, Cloudflare token, or other privileged secret in Flutter
+defines. The Web build is pinned to the published APK at
+`https://github.com/MTFOODA/Azkar/releases/download/v1.0.2/AZKAR-v1.0.2-android.apk`;
+the build fails if a different or unpublished URL is configured.
 
 For a local release build, copy
 [`config/production.example.json`](../config/production.example.json) to the
 ignored `config/production.json`, enter the approved production URL and
-publishable key locally, and keep schema verification false until its checks
-are complete. Then run:
+publishable key locally, and use the already approved verification setting for
+this project. Other projects require their own schema/RLS checks. Then run:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_web_production.ps1
@@ -64,8 +63,9 @@ with Flutter release mode and validates:
 - Replacement of the generic social metadata URL placeholder.
 - Absence of `pages.dev`, localhost, and loopback URLs from generated metadata.
 
-No local production Supabase configuration is currently present, so this
-production build has not been run with real production settings.
+The build also writes public `release.json` containing the source commit,
+application version and build time. This metadata contains no credentials.
+The local production configuration is ignored by Git.
 
 ## Wrangler Static Assets and SPA routing
 
@@ -101,13 +101,12 @@ The workflow is
    compiled Web application.
 5. Uses Wrangler 4.156.0 and `wrangler.jsonc` to deploy the existing Worker.
 
-The deployment job is skipped unless the production environment variable
-`AZKAR_AUTH_SCHEMA_VERIFIED` is exactly `true`; it remains false until the live
-provisioning and RLS acceptance checks are complete. After those checks, set
-the variable and dispatch the workflow on `main` or push an approved update.
+The workflow retains the production authentication setting approved on `main`.
+It deploys only `main` and waits for the existing production environment
+review. Its download link targets the already published v1.0.2 APK.
 
 The workflow grants `GITHUB_TOKEN` read-only `contents` permission. It does not
-deploy preview branches or run on pull requests. The production environment
+deploy preview branches. Pull requests run the validation job only. The production environment
 must have required reviewers configured; merely naming an environment does
 not create an approval gate.
 
@@ -171,10 +170,9 @@ or set `AZKAR_AUTH_SCHEMA_VERIFIED=true` until approved, isolated acceptance
 tests establish owner isolation, unpublished-page privacy, and anonymous
 read-only behavior.
 
-No production users, content, or schema were created or changed for this
-preparation. Live RLS verification and account-flow testing remain blocked
-until an isolated test project or explicit account/test-data approval is
-available.
+The mobile/widget release does not alter production users, content, or schema.
+It preserves the previously approved production authentication setting. New
+live account-flow tests still require appropriate isolated test accounts.
 
 ## Rollback and operational limits
 
@@ -194,20 +192,15 @@ Pages commands such as `wrangler pages deploy`, `wrangler pages dev`, and
 `pages.dev` hostnames do not apply to the existing Worker. Do not create a
 Pages project or use Pages-specific fallback behavior for this deployment.
 
-## Current verification status
+## Identifying the deployed release
 
-| Check | Result |
-|---|---|
-| Current production homepage response | **FAIL** — HTTP 200 returns the source HTML template, including `$FLUTTER_BASE_HREF` |
-| Current production `/m/azkar-production-check` | **FAIL** — HTTP 404 |
-| Local Flutter SDK | **PASS** — Flutter 3.47.7 / Dart 3.13.5 |
-| Current Flutter Web output exists locally | **PASS** — compiled `main.dart.js`, bootstrap, icons, manifest, and font assets exist; not verified as a production build |
-| Production configuration | **BLOCKED** — ignored `config/production.json` is absent |
-| Live Supabase tenant isolation | **BLOCKED** — no approved isolated test accounts/data |
-| Cloudflare/GitHub deployment | **NOT RUN** — requires dashboard changes, environment secrets, review, and explicit production approval |
+Read `/release.json` on the production origin and compare `commit` with the
+merged `main` commit and the corresponding successful
+[Actions run](https://github.com/MTFOODA/Azkar/actions/workflows/deploy-worker.yml).
+Verify HTTP 200 for the homepage, compiled bootstrap/application, assets, and
+navigation requests to `/login` and `/m/<slug>`.
 
-See the
-[`production manual actions`](PRODUCTION_MANUAL_ACTIONS_AR.md),
-[`acceptance report`](PRODUCTION_ACCEPTANCE_REPORT.md), and
-[`deployment checklist`](DEPLOYMENT_CHECKLIST.md) for gates and current
-evidence.
+A successful SPA response does not prove a particular memorial exists or
+establish live RLS behavior. iOS widgets require separate macOS/Xcode checks;
+Android home-screen widgets are native and are not rendered on the website.
+Older production acceptance reports retain their original dated observations.

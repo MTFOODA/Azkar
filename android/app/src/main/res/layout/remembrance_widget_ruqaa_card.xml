@@ -1,0 +1,19 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/remembrance_card" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:layoutDirection="rtl" android:padding="10dp"
+    android:background="#173E35">
+    <TextView android:id="@+id/remembrance_card_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:maxLines="3" android:ellipsize="end" android:gravity="center"
+        android:includeFontPadding="false" android:textColor="#D1D5DB" android:textSize="13sp" />
+    <ImageView android:id="@+id/remembrance_name_image" android:layout_width="match_parent" android:layout_height="48dp"
+        android:scaleType="fitCenter" android:visibility="gone" />
+    <TextView android:id="@+id/remembrance_deceased_name" style="@style/RemembranceName"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:maxLines="2" android:ellipsize="end"
+        android:visibility="gone" android:textColor="#FFFFFF" android:textSize="24sp"
+        android:layout_marginTop="3dp" android:layout_marginBottom="3dp" />
+    <TextView android:id="@+id/remembrance_card_text" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:gravity="center" android:textColor="#FFFFFF" android:textSize="16sp"
+        android:autoSizeTextType="uniform" android:autoSizeMinTextSize="11sp" android:autoSizeMaxTextSize="18sp"
+        android:autoSizeStepGranularity="1sp" />
+</LinearLayout>

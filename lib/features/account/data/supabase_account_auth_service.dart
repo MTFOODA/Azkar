@@ -104,7 +104,9 @@ class SupabaseAccountAuthService implements AccountAuthService {
   String _translateAuthError(AuthException error) {
     final message = error.message.toLowerCase();
     final code = error.code?.toLowerCase() ?? '';
-    if (code == 'invalid_credentials') return 'بيانات الدخول غير صحيحة.';
+    if (code == 'invalid_credentials') {
+      return 'بيانات تسجيل الدخول غير صحيحة.';
+    }
     if (code == 'email_not_confirmed') {
       return 'يرجى تأكيد البريد الإلكتروني قبل تسجيل الدخول.';
     }
@@ -121,7 +123,7 @@ class SupabaseAccountAuthService implements AccountAuthService {
       return 'هذا الرابط غير صالح أو مستخدم بالفعل. اختر رابطًا آخر.';
     }
     if (message.contains('invalid login credentials')) {
-      return 'بيانات الدخول غير صحيحة.';
+      return 'بيانات تسجيل الدخول غير صحيحة.';
     }
     if (message.contains('email not confirmed')) {
       return 'يرجى تأكيد البريد الإلكتروني قبل تسجيل الدخول.';

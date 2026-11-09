@@ -5,7 +5,11 @@ import '../../../features/mobile_platform/domain/mobile_runtime.dart';
 import '../domain/local_notification.dart';
 import 'notification_platform.dart';
 
-class FlutterLocalNotificationPlatform implements NotificationPlatform {
+class FlutterLocalNotificationPlatform
+    implements
+        NotificationPlatform,
+        ExactNotificationAlarmPlatform,
+        NotificationScheduleInspectionPlatform {
   FlutterLocalNotificationPlatform({
     FlutterLocalNotificationsPlugin? plugin,
     MobileRuntime? runtime,
@@ -21,12 +25,38 @@ class FlutterLocalNotificationPlatform implements NotificationPlatform {
   final MobileRuntime _runtime;
 
   @override
+  Future<List<PendingNativeNotification>> pendingNotifications() async =>
+      (await _plugin.pendingNotificationRequests())
+          .map((item) => PendingNativeNotification(item.id, item.payload))
+          .toList();
+
+  @override
+  Future<bool?> exactAlarmPermissionState() async {
+    if (_runtime.platform != MobileRuntimePlatform.android) return null;
+    return _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.canScheduleExactNotifications();
+  }
+
+  @override
+  Future<void> requestExactAlarmPermission() async {
+    if (_runtime.platform != MobileRuntimePlatform.android) return;
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestExactAlarmsPermission();
+  }
+
+  @override
   Future<void> initialize(
     void Function(NotificationPlatformResponse response) onResponse,
   ) async {
     if (!_runtime.isNativeMobile) return;
     final settings = InitializationSettings(
-      android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: const AndroidInitializationSettings('ic_notification'),
       iOS: DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
@@ -205,8 +235,8 @@ class FlutterLocalNotificationPlatform implements NotificationPlatform {
               )
               .toList(growable: false),
         ),
-        iOS: const DarwinNotificationDetails(
-          categoryIdentifier: categoryId,
+        iOS: DarwinNotificationDetails(
+          categoryIdentifier: actions.isEmpty ? null : categoryId,
           presentAlert: true,
           presentBanner: true,
           presentList: true,
@@ -214,7 +244,9 @@ class FlutterLocalNotificationPlatform implements NotificationPlatform {
           presentBadge: false,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: await exactAlarmPermissionState() == true
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
       payload: payload,
     );
   }

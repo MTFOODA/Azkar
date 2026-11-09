@@ -134,6 +134,14 @@ void main() {
       AppConfig.androidApkDownloadUri,
       AppConfig.androidApkDownloadUriFor(AppConfig.androidApkUrl),
     );
+    expect(
+      AppConfig.androidApkDownloadUriFor(
+        'https://github.com/MTFOODA/Azkar/releases/download/v1.0.0/AZKAR-v1.0.0-android.apk',
+      ),
+      Uri.parse(
+        'https://github.com/MTFOODA/Azkar/releases/download/v1.0.0/AZKAR-v1.0.0-android.apk',
+      ),
+    );
   });
 
   test('production registration gate keeps internal details private', () {

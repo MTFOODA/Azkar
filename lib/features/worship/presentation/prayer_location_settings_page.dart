@@ -1,3 +1,7 @@
+import '../../../core/widgets/route_back_button.dart';
+
+import 'package:geolocator/geolocator.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/app_palette.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/utils/app_exception.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../prayer_times/data/current_prayer_location_service.dart';
 import '../../prayer_times/domain/prayer_time_errors.dart';
 import '../../prayer_times/domain/prayer_time_models.dart';
@@ -71,70 +77,17 @@ class _PrayerLocationSettingsPageState
         _asrMethod = preferences.asrMethod;
         _loading = false;
       });
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Prayer location settings load failed',
+        error,
+        stackTrace,
+      );
       if (!mounted) return;
       setState(() {
         _loadError = error;
         _loading = false;
       });
-    }
-  }
-
-  Future<void> _saveManualLocation() async {
-    final city = _city.text.trim();
-    final country = _country.text.trim();
-    final code = _countryCode.text.trim();
-    final timezoneId = _timezone.text.trim();
-    if (city.isEmpty || country.isEmpty) {
-      _message('أدخل اسم المدينة والدولة.', isError: true);
-      return;
-    }
-    if (code.isNotEmpty && !RegExp(r'^[A-Za-z]{2}$').hasMatch(code)) {
-      _message('رمز الدولة يجب أن يتكون من حرفين مثل EG.', isError: true);
-      return;
-    }
-    try {
-      final selectedLocation = PrayerLocation.manualCity(
-        city: city,
-        country: country,
-        countryCode: code.isEmpty ? null : code,
-        timezoneId: timezoneId.isEmpty ? null : timezoneId,
-      );
-      final next = _preferences.copyWith(
-        manualCity: city,
-        manualCountry: country,
-        manualCountryCode: code.isEmpty ? null : code,
-        clearManualCountryCode: code.isEmpty,
-        timezoneId: timezoneId.isEmpty ? null : timezoneId,
-        clearTimezoneId: timezoneId.isEmpty,
-        clearManualLocation: false,
-        calculationMethod:
-            _method ?? PrayerCalculationMethod.forLocation(selectedLocation),
-        asrMethod: _asrMethod,
-      );
-      final saved = await _savePreferences(next);
-      if (saved == null) return;
-      final userId = ref.read(accountSessionProvider)!.id;
-      await ref
-          .read(localPrayerScheduleLocationStoreProvider)
-          .clearDeviceLocation(userId);
-      final location = await ref
-          .read(localPrayerScheduleLocationStoreProvider)
-          .resolve(userId: userId, preferences: saved);
-      if (!mounted) return;
-      setState(() {
-        _preferences = saved;
-        _location = location;
-        _method = saved.calculationMethod;
-        _calendar = null;
-        _city.text = saved.manualCity ?? '';
-        _country.text = saved.manualCountry ?? '';
-        _countryCode.text = saved.manualCountryCode ?? '';
-        _timezone.text = saved.timezoneId ?? '';
-      });
-      _message('حُفظ اختيار المدينة والدولة.');
-    } on Object catch (error) {
-      _message('تعذّر حفظ الموقع: $error', isError: true);
     }
   }
 
@@ -186,8 +139,13 @@ class _PrayerLocationSettingsPageState
             ? 'حُفظ الموقع على هذا الجهاز فقط.'
             : 'حُفظ اختيار الموقع المتزامن مع الحساب.',
       );
-    } on Object catch (error) {
-      _message('$error', isError: true);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Reading device prayer location failed',
+        error,
+        stackTrace,
+      );
+      _message(friendlyMessage(error), isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -223,7 +181,7 @@ class _PrayerLocationSettingsPageState
       final result = await ref
           .read(reminderPreferencesSyncServiceProvider)
           .sync(userId);
-      var saved = next;
+      var saved = result.preferences;
       if (result.status == ReminderSyncStatus.conflict &&
           result.serverSnapshot != null &&
           mounted) {
@@ -266,10 +224,12 @@ class _PrayerLocationSettingsPageState
       } else if (result.status == ReminderSyncStatus.offline && mounted) {
         _message('حُفظ محلياً; ستتم المزامنة عند عودة الاتصال.');
       }
+      await ref.read(localReminderSchedulingEngineProvider).reconcile(userId);
       return saved;
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning('Saving prayer settings failed', error, stackTrace);
       if (mounted) {
-        _message('تعذّر حفظ الإعدادات أو مزامنتها: $error', isError: true);
+        _message(friendlyMessage(error), isError: true);
       }
       return null;
     } finally {
@@ -299,7 +259,8 @@ class _PrayerLocationSettingsPageState
             asrMethod: _asrMethod,
           );
       if (mounted) setState(() => _calendar = calendar);
-    } on PrayerTimesException catch (error) {
+    } on PrayerTimesException catch (error, stackTrace) {
+      AppLogger.warning('Prayer data validation failed', error, stackTrace);
       if (mounted) setState(() => _loadError = error);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -318,14 +279,19 @@ class _PrayerLocationSettingsPageState
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('الموقع ومواقيت الصلاة')),
+    appBar: AppBar(
+      leading: const RouteBackButton(),
+      title: const Text('الموقع والتوقيت التلقائي'),
+    ),
     body: _loading
         ? const Center(child: CircularProgressIndicator())
         : _loadError != null && _location == null
         ? Center(
             child: Padding(
               padding: const EdgeInsets.all(AppPalette.spaceLg),
-              child: Text('تعذّر قراءة الإعدادات: $_loadError'),
+              child: Text(
+                'تعذّر قراءة الإعدادات. ${friendlyMessage(_loadError)}',
+              ),
             ),
           )
         : Center(
@@ -335,77 +301,26 @@ class _PrayerLocationSettingsPageState
                 padding: const EdgeInsets.all(AppPalette.spaceMd),
                 children: [
                   Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppPalette.spaceMd),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'اختيار يدوي',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: AppPalette.spaceSm),
-                          const Text(
-                            'لا يحتاج الاختيار اليدوي إلى إذن الموقع.',
-                          ),
-                          const SizedBox(height: AppPalette.spaceMd),
-                          TextField(
-                            controller: _city,
-                            textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'المدينة',
-                              hintText: 'القاهرة',
-                            ),
-                          ),
-                          const SizedBox(height: AppPalette.spaceSm),
-                          TextField(
-                            controller: _country,
-                            textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'الدولة',
-                              hintText: 'مصر',
-                            ),
-                          ),
-                          const SizedBox(height: AppPalette.spaceSm),
-                          TextField(
-                            controller: _countryCode,
-                            textCapitalization: TextCapitalization.characters,
-                            decoration: const InputDecoration(
-                              labelText: 'رمز الدولة (اختياري)',
-                              hintText: 'EG',
-                            ),
-                          ),
-                          const SizedBox(height: AppPalette.spaceSm),
-                          TextField(
-                            controller: _timezone,
-                            textDirection: TextDirection.ltr,
-                            decoration: const InputDecoration(
-                              labelText: 'المنطقة الزمنية IANA (اختياري)',
-                              hintText: 'Africa/Cairo',
-                            ),
-                          ),
-                          const SizedBox(height: AppPalette.spaceMd),
-                          FilledButton(
-                            onPressed: _busy ? null : _saveManualLocation,
-                            child: const Text('حفظ المدينة'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppPalette.spaceMd),
-                  Card(
                     child: ListTile(
                       leading: const Icon(Icons.my_location),
                       title: const Text('استخدام الموقع الحالي'),
                       subtitle: const Text(
-                        'سيظهر طلب موافقة داخل التطبيق قبل طلب إذن النظام. '
-                        'الإحداثيات لا تُرفع إلى Supabase.',
+                        'المواقيت تتبع موقعك الحالي والمنطقة الزمنية والتوقيت الصيفي تلقائياً. الإحداثيات لا تُرفع إلى Supabase.',
                       ),
                       trailing: _busy
                           ? const CircularProgressIndicator()
                           : const Icon(Icons.chevron_left),
                       onTap: _busy ? null : _useDeviceLocation,
+                    ),
+                  ),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.location_on_outlined),
+                      title: const Text('تحديث الموقع أثناء السفر'),
+                      subtitle: const Text(
+                        'لتحديث المواقيت عند انتقالك والتطبيق مقفول، اختر السماح بالموقع طوال الوقت من إعدادات الجهاز.',
+                      ),
+                      onTap: () => Geolocator.openAppSettings(),
                     ),
                   ),
                   const SizedBox(height: AppPalette.spaceMd),
@@ -525,7 +440,7 @@ class _PrayerLocationSettingsPageState
                             _calendar == null
                                 ? _loadError == null
                                       ? 'لم يتم التحقق بعد'
-                                      : 'غير متاحة: $_loadError'
+                                      : 'غير متاحة: ${friendlyMessage(_loadError)}'
                                 : _calendar!.isFromCache
                                 ? 'متاحة من التخزين المحلي دون اتصال'
                                 : 'تم التحقق من المواقيت عبر مزود البيانات',
@@ -558,9 +473,7 @@ class _PrayerLocationConsent implements PrayerLocationConsent {
       builder: (context) => AlertDialog(
         title: const Text('استخدام موقع الجهاز'),
         content: const Text(
-          'سيُستخدم موقعك التقريبي لحساب مواقيت الصلاة. تبقى الإحداثيات '
-          'على هذا الجهاز ولا تُرسل إلى Supabase. يمكنك اختيار المدينة يدوياً '
-          'بدلاً من ذلك.',
+          'سيُستخدم موقعك التقريبي لحساب مواقيت الصلاة. تُرسل الإحداثيات لخدمة AlAdhan عبر اتصال مشفّر ولا تُرسل إلى Supabase.',
         ),
         actions: [
           TextButton(

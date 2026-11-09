@@ -15,6 +15,8 @@ import '../../../content/domain/content_type.dart';
 import '../../../content/domain/content_validation.dart';
 import '../../../content/data/content_homepage_lifecycle.dart';
 import '../../../content/widgets/content_card.dart';
+import '../../../content/data/quick_content_library.dart';
+import '../../../content/widgets/quick_content_picker.dart';
 import '../../../quran/domain/quran_dataset.dart';
 import '../../dashboard/presentation/admin_shell.dart';
 import '../providers/admin_providers.dart';
@@ -49,6 +51,7 @@ class _AdminContentEditorPageState
   late ContentItem _draft;
   bool _ready = false;
   bool _busy = false;
+  bool _applyingPreset = false;
   bool _hasEdits = false;
   bool _mobilePreview = false;
   Map<String, String> _errors = {};
@@ -178,7 +181,7 @@ class _AdminContentEditorPageState
   }
 
   void _onTextChanged() {
-    if (!_ready) return;
+    if (!_ready || _applyingPreset) return;
     setState(() {
       _hasEdits = true;
       _quranResult = null;
@@ -212,6 +215,7 @@ class _AdminContentEditorPageState
       personName: _text('personName'),
       dedicationMessage: _text('dedicationMessage'),
       clearValidation: true,
+      style: _draft.style,
     );
     final result = _quranResult;
     if (widget.type == ContentType.quran && result != null && result.isValid) {
@@ -228,6 +232,72 @@ class _AdminContentEditorPageState
       _hasEdits = true;
       _draft = _draft.copyWith(style: style);
     });
+  }
+
+  Future<void> _choosePreset() async {
+    final preset = await showModalBottomSheet<QuickContentPreset>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => QuickContentPicker(type: widget.type),
+    );
+    if (preset == null || !mounted) return;
+    if (_hasEdits) {
+      final replace = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('استبدال النص الحالي؟'),
+          content: Text(
+            'سيتم ملء الحقول باختيار «${preset.title}». يمكنك تعديله قبل الحفظ.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('استخدام الاختيار'),
+            ),
+          ],
+        ),
+      );
+      if (replace != true || !mounted) return;
+    }
+    setState(() => _busy = true);
+    try {
+      final dataset = widget.type == ContentType.quran
+          ? await ref.read(quranDatasetRepositoryProvider).dataset()
+          : null;
+      final item = preset.createDraft(dataset: dataset);
+      if (!mounted) return;
+      _applyingPreset = true;
+      _surahNumber = item.surahNumber;
+      _authenticity = item.authenticity;
+      for (final key in _textKeys) {
+        _c(key).text = _initialText(key, item);
+      }
+      _applyingPreset = false;
+      setState(() {
+        _hasEdits = true;
+        _errors = {};
+        _quranResult = dataset?.validateRange(
+          surahNumber: item.surahNumber!,
+          from: item.ayahFrom!,
+          to: item.ayahTo!,
+          text: item.arabicText,
+        );
+        _draft = _buildDraft();
+      });
+    } catch (error) {
+      _applyingPreset = false;
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(friendlyMessage(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<bool> _verifyQuran() async {
@@ -490,6 +560,24 @@ class _AdminContentEditorPageState
       children: [
         Text('المحتوى', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppPalette.spaceMd),
+        if ([
+          ContentType.azkar,
+          ContentType.dua,
+          ContentType.hadith,
+          ContentType.quran,
+        ].contains(widget.type)) ...[
+          OutlinedButton.icon(
+            key: const ValueKey('quick-content-picker'),
+            onPressed: _busy ? null : _choosePreset,
+            icon: const Icon(Icons.library_add_outlined),
+            label: const Text('اختيار سريع من المكتبة'),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'اختَر نصاً جاهزاً بمصدره أو اكتب محتوى جديداً في الحقول أدناه.',
+          ),
+          const SizedBox(height: AppPalette.spaceMd),
+        ],
         if (widget.type != ContentType.tasbeeh &&
             widget.type != ContentType.youtube)
           _field('title', 'العنوان (اختياري)'),
@@ -561,6 +649,7 @@ class _AdminContentEditorPageState
           )
         else
           DropdownButtonFormField<int>(
+            key: ValueKey(_surahNumber),
             initialValue: _surahNumber,
             decoration: const InputDecoration(labelText: 'السورة'),
             items: [

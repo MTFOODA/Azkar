@@ -35,7 +35,10 @@ class GeolocatorPrayerDeviceLocationGateway
 
   @override
   Future<Position> getCurrentPosition() => Geolocator.getCurrentPosition(
-    locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+    locationSettings: const LocationSettings(
+      accuracy: LocationAccuracy.low,
+      timeLimit: Duration(seconds: 20),
+    ),
   );
 }
 
@@ -53,7 +56,7 @@ class CurrentPrayerLocationService {
     if (!await consent.confirmCurrentLocationUse()) return null;
     if (!await gateway.isLocationServiceEnabled()) {
       throw const PrayerLocationException(
-        'خدمة تحديد الموقع غير مفعّلة. يمكنك اختيار المدينة يدوياً.',
+        'فعّل خدمة تحديد الموقع لعرض مواقيت الصلاة في مكانك.',
       );
     }
 
@@ -65,7 +68,7 @@ class CurrentPrayerLocationService {
         permission == LocationPermission.deniedForever ||
         permission == LocationPermission.unableToDetermine) {
       throw const PrayerLocationException(
-        'لم يُسمح بالوصول إلى الموقع. يمكنك اختيار المدينة يدوياً.',
+        'اسمح بالوصول إلى الموقع لعرض مواقيت الصلاة في مكانك.',
       );
     }
 

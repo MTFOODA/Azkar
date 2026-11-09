@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/app_config.dart';
@@ -12,6 +13,7 @@ import 'core/providers/app_providers.dart';
 import 'core/routing/app_router.dart';
 import 'core/utils/app_logger.dart';
 import 'features/notifications/data/local_notification_service.dart';
+import 'features/notifications/domain/local_notification.dart';
 import 'features/reminders/domain/reminder_preferences.dart';
 
 /// Root application widget. Arabic RTL is the default everywhere, while the
@@ -28,27 +30,50 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
   late final ProviderSubscription<User?> _accountSubscription;
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  StreamSubscription<NotificationActionEvent>?
+  _notificationNavigationSubscription;
   final Map<String, Future<void>> _syncInFlight = <String, Future<void>>{};
   final Map<String, DateTime> _lastSyncAt = <String, DateTime>{};
   final Set<String> _syncAgain = <String>{};
   bool? _hasConnectivity;
+  StreamSubscription<Position>? _positionSubscription;
+  Future<void>? _locationRefresh;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_setForeground(true));
     final completionCoordinator = ref.read(
       prayerCompletionNotificationCoordinatorProvider,
     )..start();
     final tasbeehOutboxCoordinator = ref.read(tasbeehOutboxCoordinatorProvider)
       ..start();
     final notificationService = ref.read(localNotificationServiceProvider);
+    _notificationNavigationSubscription = notificationService.actions.listen((
+      event,
+    ) {
+      final userId = ref.read(accountSessionProvider)?.id;
+      if (userId == null ||
+          event.accountFingerprint !=
+              LocalNotificationService.accountFingerprint(userId)) {
+        return;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && ref.read(accountSessionProvider)?.id == userId) {
+          ref.read(routerProvider).go('/worship');
+        }
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
+    });
     final account = ref.read(accountSessionProvider);
     notificationService.setActiveAccount(account?.id);
     if (notificationService.isSupported) {
       unawaited(_initializeNotifications(notificationService));
     }
+    if (account == null) unawaited(_clearHomeWidget());
     if (account != null) {
+      unawaited(_refreshDeviceLocation(account.id));
       unawaited(_syncPreferences(account.id, 'login', force: true));
       unawaited(completionCoordinator.reconcilePendingSchedules(account.id));
       unawaited(tasbeehOutboxCoordinator.reconcilePending(account.id));
@@ -73,9 +98,20 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    unawaited(
+      _setForeground(
+        state == AppLifecycleState.resumed ||
+            state == AppLifecycleState.inactive,
+      ),
+    );
+    if (state != AppLifecycleState.resumed) {
+      unawaited(_positionSubscription?.cancel());
+      _positionSubscription = null;
+    }
     if (state == AppLifecycleState.resumed) {
       final userId = ref.read(accountSessionProvider)?.id;
       if (userId != null) {
+        unawaited(_refreshDeviceLocation(userId));
         unawaited(_syncPreferences(userId, 'resume'));
         unawaited(
           ref
@@ -95,6 +131,8 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
     WidgetsBinding.instance.removeObserver(this);
     _accountSubscription.close();
     unawaited(_connectivitySubscription?.cancel());
+    unawaited(_notificationNavigationSubscription?.cancel());
+    unawaited(_positionSubscription?.cancel());
     super.dispose();
   }
 
@@ -103,6 +141,11 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
   ) async {
     try {
       await service.initialize();
+      if (mounted) {
+        await service.cancelInactiveNativeSchedules(
+          ref.read(accountSessionProvider)?.id,
+        );
+      }
     } on Object catch (error, stackTrace) {
       AppLogger.error(
         'Could not initialize local notifications.',
@@ -114,6 +157,9 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
 
   void _accountChanged(User? previous, User? next) {
     if (previous?.id == next?.id) return;
+    unawaited(_positionSubscription?.cancel());
+    _positionSubscription = null;
+    unawaited(_clearHomeWidget());
     final notificationService = ref.read(localNotificationServiceProvider);
     notificationService.setActiveAccount(next?.id);
     final previousId = previous?.id;
@@ -123,6 +169,7 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
       );
     }
     if (next != null) {
+      unawaited(_refreshDeviceLocation(next.id));
       unawaited(_syncPreferences(next.id, 'login', force: true));
       unawaited(
         ref
@@ -145,6 +192,66 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
     } on Object catch (error, stackTrace) {
       AppLogger.error(
         'Could not cancel notifications for the previous account.',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  Future<void> _clearHomeWidget() async {
+    try {
+      await ref.read(backgroundReminderServiceProvider).clear();
+      await ref.read(prayerHomeWidgetServiceProvider).clear();
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning('Could not clear the home widget.', error, stackTrace);
+    }
+  }
+
+  Future<void> _setForeground(bool active) async {
+    try {
+      await ref.read(backgroundReminderServiceProvider).setForeground(active);
+    } on Object catch (error) {
+      AppLogger.warning('Could not update background-task state.', error);
+    }
+  }
+
+  Future<void> _refreshDeviceLocation(String userId) =>
+      _locationRefresh ??= _performLocationRefresh(userId)
+          .whenComplete(() => _locationRefresh = null);
+
+  Future<void> _performLocationRefresh(String userId) async {
+    try {
+      final service = ref.read(automaticPrayerLocationServiceProvider);
+      if (await service.refresh(userId)) {
+        await _reconcileReminderSchedules(userId, 'location');
+      }
+      if (!mounted || ref.read(accountSessionProvider)?.id != userId) return;
+      final permission = await Geolocator.checkPermission();
+      if (_positionSubscription == null &&
+          (permission == LocationPermission.whileInUse ||
+              permission == LocationPermission.always)) {
+        _positionSubscription =
+            Geolocator.getPositionStream(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.low,
+                distanceFilter: 2000,
+              ),
+            ).listen(
+              (position) async {
+                final active = ref.read(accountSessionProvider)?.id;
+                if (active != null &&
+                    await service.savePosition(active, position)) {
+                  await _reconcileReminderSchedules(active, 'location-change');
+                }
+              },
+              onError: (Object error) {
+                AppLogger.warning('Location updates are unavailable.', error);
+              },
+            );
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Could not refresh the authorized prayer location.',
         error,
         stackTrace,
       );
@@ -196,6 +303,7 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
         );
       }
       await _reconcileReminderSchedules(userId, 'preference-sync');
+      await ref.read(remembranceWidgetServiceProvider).refresh(userId);
     } on Object catch (error, stackTrace) {
       AppLogger.error(
         'Reminder preference sync failed after $trigger.',

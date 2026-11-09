@@ -33,6 +33,9 @@ if ($env:AZKAR_AUTH_SCHEMA_VERIFIED -cnotin @('true', 'false')) {
 $authSchemaVerified = $env:AZKAR_AUTH_SCHEMA_VERIFIED -ceq 'true'
 
 $apkDownloadUrl = ([string]$env:AZKAR_ANDROID_APK_URL).Trim()
+if ($apkDownloadUrl.Length -eq 0) {
+    $apkDownloadUrl = 'https://github.com/MTFOODA/Azkar/releases/download/v1.0.0/AZKAR-v1.0.0-android.apk'
+}
 if ($apkDownloadUrl.Length -gt 0) {
     $apkUri = $null
     $validApkDownloadUrl = [Uri]::TryCreate(

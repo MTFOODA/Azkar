@@ -155,6 +155,17 @@ class PublicNavigationDrawer extends ConsumerWidget {
               onTap: () => _go(context, memorialPath ?? '/'),
             ),
             const Divider(),
+            ListTile(
+              key: const ValueKey('navigation-prayer-times'),
+              leading: const Icon(Icons.mosque_outlined),
+              title: const Text('مواقيت الصلاة'),
+              onTap: () => _go(context, '/worship'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.widgets_outlined),
+              title: const Text('ويدجت الشاشة الرئيسية'),
+              onTap: () => _go(context, '/worship/widget'),
+            ),
             for (final type in categories)
               ListTile(
                 leading: Icon(type.icon),
@@ -236,8 +247,13 @@ class PublicNavigationDrawer extends ConsumerWidget {
   }
 
   void _go(BuildContext context, String location) {
-    Navigator.of(context).maybePop();
-    context.go(location);
+    Scaffold.maybeOf(context)?.closeDrawer();
+    if (location == '/') {
+      context.go(location);
+    } else if (GoRouterState.of(context).uri.toString() != location) {
+      GoRouter.optionURLReflectsImperativeAPIs = true;
+      context.push(location);
+    }
   }
 
   void _selectCategory(

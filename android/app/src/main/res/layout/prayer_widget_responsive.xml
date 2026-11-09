@@ -1,0 +1,45 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:layoutDirection="rtl"
+    android:paddingStart="6dp" android:paddingEnd="6dp" android:paddingTop="4dp" android:paddingBottom="4dp"
+    android:background="@drawable/widget_background">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:gravity="center_vertical">
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1.3"
+            android:gravity="center_vertical">
+            <ImageView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="0.22"
+                android:layout_marginEnd="4dp" android:scaleType="fitCenter"
+                android:src="@mipmap/ic_launcher" android:contentDescription="أذكار" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+                android:layout_weight="0.78" android:orientation="vertical">
+                <TextView android:id="@+id/widget_gregorian" style="@style/PrayerWidgetDate"
+                    android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+                    android:gravity="start|center_vertical" android:text="الميلادي" />
+                <TextView android:id="@+id/widget_hijri" style="@style/PrayerWidgetDate"
+                    android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+                    android:gravity="start|center_vertical" android:text="الهجري" />
+            </LinearLayout>
+        </LinearLayout>
+        <TextClock android:id="@+id/widget_clock" android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1.1" android:gravity="center" android:includeFontPadding="false"
+            android:format12Hour="HH:mm" android:format24Hour="HH:mm" android:textColor="#FFFFFF"
+            android:textStyle="bold" android:textSize="40sp" android:maxLines="1"
+            android:autoSizeTextType="uniform" android:autoSizeMinTextSize="14sp"
+            android:autoSizeMaxTextSize="64sp" android:autoSizeStepGranularity="1sp" />
+        <TextView android:id="@+id/widget_next" android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1.3" android:gravity="center" android:includeFontPadding="false"
+            android:text="افتح أذكار لتحديث المواقيت" android:textColor="#D1D5DB" android:textSize="16sp"
+            android:maxLines="2" android:ellipsize="end" android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="9sp" android:autoSizeMaxTextSize="18sp" android:autoSizeStepGranularity="1sp" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:orientation="horizontal" android:gravity="center" android:layout_marginTop="2dp"
+        android:paddingStart="8dp" android:paddingEnd="8dp">
+        <TextView android:id="@+id/widget_fajr" style="@style/PrayerWidgetTime" android:text="الفجر&#10;—" />
+        <TextView android:id="@+id/widget_sunrise" style="@style/PrayerWidgetTime" android:text="الشروق&#10;—" />
+        <TextView android:id="@+id/widget_dhuhr" style="@style/PrayerWidgetTime" android:text="الظهر&#10;—" />
+        <TextView android:id="@+id/widget_asr" style="@style/PrayerWidgetTime" android:text="العصر&#10;—" />
+        <TextView android:id="@+id/widget_maghrib" style="@style/PrayerWidgetTime" android:text="المغرب&#10;—" />
+        <TextView android:id="@+id/widget_isha" style="@style/PrayerWidgetTime" android:text="العشاء&#10;—" />
+    </LinearLayout>
+</LinearLayout>

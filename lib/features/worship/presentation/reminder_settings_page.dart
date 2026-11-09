@@ -1,3 +1,5 @@
+import '../../../core/widgets/route_back_button.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -8,7 +10,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/design/app_palette.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/utils/app_exception.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../notifications/domain/local_notification.dart';
+import '../../prayer_times/domain/prayer_time_models.dart';
 import '../../reminders/domain/reminder_preferences.dart';
 
 class ReminderSettingsPage extends ConsumerStatefulWidget {
@@ -42,10 +47,14 @@ class _ReminderSettingsPageState extends ConsumerState<ReminderSettingsPage> {
         _preferences = local?.preferences ?? ReminderPreferences.defaults;
         _loading = false;
       });
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning('Reminder settings load failed', error, stackTrace);
       if (!mounted) return;
       setState(() => _loading = false);
-      _message('تعذّر تحميل الإعدادات: $error', isError: true);
+      _message(
+        'تعذّر تحميل الإعدادات. ${friendlyMessage(error)}',
+        isError: true,
+      );
     }
   }
 
@@ -65,17 +74,17 @@ class _ReminderSettingsPageState extends ConsumerState<ReminderSettingsPage> {
           .sync(userId);
       if (result.status == ReminderSyncStatus.conflict) {
         await _resolveConflict(userId, result);
+      } else if (mounted) {
+        setState(() => _preferences = result.preferences);
       }
       await ref.read(localReminderSchedulingEngineProvider).reconcile(userId);
       if (mounted && result.status == ReminderSyncStatus.offline) {
         _message('حُفظت التغييرات على هذا الجهاز وستُزامن عند الاتصال.');
       }
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning('Reminder settings save failed', error, stackTrace);
       if (mounted) {
-        _message(
-          'تعذّر إكمال حفظ الإعدادات أو مزامنتها أو جدولة التذكيرات: $error',
-          isError: true,
-        );
+        _message(friendlyMessage(error), isError: true);
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -236,7 +245,10 @@ class _ReminderSettingsPageState extends ConsumerState<ReminderSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('إعدادات التذكير')),
+      appBar: AppBar(
+        leading: const RouteBackButton(),
+        title: const Text('إعدادات التذكير'),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Center(
@@ -744,15 +756,29 @@ class NotificationPermissionPage extends ConsumerStatefulWidget {
 }
 
 class _NotificationPermissionPageState
-    extends ConsumerState<NotificationPermissionPage> {
+    extends ConsumerState<NotificationPermissionPage>
+    with WidgetsBindingObserver {
   NotificationPermissionState? _permission;
   String? _permissionError;
   bool _busy = false;
+  bool? _exactAlarmsGranted;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_readPermission());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_readPermission());
   }
 
   Future<void> _readPermission() async {
@@ -760,14 +786,25 @@ class _NotificationPermissionPageState
       final state = await ref
           .read(localNotificationServiceProvider)
           .permissionState();
+      final exact = await ref
+          .read(localNotificationServiceProvider)
+          .exactAlarmPermissionState();
       if (mounted) {
         setState(() {
           _permission = state;
+          _exactAlarmsGranted = exact;
           _permissionError = null;
         });
       }
-    } on Object catch (error) {
-      if (mounted) setState(() => _permissionError = error.toString());
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Notification permission state lookup failed',
+        error,
+        stackTrace,
+      );
+      if (mounted) {
+        setState(() => _permissionError = 'تعذّر التحقق من إذن الإشعارات.');
+      }
     }
   }
 
@@ -783,11 +820,21 @@ class _NotificationPermissionPageState
           _permissionError = null;
         });
       }
-    } on Object catch (error) {
+      final userId = ref.read(accountSessionProvider)?.id;
+      if (state == NotificationPermissionState.granted && userId != null) {
+        await ref.read(localReminderSchedulingEngineProvider).reconcile(userId);
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Notification permission request failed',
+        error,
+        stackTrace,
+      );
       if (mounted) {
-        setState(() => _permissionError = error.toString());
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('تعذّر طلب الإذن: $error')));
+        setState(() => _permissionError = 'تعذّر طلب إذن الإشعارات.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذّر طلب إذن الإشعارات.')),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -804,17 +851,92 @@ class _NotificationPermissionPageState
           ),
         );
       }
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning('Opening app settings failed', error, stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذّر فتح إعدادات الجهاز: $error')),
+        const SnackBar(
+          content: Text('تعذّر فتح إعدادات الجهاز. افتحها يدويًا.'),
+        ),
       );
+    }
+  }
+
+  Future<void> _requestExactAlarms() async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(localNotificationServiceProvider)
+          .requestExactAlarmPermission();
+      await _readPermission();
+      final userId = ref.read(accountSessionProvider)?.id;
+      if (userId != null) {
+        await ref.read(localReminderSchedulingEngineProvider).reconcile(userId);
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Could not enable exact prayer alarms.',
+        error,
+        stackTrace,
+      );
+      if (mounted) {
+        setState(
+          () => _permissionError = 'تعذّر فتح إعدادات المنبّهات الدقيقة.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _testNotification() async {
+    final userId = ref.read(accountSessionProvider)?.id;
+    if (userId == null) return;
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(localNotificationServiceProvider)
+          .schedule(
+            LocalNotificationRequest(
+              accountId: userId,
+              stableKey: 'notification-test:v1',
+              title: 'أذكار • اختبار الإشعارات',
+              body: 'الإشعارات تعمل على جهازك.',
+              scheduledAt: PrayerTimeZones.localDateTime(
+                DateTime.now().add(const Duration(seconds: 10)),
+                'UTC',
+              ),
+            ),
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'تمت جدولة تنبيه بعد 10 ثوانٍ؛ قد يؤخره النظام إذا كانت المنبّهات الدقيقة غير مفعّلة.',
+            ),
+          ),
+        );
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Could not schedule test notification.',
+        error,
+        stackTrace,
+      );
+      if (mounted) {
+        setState(() => _permissionError = 'تعذّر جدولة التنبيه التجريبي.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('إذن الإشعارات')),
+    appBar: AppBar(
+      leading: const RouteBackButton(),
+      title: const Text('إذن الإشعارات'),
+    ),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
@@ -882,6 +1004,36 @@ class _NotificationPermissionPageState
                 label: Text(_busy ? 'جارٍ الطلب…' : 'السماح بالإشعارات'),
               ),
             const SizedBox(height: AppPalette.spaceSm),
+            if (_permission == NotificationPermissionState.granted) ...[
+              if (_exactAlarmsGranted != null)
+                Card(
+                  child: ListTile(
+                    title: Text(
+                      _exactAlarmsGranted!
+                          ? 'المنبّهات الدقيقة مفعّلة'
+                          : 'السماح بتنبيهات الصلاة الدقيقة',
+                    ),
+                    subtitle: const Text(
+                      'لإظهار التنبيه عند موعد الصلاة. بدون هذا الإذن قد يؤخر أندرويد التذكير.',
+                    ),
+                    trailing: _exactAlarmsGranted!
+                        ? const Icon(Icons.check_circle_outline)
+                        : const Icon(Icons.alarm),
+                    onTap: _busy || _exactAlarmsGranted!
+                        ? null
+                        : _requestExactAlarms,
+                  ),
+                ),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _testNotification,
+                icon: const Icon(Icons.notifications_outlined),
+                label: const Text('اختبار الإشعارات'),
+              ),
+              const Text(
+                'إذن الإشعارات يظل مفعّلاً؛ يتم تحديث جدول التذكيرات تلقائياً في الخلفية حسب سماح النظام.',
+                textAlign: TextAlign.center,
+              ),
+            ],
             OutlinedButton(
               onPressed: () => context.pop(),
               child: const Text('العودة إلى الإعدادات'),
