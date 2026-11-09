@@ -25,6 +25,21 @@ class MemorialPage {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  String get displayDeceasedName {
+    final name = deceasedName?.trim() ?? '';
+    if (name.isEmpty) {
+      return deceasedGender == 'female'
+          ? 'اسم الفقيدة غير محدد'
+          : 'اسم الفقيد غير محدد';
+    }
+    if (name.startsWith('المرحوم')) return name;
+    return switch (deceasedGender) {
+      'male' => 'المرحوم $name',
+      'female' => 'المرحومة $name',
+      _ => name,
+    };
+  }
+
   MemorialPage copyWith({
     String? slug,
     String? title,

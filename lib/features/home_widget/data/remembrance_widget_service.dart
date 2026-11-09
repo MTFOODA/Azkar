@@ -91,6 +91,7 @@ class RemembranceWidgetService {
           'title': dedicationTitle(name, recipient),
           'dedicationHeading': dedicationHeading(recipient),
           'deceasedName': name,
+          'displayName': page.displayDeceasedName,
           'text': page.dedicationMessage?.trim() ?? '',
           'route': route,
         });
@@ -213,6 +214,9 @@ class RemembranceWidgetService {
           if (isNamedDedication) ...{
             'dedicationHeading': dedicationHeading(dedicationRecipient),
             'deceasedName': name,
+            'displayName': name.startsWith('المرحوم')
+                ? name
+                : '${dedicationRecipient.defaultHonorific} $name',
           },
           'text': chunks[index],
           'route': route,

@@ -1,12 +1,12 @@
 <resources>
     <!-- Retain old IDs for cached widgets. New provider layout IDs force the
          launcher to inflate the new structure instead of reapplying the old one. -->
-    <item type="layout" name="prayer_widget">@layout/prayer_widget_responsive</item>
-    <item type="layout" name="prayer_widget_compact">@layout/prayer_widget_responsive</item>
-    <item type="layout" name="prayer_widget_large_clock">@layout/prayer_widget_responsive</item>
-    <item type="layout" name="remembrance_widget">@layout/remembrance_widget_single</item>
-    <item type="layout" name="remembrance_widget_full">@layout/remembrance_widget_single</item>
-    <item type="layout" name="remembrance_widget_card">@layout/remembrance_widget_ruqaa_card</item>
-    <item type="layout" name="remembrance_widget_dedication_card">@layout/remembrance_widget_ruqaa_card</item>
-    <item type="layout" name="remembrance_widget_named_card">@layout/remembrance_widget_ruqaa_card</item>
+    <item type="layout" name="prayer_widget">@layout/prayer_widget_artistic</item>
+    <item type="layout" name="prayer_widget_compact">@layout/prayer_widget_artistic</item>
+    <item type="layout" name="prayer_widget_large_clock">@layout/prayer_widget_artistic</item>
+    <item type="layout" name="remembrance_widget">@layout/remembrance_widget_scroll</item>
+    <item type="layout" name="remembrance_widget_full">@layout/remembrance_widget_scroll</item>
+    <item type="layout" name="remembrance_widget_card">@layout/remembrance_widget_surface_card</item>
+    <item type="layout" name="remembrance_widget_dedication_card">@layout/remembrance_widget_surface_card</item>
+    <item type="layout" name="remembrance_widget_named_card">@layout/remembrance_widget_surface_card</item>
 </resources>

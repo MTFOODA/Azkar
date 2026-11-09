@@ -96,9 +96,11 @@ The `/worship/widget` screen combines remembrance-widget installation and all
 content filters; the older `/worship/widget/content` URL redirects there.
 The main drawer's notification action checks the current system permission and
 shows an already-enabled message when appropriate, without requesting it again.
-Android's StackView advances every seven seconds while the device permits it and
-supports manual swipes. Its cards fill the widget, skip unavailable content, and
-repeat without blank frames. Users can select categories and individual items.
+Android's vertical collection advances every seven seconds while the device permits
+it and supports manual scrolling. Full-height artistic cards use the same asymmetric
+outline, star pattern and palette as the in-app dedication card, without overlapping
+rear cards. The prayer widget uses that same surface renderer. Available content
+loops automatically; users can select categories and individual items.
 Memorial cards put the deceased's name on its own line in Aref Ruqaa and display
 only the user's dedication text, without an additional repeated prayer.
 iOS uses timeline rotation and interactive buttons on iOS 17+. Both clear

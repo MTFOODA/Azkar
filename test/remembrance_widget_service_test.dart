@@ -202,8 +202,10 @@ void main() {
         'صدقة جارية على روح المغفور له بإذن الله\n"الاسم المنشور"',
       );
       expect(memorial['text'], 'اللهم اغفر له وارحمه');
+      expect(memorial['displayName'], 'الاسم المنشور');
       final noMessage = cards.singleWhere((card) => card['id'] == 'memorial:d');
       expect(noMessage['deceasedName'], 'فاطمة');
+      expect(noMessage['displayName'], 'المرحومة فاطمة');
       expect(noMessage['text'], isEmpty);
       expect(noMessage['title'], contains('\n"فاطمة"'));
       expect(payload, contains('الاسم المنشور'));

@@ -16,6 +16,47 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   for (final authenticated in [false, true]) {
+    for (final location in ['/', '/m/example', '/m/example/azkar']) {
+      testWidgets(
+        'personal tools only appear in the signed-in app menu: $authenticated $location',
+        (tester) async {
+          final router = _createRouter(initialLocation: location);
+          addTearDown(router.dispose);
+          await tester.pumpWidget(
+            _createApp(router, authenticated: authenticated),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const ValueKey('public-header-menu')));
+          await tester.pumpAndSettle();
+          final expected = authenticated && location == '/'
+              ? findsOneWidget
+              : findsNothing;
+          for (final key in [
+            'navigation-prayer-times',
+            'navigation-home-widgets',
+            'navigation-notifications',
+          ]) {
+            expect(find.byKey(ValueKey(key)), expected);
+          }
+          expect(
+            find.descendant(
+              of: find.byType(Drawer),
+              matching: find.byType(AzkarBrandLockup),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('android-apk-download')),
+            findsNothing,
+          );
+          expect(find.byKey(const ValueKey('about-developer')), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
+  for (final authenticated in [false, true]) {
     testWidgets(
       'shared memorial has no back or account-home action (signed in: $authenticated)',
       (tester) async {
@@ -51,7 +92,7 @@ void main() {
         final router = _createRouter();
         addTearDown(router.dispose);
         await tester.pumpWidget(
-          _createApp(router, notificationService: service),
+          _createApp(router, authenticated: true, notificationService: service),
         );
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('public-header-menu')));
@@ -311,7 +352,7 @@ void main() {
     (name: 'Android', nativeAndroid: true),
   ]) {
     testWidgets(
-      'drawer shows APK download and developer actions on ${platform.name}',
+      'Android download is inside About Developer on ${platform.name}',
       (tester) async {
         tester.view.physicalSize = const Size(320, 640);
         tester.view.devicePixelRatio = 1;
@@ -328,11 +369,18 @@ void main() {
 
         expect(
           find.byKey(const ValueKey('android-apk-download')),
+          findsNothing,
+        );
+        expect(find.byKey(const ValueKey('about-developer')), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('about-developer')));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('android-apk-download')),
           findsOneWidget,
         );
-        expect(find.text('تحميل تطبيق أذكار للأندرويد'), findsOneWidget);
+        expect(find.text('تحميل نسخة أندرويد'), findsOneWidget);
         expect(find.byIcon(Icons.android), findsOneWidget);
-        expect(find.byKey(const ValueKey('about-developer')), findsOneWidget);
+        expect(find.text('Flutter Developer'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );
@@ -350,6 +398,8 @@ void main() {
     await tester.pumpWidget(_createApp(router));
     await tester.pump();
     await tester.tap(find.byTooltip('القائمة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('about-developer')));
     await tester.pumpAndSettle();
     final download = find.byKey(const ValueKey('android-apk-download'));
     await tester.ensureVisible(download);
@@ -380,7 +430,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Mohamed Fooda'), findsOneWidget);
-      expect(find.text('Flutter Developer'), findsOneWidget);
+      expect(find.text('Flutter Developer'), findsNothing);
+      expect(find.textContaining('هذا التطبيق صدقة جارية'), findsOneWidget);
       expect(find.text('LinkedIn'), findsOneWidget);
       expect(find.text('GitHub'), findsOneWidget);
       expect(
@@ -407,7 +458,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('About the Developer'), findsOneWidget);
-    expect(find.textContaining('AZKAR was developed'), findsOneWidget);
+    expect(find.textContaining('AZKAR is an ongoing charity'), findsOneWidget);
     final pageDirection = tester.widget<Directionality>(
       find
           .ancestor(

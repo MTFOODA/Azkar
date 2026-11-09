@@ -1,0 +1,24 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/remembrance_card" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layoutDirection="rtl" android:background="@android:color/transparent">
+    <ImageView android:id="@+id/remembrance_surface" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:scaleType="fitXY" android:importantForAccessibility="no" />
+    <FrameLayout android:id="@+id/remembrance_card_content" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:padding="20dp">
+        <ImageView android:id="@+id/remembrance_name_image" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:scaleType="fitCenter" android:visibility="gone" />
+        <LinearLayout android:id="@+id/remembrance_text_fallback" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/remembrance_card_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:maxLines="3" android:ellipsize="end" android:gravity="center"
+                android:includeFontPadding="false" android:textColor="#F3F4F6" android:textSize="16sp" />
+            <TextView android:id="@+id/remembrance_deceased_name" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center" android:maxLines="2" android:ellipsize="end"
+                android:visibility="gone" android:textColor="#F3F4F6" android:textSize="24sp" />
+            <TextView android:id="@+id/remembrance_card_text" android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:gravity="center" android:textColor="#F3F4F6" android:textSize="18sp"
+                android:autoSizeTextType="uniform" android:autoSizeMinTextSize="11sp" android:autoSizeMaxTextSize="20sp"
+                android:autoSizeStepGranularity="1sp" />
+        </LinearLayout>
+    </FrameLayout>
+</FrameLayout>
