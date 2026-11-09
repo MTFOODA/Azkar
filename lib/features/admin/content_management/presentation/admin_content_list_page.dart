@@ -35,9 +35,7 @@ class _AdminContentListPageState extends ConsumerState<AdminContentListPage> {
   bool _busy = false;
 
   Future<void> _refresh() async {
-    ref.invalidate(adminContentProvider(widget.type));
-    ref.invalidate(adminDashboardProvider);
-    ref.invalidate(adminHomepageProvider);
+    invalidateContentViews(ref);
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -48,9 +46,7 @@ class _AdminContentListPageState extends ConsumerState<AdminContentListPage> {
       await _refresh();
     } catch (error) {
       if (error is ContentHomepageLinkException) {
-        ref.invalidate(adminContentProvider(widget.type));
-        ref.invalidate(adminDashboardProvider);
-        ref.invalidate(adminHomepageProvider);
+        invalidateContentViews(ref);
       }
       if (mounted) {
         ScaffoldMessenger.of(context)

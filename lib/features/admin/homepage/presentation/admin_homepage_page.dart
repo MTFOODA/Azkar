@@ -31,7 +31,7 @@ class _AdminHomepagePageState extends ConsumerState<AdminHomepagePage> {
   bool _busy = false;
 
   Future<void> _refresh() async {
-    ref.invalidate(adminHomepageProvider);
+    invalidateContentViews(ref);
     ref.invalidate(homeLayoutProvider);
   }
 

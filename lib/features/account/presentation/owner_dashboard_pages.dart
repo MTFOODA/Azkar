@@ -13,6 +13,7 @@ import '../../../core/widgets/route_back_button.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../admin/content_management/presentation/admin_content_editor_page.dart';
 import '../../admin/content_management/presentation/admin_content_list_page.dart';
+import '../../admin/content_management/providers/admin_providers.dart';
 import '../../admin/homepage/presentation/admin_homepage_page.dart';
 import '../../admin/appearance/presentation/admin_appearance_page.dart';
 import '../../content/data/content_repository.dart';
@@ -157,8 +158,12 @@ class OwnerDashboardShell extends ConsumerWidget {
           ListTile(
             leading: Icon(entry.icon),
             title: Text(entry.label),
-            onTap: () =>
-                navigateToLocation(context, entry.path, closeDrawer: true),
+            onTap: () => navigateToLocation(
+              context,
+              entry.path,
+              closeDrawer: true,
+              replace: true,
+            ),
           ),
         const Divider(),
         ListTile(
@@ -166,8 +171,12 @@ class OwnerDashboardShell extends ConsumerWidget {
           title: Text(
             page.isPublished ? 'فتح الصفحة العامة' : 'معاينة خاصة للمالك',
           ),
-          onTap: () =>
-              navigateToLocation(context, previewPath, closeDrawer: true),
+          onTap: () => navigateToLocation(
+            context,
+            previewPath,
+            closeDrawer: true,
+            replace: !page.isPublished,
+          ),
         ),
         ListTile(
           leading: const Icon(Icons.logout_outlined),
@@ -210,7 +219,11 @@ class OwnerDashboardShell extends ConsumerWidget {
                       tooltip: page.isPublished
                           ? 'فتح الصفحة العامة'
                           : 'معاينة خاصة للمالك',
-                      onPressed: () => navigateToLocation(context, previewPath),
+                      onPressed: () => navigateToLocation(
+                        context,
+                        previewPath,
+                        replace: !page.isPublished,
+                      ),
                       icon: const Icon(Icons.open_in_new_outlined),
                     ),
                     if (!isRoot) const RouteBackButton(),
@@ -276,10 +289,12 @@ class OwnerDashboardHomePage extends ConsumerWidget {
                   ? 'صفحتك منشورة ومتاحة للزوار.'
                   : 'مسودة — الرابط العام غير متاح للزوار.',
               trailing: OutlinedButton.icon(
-                onPressed: () => context.go(
+                onPressed: () => navigateToLocation(
+                  context,
                   page.isPublished
                       ? AppConfig.memorialPagePath(page.slug)
                       : '/dashboard/pages/${page.id}/preview',
+                  replace: !page.isPublished,
                 ),
                 icon: const Icon(Icons.open_in_new_outlined),
                 label: const Text('معاينة'),
@@ -343,8 +358,9 @@ class OwnerDashboardHomePage extends ConsumerWidget {
 
 final _ownerContentCountsProvider =
     FutureProvider<Map<ContentType, TypeCounts>>((ref) {
+      ref.watch(adminContentRevisionProvider);
       return ref.watch(contentRepositoryProvider).counts();
-    }, dependencies: [contentRepositoryProvider]);
+    }, dependencies: [contentRepositoryProvider, adminContentRevisionProvider]);
 
 class OwnerPageSettingsPage extends ConsumerStatefulWidget {
   const OwnerPageSettingsPage({super.key});
