@@ -115,7 +115,15 @@ class PrayerTimesService {
       throw PrayerTimesUnavailableException(cause: error);
     }
 
-    await cache.write(cacheKey, fresh);
+    try {
+      await cache.write(cacheKey, fresh);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Prayer times were fetched, but could not be cached.',
+        error,
+        stackTrace,
+      );
+    }
     return fresh;
   }
 

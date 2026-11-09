@@ -55,7 +55,13 @@ class LocalNotificationService {
 
   Future<void> initialize() {
     if (!isSupported) return Future<void>.value();
-    return _initialization ??= _initialize();
+    return _initialization ??= _initialize().catchError((
+      Object error,
+      StackTrace stackTrace,
+    ) {
+      _initialization = null;
+      Error.throwWithStackTrace(error, stackTrace);
+    });
   }
 
   Future<void> _initialize() async {
@@ -77,6 +83,26 @@ class LocalNotificationService {
     if (!isSupported) return NotificationPermissionState.unsupported;
     await initialize();
     return _platform.requestPermission();
+  }
+
+  Future<bool?> exactAlarmPermissionState() async {
+    if (!isSupported) return null;
+    await initialize();
+    final platform = _platform;
+    return platform is ExactNotificationAlarmPlatform
+        ? (platform as ExactNotificationAlarmPlatform)
+              .exactAlarmPermissionState()
+        : null;
+  }
+
+  Future<void> requestExactAlarmPermission() async {
+    if (!isSupported) return;
+    await initialize();
+    final platform = _platform;
+    if (platform is ExactNotificationAlarmPlatform) {
+      await (platform as ExactNotificationAlarmPlatform)
+          .requestExactAlarmPermission();
+    }
   }
 
   void setActiveAccount(String? accountId) {
@@ -228,6 +254,80 @@ class LocalNotificationService {
     return _registry.schedules(accountId);
   }
 
+  /// Reconciles schedules written by the background isolate with this registry.
+  /// Foreground takes over ordinary reminders; completion actions stay local.
+  Future<void> adoptNativeSchedules(
+    String accountId, {
+    bool background = false,
+  }) async {
+    if (!isSupported || _platform is! NotificationScheduleInspectionPlatform) {
+      return;
+    }
+    await initialize();
+    final pending = await (_platform as NotificationScheduleInspectionPlatform)
+        .pendingNotifications();
+    final ids = pending.map((item) => item.id).toSet();
+    for (final entry in (await _registry.schedules(accountId)).entries) {
+      if (!ids.contains(entry.value)) {
+        await _registry.remove(
+          accountId: accountId,
+          notificationId: entry.value,
+        );
+      }
+    }
+    for (final item in pending) {
+      final event = _parseResponse(
+        NotificationPlatformResponse(
+          id: item.id,
+          payload: item.payload,
+          actionId: null,
+        ),
+      );
+      if (event == null) continue;
+      final sameAccount =
+          event.accountFingerprint == accountFingerprint(accountId);
+      final replace = background
+          ? event.stableKey.startsWith('reminder-engine:v1:')
+          : event.stableKey.startsWith('reminder-background:v1:');
+      if (!sameAccount || replace) {
+        await _platform.cancel(item.id);
+        if (sameAccount) {
+          await _registry.remove(accountId: accountId, notificationId: item.id);
+        }
+      } else if (item.id == stableNotificationId(accountId, event.stableKey)) {
+        await _registry.register(
+          accountId: accountId,
+          stableKey: event.stableKey,
+          notificationId: item.id,
+        );
+      }
+    }
+  }
+
+  Future<void> cancelInactiveNativeSchedules(String? activeAccountId) async {
+    if (!isSupported || _platform is! NotificationScheduleInspectionPlatform) {
+      return;
+    }
+    await initialize();
+    final fingerprint = activeAccountId == null
+        ? null
+        : accountFingerprint(activeAccountId);
+    for (final pending
+        in await (_platform as NotificationScheduleInspectionPlatform)
+            .pendingNotifications()) {
+      final event = _parseResponse(
+        NotificationPlatformResponse(
+          id: pending.id,
+          payload: pending.payload,
+          actionId: null,
+        ),
+      );
+      if (event != null && event.accountFingerprint != fingerprint) {
+        await _platform.cancel(pending.id);
+      }
+    }
+  }
+
   Future<void> cancel({
     required String accountId,
     required String stableKey,
@@ -247,6 +347,23 @@ class LocalNotificationService {
     if (!isSupported) return;
     await initialize();
     final ids = await _registry.notificationIds(accountId);
+    if (_platform is NotificationScheduleInspectionPlatform) {
+      for (final pending
+          in await (_platform as NotificationScheduleInspectionPlatform)
+              .pendingNotifications()) {
+        final event = _parseResponse(
+          NotificationPlatformResponse(
+            id: pending.id,
+            payload: pending.payload,
+            actionId: null,
+          ),
+        );
+        if (event?.accountFingerprint == accountFingerprint(accountId) &&
+            !ids.contains(pending.id)) {
+          ids.add(pending.id);
+        }
+      }
+    }
     for (final id in ids) {
       await _platform.cancel(id);
       await _registry.remove(accountId: accountId, notificationId: id);

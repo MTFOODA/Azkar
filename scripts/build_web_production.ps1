@@ -75,6 +75,7 @@ $validPublicUrl = [Uri]::TryCreate(
         [string]::IsNullOrEmpty($publicUri.AbsolutePath)) -and
     $publicUri.GetLeftPart([UriPartial]::Authority) -eq
         'https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev'
+$expectedApkUrl = 'https://github.com/MTFOODA/Azkar/releases/download/v1.0.0/AZKAR-v1.0.0-android.apk'
 
 $problems = New-Object System.Collections.Generic.List[string]
 if (-not $validSupabaseUrl) {
@@ -91,6 +92,9 @@ if ([string]$config.AZKAR_AUTH_SCHEMA_VERIFIED -notin @('true', 'false')) {
 }
 if (-not $validPublicUrl) {
     $problems.Add('PUBLIC_BASE_URL must be https://azkar-sadaqa.mohamed-fooda-mtf.workers.dev without a path, query, or fragment.')
+}
+if ([string]$config.AZKAR_ANDROID_APK_URL -cne $expectedApkUrl) {
+    $problems.Add('AZKAR_ANDROID_APK_URL must use the published v1.0.0 Android release asset.')
 }
 if ($problems.Count -gt 0) {
     throw ('Production configuration is not ready: ' + ($problems -join ' '))
@@ -154,6 +158,9 @@ if ($indexHtml.Contains('__AZKAR_PUBLIC_BASE_URL__')) {
 $compiledApplication = [IO.File]::ReadAllText($applicationPath)
 if (-not $compiledApplication.Contains($publicBaseUrl)) {
     throw 'The compiled Flutter application does not contain the configured public site origin.'
+}
+if (-not $compiledApplication.Contains($expectedApkUrl)) {
+    throw 'The compiled Flutter application does not contain the verified Android release URL.'
 }
 if ($indexHtml -match 'pages\.dev|localhost|127\.0\.0\.1') {
     throw 'The generated Web metadata contains a non-production hostname.'

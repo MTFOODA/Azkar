@@ -1,0 +1,6 @@
+<resources>
+    <style name="RemembranceName">
+        <item name="android:fontFamily">@font/aref_ruqaa_bold</item>
+        <item name="android:includeFontPadding">true</item>
+    </style>
+</resources>

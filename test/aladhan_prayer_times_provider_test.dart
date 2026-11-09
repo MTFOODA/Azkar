@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:azkar/features/prayer_times/data/aladhan_prayer_times_provider.dart';
 import 'package:azkar/features/prayer_times/domain/prayer_time_errors.dart';
@@ -9,6 +10,71 @@ import 'package:http/testing.dart';
 
 void main() {
   setUpAll(PrayerTimeZones.initialize);
+
+  test('parses the recorded live AlAdhan monthly response', () async {
+    final body = await File('test/fixtures/aladhan_cairo_2026_11.json')
+        .readAsString();
+    final provider = AlAdhanPrayerTimesProvider(
+      client: MockClient((_) async => http.Response(body, 200)),
+    );
+    final calendar = await provider.fetchMonthlyCalendar(
+      location: PrayerLocation.manualCity(city: 'Cairo', country: 'Egypt'),
+      month: PrayerMonth(2026, 11),
+      calculationMethod: PrayerCalculationMethod.egyptianGeneralAuthority,
+      asrMethod: AsrCalculationMethod.standard,
+    );
+    expect(calendar.days, hasLength(30));
+    expect(calendar.timezoneId, 'Africa/Cairo');
+    expect(calendar.days.first.hijri!.toJson(), {
+      'day': 21,
+      'month': 5,
+      'year': 1448,
+    });
+    final restored = PrayerCalendar.fromJson(calendar.toJson());
+    expect(
+      restored.days.first.hijri!.toJson(),
+      calendar.days.first.hijri!.toJson(),
+    );
+    final legacyDay = Map<String, dynamic>.from(calendar.days.first.toJson())
+      ..remove('hijri');
+    expect(PrayerDay.fromJson(legacyDay, calendar.timezoneId).hijri, isNull);
+    final invalidDay = Map<String, dynamic>.from(calendar.days.first.toJson())
+      ..['hijri'] = {'day': 31, 'month': 5, 'year': 1448};
+    expect(
+      () => PrayerDay.fromJson(invalidDay, calendar.timezoneId),
+      throwsA(isA<PrayerTimesCacheException>()),
+    );
+    expect(
+      formatPrayerWallTime(calendar.days.first.timeFor(PrayerName.fajr)),
+      '04:41',
+    );
+  });
+
+  for (final field in ['timezone', 'method', 'school']) {
+    test('rejects inconsistent $field metadata in later days', () async {
+      final response = _calendarResponse(PrayerMonth(2026, 11));
+      final meta = (response['data'] as List)[4]['meta'] as Map;
+      meta[field] = switch (field) {
+        'timezone' => 'Asia/Riyadh',
+        'method' => {'id': 3},
+        _ => 'HANAFI',
+      };
+      final provider = AlAdhanPrayerTimesProvider(
+        client: MockClient(
+          (_) async => http.Response(jsonEncode(response), 200),
+        ),
+      );
+      await expectLater(
+        provider.fetchMonthlyCalendar(
+          location: PrayerLocation.manualCity(city: 'Cairo', country: 'Egypt'),
+          month: PrayerMonth(2026, 11),
+          calculationMethod: PrayerCalculationMethod.egyptianGeneralAuthority,
+          asrMethod: AsrCalculationMethod.standard,
+        ),
+        throwsA(isA<PrayerTimesDataException>()),
+      );
+    });
+  }
 
   test('fetches a validated city calendar with the selected method', () async {
     Uri? requestedUri;
@@ -103,7 +169,7 @@ void main() {
 
   test('rejects invalid IANA timezone metadata', () async {
     final response = _calendarResponse(PrayerMonth(2026, 11));
-    response['meta']['timezone'] = 'Not/A_Timezone';
+    (response['data'] as List).first['meta']['timezone'] = 'Not/A_Timezone';
     final provider = AlAdhanPrayerTimesProvider(
       client: MockClient((_) async => http.Response(jsonEncode(response), 200)),
     );
@@ -126,6 +192,11 @@ Map<String, dynamic> _calendarResponse(PrayerMonth month) => <String, dynamic>{
   'data': List<Map<String, dynamic>>.generate(month.dayCount, (index) {
     final day = index + 1;
     return <String, dynamic>{
+      'meta': <String, dynamic>{
+        'timezone': 'Africa/Cairo',
+        'method': <String, dynamic>{'id': 5},
+        'school': 'STANDARD',
+      },
       'date': <String, dynamic>{
         'gregorian': <String, dynamic>{
           'day': '$day',
@@ -143,5 +214,4 @@ Map<String, dynamic> _calendarResponse(PrayerMonth month) => <String, dynamic>{
       },
     };
   }),
-  'meta': <String, dynamic>{'timezone': 'Africa/Cairo'},
 };

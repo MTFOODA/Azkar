@@ -93,3 +93,14 @@ key.properties
 
 # Widget Preview related
 .widget_preview/
+
+# Local backups, downloaded worktrees, and one-off operational output
+/_azkar_backup_*/
+/Azkar-release-download/
+/err.txt
+/out.txt
+/AZKAR_ANDROID_AND_WEB_RELEASE_REPORT.md
+/AZKAR_ANDROID_RELEASE_FINAL_REPORT.md
+/AZKAR_FINAL_DEPLOYMENT_REPORT.md
+/AZKAR_PRODUCTION_INTEGRATION_REPORT.md
+/AZKAR_RELEASE_READINESS_REPORT.md

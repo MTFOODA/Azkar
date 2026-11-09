@@ -74,7 +74,7 @@ jobs:
           AZKAR_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.AZKAR_SUPABASE_PUBLISHABLE_KEY }}
           # Keep registration gated until production signup is verified.
           AZKAR_AUTH_SCHEMA_VERIFIED: 'false'
-          AZKAR_ANDROID_APK_URL: ${{ vars.AZKAR_ANDROID_APK_URL || 'https://github.com/MTFOODA/Azkar/releases/download/v1.0.0/AZKAR-v1.0.0-android.apk' }}
+          AZKAR_ANDROID_APK_URL: https://github.com/MTFOODA/Azkar/releases/download/v1.0.0/AZKAR-v1.0.0-android.apk
         run: ./scripts/write_production_config.ps1
 
       - name: Build and validate Flutter Web

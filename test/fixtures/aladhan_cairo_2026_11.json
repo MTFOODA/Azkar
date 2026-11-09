@@ -1,0 +1,1634 @@
+{
+  "code": 200,
+  "status": "OK",
+  "data": [
+    {
+      "timings": {
+        "Fajr": "04:41 (EET)",
+        "Sunrise": "06:09 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:46 (EET)",
+        "Sunset": "17:08 (EET)",
+        "Maghrib": "17:08 (EET)",
+        "Isha": "18:27 (EET)",
+        "Imsak": "04:31 (EET)",
+        "Midnight": "23:38 (EET)",
+        "Firstthird": "21:28 (EET)",
+        "Lastthird": "01:49 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "01"
+        },
+        "hijri": {
+          "date": "21-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "21",
+          "weekday": {
+            "en": "Al Ahad",
+            "ar": "Ø§ÙØ§Ø­Ø¯"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:41 (EET)",
+        "Sunrise": "06:10 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:46 (EET)",
+        "Sunset": "17:07 (EET)",
+        "Maghrib": "17:07 (EET)",
+        "Isha": "18:26 (EET)",
+        "Imsak": "04:31 (EET)",
+        "Midnight": "23:38 (EET)",
+        "Firstthird": "21:28 (EET)",
+        "Lastthird": "01:49 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "02"
+        },
+        "hijri": {
+          "date": "22-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "22",
+          "weekday": {
+            "en": "Al Athnayn",
+            "ar": "Ø§ÙØ§Ø«ÙÙÙ"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:42 (EET)",
+        "Sunrise": "06:10 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:45 (EET)",
+        "Sunset": "17:06 (EET)",
+        "Maghrib": "17:06 (EET)",
+        "Isha": "18:25 (EET)",
+        "Imsak": "04:32 (EET)",
+        "Midnight": "23:38 (EET)",
+        "Firstthird": "21:28 (EET)",
+        "Lastthird": "01:49 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "03"
+        },
+        "hijri": {
+          "date": "23-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "23",
+          "weekday": {
+            "en": "Al Thalaata",
+            "ar": "Ø§ÙØ«ÙØ§Ø«Ø§Ø¡"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:43 (EET)",
+        "Sunrise": "06:11 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:44 (EET)",
+        "Sunset": "17:06 (EET)",
+        "Maghrib": "17:06 (EET)",
+        "Isha": "18:25 (EET)",
+        "Imsak": "04:33 (EET)",
+        "Midnight": "23:38 (EET)",
+        "Firstthird": "21:28 (EET)",
+        "Lastthird": "01:49 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "04"
+        },
+        "hijri": {
+          "date": "24-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "24",
+          "weekday": {
+            "en": "Al Arba'a",
+            "ar": "Ø§ÙØ§Ø±Ø¨Ø¹Ø§Ø¡"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:43 (EET)",
+        "Sunrise": "06:12 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:44 (EET)",
+        "Sunset": "17:05 (EET)",
+        "Maghrib": "17:05 (EET)",
+        "Isha": "18:24 (EET)",
+        "Imsak": "04:33 (EET)",
+        "Midnight": "23:38 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:50 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "05"
+        },
+        "hijri": {
+          "date": "25-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "25",
+          "weekday": {
+            "en": "Al Khamees",
+            "ar": "Ø§ÙØ®ÙÙØ³"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:44 (EET)",
+        "Sunrise": "06:13 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:43 (EET)",
+        "Sunset": "17:04 (EET)",
+        "Maghrib": "17:04 (EET)",
+        "Isha": "18:24 (EET)",
+        "Imsak": "04:34 (EET)",
+        "Midnight": "23:38 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:50 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "06"
+        },
+        "hijri": {
+          "date": "26-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "26",
+          "weekday": {
+            "en": "Al Juma'a",
+            "ar": "Ø§ÙØ¬ÙØ¹Ø©"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:45 (EET)",
+        "Sunrise": "06:13 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:43 (EET)",
+        "Sunset": "17:04 (EET)",
+        "Maghrib": "17:04 (EET)",
+        "Isha": "18:23 (EET)",
+        "Imsak": "04:35 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:50 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "07"
+        },
+        "hijri": {
+          "date": "27-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "27",
+          "weekday": {
+            "en": "Al Sabt",
+            "ar": "Ø§ÙØ³Ø¨Øª"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [
+            "Urs of Shaykh SharafuddÄ«n ad-DaghestÄni Ù"
+          ],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:45 (EET)",
+        "Sunrise": "06:14 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:42 (EET)",
+        "Sunset": "17:03 (EET)",
+        "Maghrib": "17:03 (EET)",
+        "Isha": "18:22 (EET)",
+        "Imsak": "04:35 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:51 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "08"
+        },
+        "hijri": {
+          "date": "28-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "28",
+          "weekday": {
+            "en": "Al Ahad",
+            "ar": "Ø§ÙØ§Ø­Ø¯"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:46 (EET)",
+        "Sunrise": "06:15 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:42 (EET)",
+        "Sunset": "17:02 (EET)",
+        "Maghrib": "17:02 (EET)",
+        "Isha": "18:22 (EET)",
+        "Imsak": "04:36 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:51 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "09"
+        },
+        "hijri": {
+          "date": "29-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "29",
+          "weekday": {
+            "en": "Al Athnayn",
+            "ar": "Ø§ÙØ§Ø«ÙÙÙ"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:47 (EET)",
+        "Sunrise": "06:16 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:41 (EET)",
+        "Sunset": "17:02 (EET)",
+        "Maghrib": "17:02 (EET)",
+        "Isha": "18:21 (EET)",
+        "Imsak": "04:37 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:51 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "10"
+        },
+        "hijri": {
+          "date": "30-05-1448",
+          "format": "DD-MM-YYYY",
+          "day": "30",
+          "weekday": {
+            "en": "Al Thalaata",
+            "ar": "Ø§ÙØ«ÙØ§Ø«Ø§Ø¡"
+          },
+          "month": {
+            "number": 5,
+            "en": "JumÄdÃ¡ al-Å«lÃ¡",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ£ÙÙÙ",
+            "days": 30
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:48 (EET)",
+        "Sunrise": "06:17 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:41 (EET)",
+        "Sunset": "17:01 (EET)",
+        "Maghrib": "17:01 (EET)",
+        "Isha": "18:21 (EET)",
+        "Imsak": "04:38 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:51 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "11"
+        },
+        "hijri": {
+          "date": "01-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "1",
+          "weekday": {
+            "en": "Al Arba'a",
+            "ar": "Ø§ÙØ§Ø±Ø¨Ø¹Ø§Ø¡"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:48 (EET)",
+        "Sunrise": "06:18 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:40 (EET)",
+        "Sunset": "17:00 (EET)",
+        "Maghrib": "17:00 (EET)",
+        "Isha": "18:20 (EET)",
+        "Imsak": "04:38 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:52 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "12"
+        },
+        "hijri": {
+          "date": "02-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "2",
+          "weekday": {
+            "en": "Al Khamees",
+            "ar": "Ø§ÙØ®ÙÙØ³"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:49 (EET)",
+        "Sunrise": "06:18 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:40 (EET)",
+        "Sunset": "17:00 (EET)",
+        "Maghrib": "17:00 (EET)",
+        "Isha": "18:20 (EET)",
+        "Imsak": "04:39 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:52 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "13"
+        },
+        "hijri": {
+          "date": "03-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "3",
+          "weekday": {
+            "en": "Al Juma'a",
+            "ar": "Ø§ÙØ¬ÙØ¹Ø©"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [
+            "Urs of MawlÄnÄ Shaykh HishÄm KabbÄni Ù"
+          ],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:50 (EET)",
+        "Sunrise": "06:19 (EET)",
+        "Dhuhr": "11:39 (EET)",
+        "Asr": "14:40 (EET)",
+        "Sunset": "16:59 (EET)",
+        "Maghrib": "16:59 (EET)",
+        "Isha": "18:20 (EET)",
+        "Imsak": "04:40 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:53 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "14"
+        },
+        "hijri": {
+          "date": "04-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "4",
+          "weekday": {
+            "en": "Al Sabt",
+            "ar": "Ø§ÙØ³Ø¨Øª"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:50 (EET)",
+        "Sunrise": "06:20 (EET)",
+        "Dhuhr": "11:40 (EET)",
+        "Asr": "14:39 (EET)",
+        "Sunset": "16:59 (EET)",
+        "Maghrib": "16:59 (EET)",
+        "Isha": "18:19 (EET)",
+        "Imsak": "04:40 (EET)",
+        "Midnight": "23:39 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:53 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "15"
+        },
+        "hijri": {
+          "date": "05-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "5",
+          "weekday": {
+            "en": "Al Ahad",
+            "ar": "Ø§ÙØ§Ø­Ø¯"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:51 (EET)",
+        "Sunrise": "06:21 (EET)",
+        "Dhuhr": "11:40 (EET)",
+        "Asr": "14:39 (EET)",
+        "Sunset": "16:58 (EET)",
+        "Maghrib": "16:58 (EET)",
+        "Isha": "18:19 (EET)",
+        "Imsak": "04:41 (EET)",
+        "Midnight": "23:40 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:53 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "16"
+        },
+        "hijri": {
+          "date": "06-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "6",
+          "weekday": {
+            "en": "Al Athnayn",
+            "ar": "Ø§ÙØ§Ø«ÙÙÙ"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:52 (EET)",
+        "Sunrise": "06:22 (EET)",
+        "Dhuhr": "11:40 (EET)",
+        "Asr": "14:38 (EET)",
+        "Sunset": "16:58 (EET)",
+        "Maghrib": "16:58 (EET)",
+        "Isha": "18:19 (EET)",
+        "Imsak": "04:42 (EET)",
+        "Midnight": "23:40 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:54 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "17"
+        },
+        "hijri": {
+          "date": "07-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "7",
+          "weekday": {
+            "en": "Al Thalaata",
+            "ar": "Ø§ÙØ«ÙØ§Ø«Ø§Ø¡"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:52 (EET)",
+        "Sunrise": "06:22 (EET)",
+        "Dhuhr": "11:40 (EET)",
+        "Asr": "14:38 (EET)",
+        "Sunset": "16:58 (EET)",
+        "Maghrib": "16:58 (EET)",
+        "Isha": "18:18 (EET)",
+        "Imsak": "04:42 (EET)",
+        "Midnight": "23:40 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:54 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "18"
+        },
+        "hijri": {
+          "date": "08-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "8",
+          "weekday": {
+            "en": "Al Arba'a",
+            "ar": "Ø§ÙØ§Ø±Ø¨Ø¹Ø§Ø¡"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:53 (EET)",
+        "Sunrise": "06:23 (EET)",
+        "Dhuhr": "11:40 (EET)",
+        "Asr": "14:38 (EET)",
+        "Sunset": "16:57 (EET)",
+        "Maghrib": "16:57 (EET)",
+        "Isha": "18:18 (EET)",
+        "Imsak": "04:43 (EET)",
+        "Midnight": "23:40 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:55 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "19"
+        },
+        "hijri": {
+          "date": "09-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "9",
+          "weekday": {
+            "en": "Al Khamees",
+            "ar": "Ø§ÙØ®ÙÙØ³"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:54 (EET)",
+        "Sunrise": "06:24 (EET)",
+        "Dhuhr": "11:41 (EET)",
+        "Asr": "14:38 (EET)",
+        "Sunset": "16:57 (EET)",
+        "Maghrib": "16:57 (EET)",
+        "Isha": "18:18 (EET)",
+        "Imsak": "04:44 (EET)",
+        "Midnight": "23:40 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:55 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "20"
+        },
+        "hijri": {
+          "date": "10-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "10",
+          "weekday": {
+            "en": "Al Juma'a",
+            "ar": "Ø§ÙØ¬ÙØ¹Ø©"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [
+            "Urs of Muhammad BÄbÄ as-Samasi Ù"
+          ],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:54 (EET)",
+        "Sunrise": "06:25 (EET)",
+        "Dhuhr": "11:41 (EET)",
+        "Asr": "14:37 (EET)",
+        "Sunset": "16:57 (EET)",
+        "Maghrib": "16:57 (EET)",
+        "Isha": "18:18 (EET)",
+        "Imsak": "04:44 (EET)",
+        "Midnight": "23:41 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:55 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "21"
+        },
+        "hijri": {
+          "date": "11-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "11",
+          "weekday": {
+            "en": "Al Sabt",
+            "ar": "Ø§ÙØ³Ø¨Øª"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:55 (EET)",
+        "Sunrise": "06:26 (EET)",
+        "Dhuhr": "11:41 (EET)",
+        "Asr": "14:37 (EET)",
+        "Sunset": "16:56 (EET)",
+        "Maghrib": "16:56 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:45 (EET)",
+        "Midnight": "23:41 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:56 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "22"
+        },
+        "hijri": {
+          "date": "12-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "12",
+          "weekday": {
+            "en": "Al Ahad",
+            "ar": "Ø§ÙØ§Ø­Ø¯"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:56 (EET)",
+        "Sunrise": "06:27 (EET)",
+        "Dhuhr": "11:41 (EET)",
+        "Asr": "14:37 (EET)",
+        "Sunset": "16:56 (EET)",
+        "Maghrib": "16:56 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:46 (EET)",
+        "Midnight": "23:41 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:56 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "23"
+        },
+        "hijri": {
+          "date": "13-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "13",
+          "weekday": {
+            "en": "Al Athnayn",
+            "ar": "Ø§ÙØ§Ø«ÙÙÙ"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:57 (EET)",
+        "Sunrise": "06:27 (EET)",
+        "Dhuhr": "11:42 (EET)",
+        "Asr": "14:37 (EET)",
+        "Sunset": "16:56 (EET)",
+        "Maghrib": "16:56 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:47 (EET)",
+        "Midnight": "23:42 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:57 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "24"
+        },
+        "hijri": {
+          "date": "14-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "14",
+          "weekday": {
+            "en": "Al Thalaata",
+            "ar": "Ø§ÙØ«ÙØ§Ø«Ø§Ø¡"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [
+            "Urs of Muhammad BÄqi BillÄh  Ù"
+          ],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:57 (EET)",
+        "Sunrise": "06:28 (EET)",
+        "Dhuhr": "11:42 (EET)",
+        "Asr": "14:37 (EET)",
+        "Sunset": "16:55 (EET)",
+        "Maghrib": "16:55 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:47 (EET)",
+        "Midnight": "23:42 (EET)",
+        "Firstthird": "21:26 (EET)",
+        "Lastthird": "01:57 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "25"
+        },
+        "hijri": {
+          "date": "15-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "15",
+          "weekday": {
+            "en": "Al Arba'a",
+            "ar": "Ø§ÙØ§Ø±Ø¨Ø¹Ø§Ø¡"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:58 (EET)",
+        "Sunrise": "06:29 (EET)",
+        "Dhuhr": "11:42 (EET)",
+        "Asr": "14:36 (EET)",
+        "Sunset": "16:55 (EET)",
+        "Maghrib": "16:55 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:48 (EET)",
+        "Midnight": "23:42 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:58 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "26"
+        },
+        "hijri": {
+          "date": "16-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "16",
+          "weekday": {
+            "en": "Al Khamees",
+            "ar": "Ø§ÙØ®ÙÙØ³"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:59 (EET)",
+        "Sunrise": "06:30 (EET)",
+        "Dhuhr": "11:43 (EET)",
+        "Asr": "14:36 (EET)",
+        "Sunset": "16:55 (EET)",
+        "Maghrib": "16:55 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:49 (EET)",
+        "Midnight": "23:43 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:58 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "27"
+        },
+        "hijri": {
+          "date": "17-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "17",
+          "weekday": {
+            "en": "Al Juma'a",
+            "ar": "Ø§ÙØ¬ÙØ¹Ø©"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "04:59 (EET)",
+        "Sunrise": "06:31 (EET)",
+        "Dhuhr": "11:43 (EET)",
+        "Asr": "14:36 (EET)",
+        "Sunset": "16:55 (EET)",
+        "Maghrib": "16:55 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:49 (EET)",
+        "Midnight": "23:43 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:59 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "28"
+        },
+        "hijri": {
+          "date": "18-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "18",
+          "weekday": {
+            "en": "Al Sabt",
+            "ar": "Ø§ÙØ³Ø¨Øª"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "05:00 (EET)",
+        "Sunrise": "06:32 (EET)",
+        "Dhuhr": "11:43 (EET)",
+        "Asr": "14:36 (EET)",
+        "Sunset": "16:55 (EET)",
+        "Maghrib": "16:55 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:50 (EET)",
+        "Midnight": "23:43 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "01:59 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "29"
+        },
+        "hijri": {
+          "date": "19-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "19",
+          "weekday": {
+            "en": "Al Ahad",
+            "ar": "Ø§ÙØ§Ø­Ø¯"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    },
+    {
+      "timings": {
+        "Fajr": "05:01 (EET)",
+        "Sunrise": "06:32 (EET)",
+        "Dhuhr": "11:44 (EET)",
+        "Asr": "14:36 (EET)",
+        "Sunset": "16:55 (EET)",
+        "Maghrib": "16:55 (EET)",
+        "Isha": "18:17 (EET)",
+        "Imsak": "04:51 (EET)",
+        "Midnight": "23:44 (EET)",
+        "Firstthird": "21:27 (EET)",
+        "Lastthird": "02:00 (EET)"
+      },
+      "date": {
+        "gregorian": {
+          "year": "2026",
+          "month": {
+            "number": 11
+          },
+          "day": "30"
+        },
+        "hijri": {
+          "date": "20-06-1448",
+          "format": "DD-MM-YYYY",
+          "day": "20",
+          "weekday": {
+            "en": "Al Athnayn",
+            "ar": "Ø§ÙØ§Ø«ÙÙÙ"
+          },
+          "month": {
+            "number": 6,
+            "en": "JumÄdÃ¡ al-Äkhirah",
+            "ar": "Ø¬ÙÙØ§Ø¯Ù Ø§ÙØ¢Ø®Ø±Ø©",
+            "days": 29
+          },
+          "year": "1448",
+          "designation": {
+            "abbreviated": "AH",
+            "expanded": "Anno Hegirae"
+          },
+          "holidays": [],
+          "adjustedHolidays": [],
+          "method": "HJCoSA"
+        }
+      },
+      "meta": {
+        "timezone": "Africa/Cairo",
+        "method": {
+          "id": 5
+        },
+        "school": "STANDARD"
+      }
+    }
+  ]
+}

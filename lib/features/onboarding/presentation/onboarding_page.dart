@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/design/app_palette.dart';
 import '../../../core/design/azkar_brand.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/utils/app_exception.dart';
+import '../../../core/utils/app_logger.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
@@ -48,7 +50,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     _OnboardingSlide(
       title: 'صلاتك في وقتها',
       description:
-          'تابع مواقيت الصلاة حسب مدينتك، وسجّل ما أتممت من الصلوات '
+          'تابع مواقيت الصلاة حسب موقعك الحالي وتوقيته، وسجّل ما أتممت من الصلوات '
           'على هذا الجهاز.',
       icon: Icons.mosque_outlined,
     ),
@@ -85,12 +87,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     try {
       await ref.read(onboardingCompletionStoreProvider).markCompleted();
       if (mounted) context.go(destination);
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Saving onboarding completion failed',
+        error,
+        stackTrace,
+      );
       if (mounted) {
         setState(() => _busy = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذّر حفظ إكمال التعريف: $error')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(friendlyMessage(error))));
       }
     }
   }
@@ -144,6 +150,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   LayoutBuilder(
                     builder: (context, constraints) => Row(
                       children: [
+                        IconButton(
+                          tooltip: 'رجوع',
+                          onPressed: _busy
+                              ? null
+                              : () => _index == 0 ? _finish() : _previous(),
+                          icon: const Icon(Icons.arrow_back),
+                        ),
                         if (constraints.maxWidth < 400)
                           const AzkarBrandMark(size: 38)
                         else

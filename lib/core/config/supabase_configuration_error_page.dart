@@ -3,12 +3,7 @@ import 'package:flutter/material.dart';
 import '../design/app_palette.dart';
 
 class SupabaseConfigurationErrorPage extends StatelessWidget {
-  const SupabaseConfigurationErrorPage({
-    required this.missingSettings,
-    super.key,
-  });
-
-  final List<String> missingSettings;
+  const SupabaseConfigurationErrorPage({super.key});
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -30,34 +25,15 @@ class SupabaseConfigurationErrorPage extends StatelessWidget {
                 const Icon(Icons.cloud_off_outlined, size: 56),
                 const SizedBox(height: 16),
                 const Text(
-                  'إعداد Supabase غير مكتمل',
+                  'تعذّر تهيئة التطبيق',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'لم يتم الاتصال بـ Supabase. لن تُستخدم بيانات تجريبية '
-                  'بدلًا من خدمة المصادقة.',
+                  'لا يمكن تشغيل التطبيق الآن. يُرجى المحاولة لاحقًا أو '
+                  'التواصل مع الدعم.',
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'الإعدادات الناقصة: ${missingSettings.join('، ')}',
-                  textAlign: TextAlign.center,
-                  textDirection: TextDirection.ltr,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'شغّل AZKAR باستخدام ملف config/dev.json من ملف التشغيل '
-                  'في VS Code أو عبر scripts\\run_android_dev.ps1.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'لتفعيل وضع العرض دون اتصال عمدًا، استخدم '
-                  'AZKAR_DEMO_MODE=true.',
-                  textAlign: TextAlign.center,
-                  textDirection: TextDirection.ltr,
                 ),
               ],
             ),

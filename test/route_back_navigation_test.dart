@@ -4,6 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
+  test('worship back targets retain the worship navigation context', () {
+    expect(routeBackFallback('/worship/location'), '/worship');
+    expect(routeBackFallback('/worship/notifications'), '/worship');
+    expect(routeBackFallback('/worship'), '/');
+  });
   test('owner Back targets retain the selected memorial context', () {
     expect(
       routeBackFallback('/dashboard/pages/page-a/settings'),

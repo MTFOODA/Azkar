@@ -10,6 +10,7 @@ import 'core/config/supabase_configuration_error_page.dart';
 import 'core/typography/arabic_font_loader.dart';
 import 'core/typography/arabic_fonts.dart';
 import 'core/utils/app_logger.dart';
+import 'features/reminders/data/background_reminder_service.dart';
 
 /// Registers font copyright notices in Flutter's license page.
 void _registerFontLicenses() {
@@ -32,11 +33,11 @@ Future<void> main() async {
   )) {
     await ArabicFontLoader.ensureDefault();
     _registerFontLicenses();
-    runApp(
-      SupabaseConfigurationErrorPage(
-        missingSettings: AppConfig.missingSupabaseSettings,
-      ),
+    AppLogger.error(
+      'Application startup blocked because required Supabase settings are missing: '
+      '${AppConfig.missingSupabaseSettings.join(', ')}',
     );
+    runApp(const SupabaseConfigurationErrorPage());
     return;
   }
 
@@ -61,5 +62,14 @@ Future<void> main() async {
   await ArabicFontLoader.ensureDefault();
   _registerFontLicenses();
 
+  try {
+    await BackgroundReminderService.initialize();
+  } on Object catch (error, stackTrace) {
+    AppLogger.warning(
+      'Could not initialize background reminder maintenance.',
+      error,
+      stackTrace,
+    );
+  }
   runApp(const ProviderScope(child: AzkarApp()));
 }

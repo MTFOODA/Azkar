@@ -9,10 +9,12 @@ class LocalPrayerScheduleLocationStore {
   LocalPrayerScheduleLocationStore({
     Future<Database> Function()? databaseProvider,
     this.currentUserIdProvider,
+    this.allowManualLocation = true,
   }) : _databaseProvider = databaseProvider ?? LocalDatabase.instance;
 
   final Future<Database> Function() _databaseProvider;
   final String? Function()? currentUserIdProvider;
+  final bool allowManualLocation;
 
   StoreRef<String, Map<String, Object?>> get _store =>
       stringMapStoreFactory.store(LocalStores.preferences);
@@ -22,7 +24,9 @@ class LocalPrayerScheduleLocationStore {
     required ReminderPreferences preferences,
   }) async {
     _validateUser(userId);
-    if (preferences.manualCity != null && preferences.manualCountry != null) {
+    if (allowManualLocation &&
+        preferences.manualCity != null &&
+        preferences.manualCountry != null) {
       return PrayerLocation.manualCity(
         city: preferences.manualCity!,
         country: preferences.manualCountry!,

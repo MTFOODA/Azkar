@@ -41,6 +41,63 @@ void main() {
     expect(id, inInclusiveRange(0, 0x7fffffff));
   });
 
+  test('foreground adopts owned actions and replaces background or foreign schedules', () async {
+    final platform = _InspectingPlatform();
+    final service = _service(platform, _MemoryNotificationRegistry());
+    addTearDown(service.dispose);
+    service.setActiveAccount('account-a');
+    const backgroundKey = 'reminder-background:v1:morning-azkar:test';
+    const completionKey = 'prayer-completion:v1:test:reminder:1';
+    final backgroundId = LocalNotificationService.stableNotificationId(
+      'account-a',
+      backgroundKey,
+    );
+    final foreignId = LocalNotificationService.stableNotificationId(
+      'account-b',
+      backgroundKey,
+    );
+    final completionId = LocalNotificationService.stableNotificationId(
+      'account-a',
+      completionKey,
+    );
+    platform.pending.addAll([
+      PendingNativeNotification(
+        backgroundId,
+        _payload('account-a', backgroundKey),
+      ),
+      PendingNativeNotification(
+        foreignId,
+        _payload('account-b', backgroundKey),
+      ),
+      PendingNativeNotification(
+        completionId,
+        _payload('account-a', completionKey),
+      ),
+    ]);
+    await service.adoptNativeSchedules('account-a');
+    expect(platform.cancelled, containsAll([backgroundId, foreignId]));
+    expect(platform.cancelled, isNot(contains(completionId)));
+    expect(await service.registeredSchedules('account-a'), {
+      completionKey: completionId,
+    });
+    await service.cancelInactiveNativeSchedules(null);
+    expect(platform.cancelled, contains(completionId));
+  });
+
+  test('initialization recovers after a transient plugin failure', () async {
+    final platform = _FakeNotificationPlatform()..failInitialization = true;
+    final service = _service(platform, _MemoryNotificationRegistry());
+    addTearDown(service.dispose);
+    await expectLater(service.initialize(), throwsStateError);
+    platform.failInitialization = false;
+    await service.initialize();
+    expect(platform.initializeCalls, 2);
+    expect(
+      await service.permissionState(),
+      NotificationPermissionState.granted,
+    );
+  });
+
   test(
     'scheduling is idempotent and uses the supplied IANA time zone',
     () async {
@@ -356,6 +413,7 @@ class _MemoryNotificationRegistry implements NotificationScheduleRegistry {
 }
 
 class _FakeNotificationPlatform implements NotificationPlatform {
+  bool failInitialization = false;
   NotificationPermissionState permission = NotificationPermissionState.granted;
   NotificationPlatformResponse? launchResponse;
   Completer<void>? scheduleBarrier;
@@ -370,6 +428,9 @@ class _FakeNotificationPlatform implements NotificationPlatform {
     void Function(NotificationPlatformResponse response) onResponse,
   ) async {
     initializeCalls++;
+    if (failInitialization) {
+      throw StateError('Temporary initialization failure');
+    }
     _onResponse = onResponse;
   }
 
@@ -408,6 +469,14 @@ class _FakeNotificationPlatform implements NotificationPlatform {
 
   void emit(NotificationPlatformResponse response) =>
       _onResponse?.call(response);
+}
+
+class _InspectingPlatform extends _FakeNotificationPlatform
+    implements NotificationScheduleInspectionPlatform {
+  final pending = <PendingNativeNotification>[];
+  @override
+  Future<List<PendingNativeNotification>> pendingNotifications() async =>
+      pending;
 }
 
 class _ScheduledRequest {

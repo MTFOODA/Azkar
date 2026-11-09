@@ -90,34 +90,49 @@ void main() {
     expect(find.text('دخول المشرف'), findsNothing);
   });
 
-  testWidgets('registration stays disabled until schema verification', (
-    tester,
-  ) async {
-    late GoRouter router;
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          isDemoBackendProvider.overrideWithValue(false),
-          registrationUnavailableMessageProvider.overrideWithValue(
-            'التسجيل مغلق حتى التحقق من المخطط.',
+  testWidgets(
+    'disabled registration shows only the safe notice and home action',
+    (tester) async {
+      late GoRouter router;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            isDemoBackendProvider.overrideWithValue(false),
+            registrationUnavailableMessageProvider.overrideWithValue(
+              'AZKAR_AUTH_SCHEMA_VERIFIED --dart-define RLS',
+            ),
+            isRegistrationEnabledProvider.overrideWithValue(false),
+            accountSessionProvider.overrideWith(_AnonymousAccountSession.new),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              router = ref.watch(routerProvider);
+              return MaterialApp.router(routerConfig: router);
+            },
           ),
-          accountSessionProvider.overrideWith(_AnonymousAccountSession.new),
-        ],
-        child: Consumer(
-          builder: (context, ref, _) {
-            router = ref.watch(routerProvider);
-            return MaterialApp.router(routerConfig: router);
-          },
         ),
-      ),
-    );
-    router.go('/register');
-    await tester.pumpAndSettle();
+      );
+      router.go('/register');
+      await tester.pumpAndSettle();
 
-    expect(find.byType(AccountRegistrationPage), findsOneWidget);
-    expect(find.byType(TextFormField), findsNothing);
-    expect(find.text('التسجيل مغلق حتى التحقق من المخطط.'), findsOneWidget);
-  });
+      expect(find.byType(AccountRegistrationPage), findsOneWidget);
+      expect(find.byType(TextFormField), findsNothing);
+      expect(find.text('إنشاء حساب جديد'), findsOneWidget);
+      expect(
+        find.text(
+          'خدمة إنشاء الحسابات غير متاحة مؤقتًا. نعمل على إتاحتها قريبًا.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('AZKAR_AUTH_SCHEMA_VERIFIED'), findsNothing);
+      expect(find.textContaining('dart-define'), findsNothing);
+      expect(find.textContaining('RLS'), findsNothing);
+
+      await tester.tap(find.text('العودة إلى الرئيسية'));
+      await tester.pumpAndSettle();
+      expect(router.routeInformationProvider.value.uri.path, '/');
+    },
+  );
 
   testWidgets('registration shows four fields and validates credentials', (
     tester,
@@ -290,6 +305,118 @@ void main() {
     expect(find.byType(PasswordResetPage), findsOneWidget);
   });
 
+  testWidgets('password reset validates email before sending a request', (
+    tester,
+  ) async {
+    late GoRouter router;
+    late _TestAccountSession session;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          isDemoBackendProvider.overrideWithValue(false),
+          accountSessionProvider.overrideWith(() {
+            session = _TestAccountSession();
+            return session;
+          }),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            router = ref.watch(routerProvider);
+            return MaterialApp.router(routerConfig: router);
+          },
+        ),
+      ),
+    );
+    router.go('/reset-password');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'إرسال رابط الاستعادة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('أدخل بريدًا إلكترونيًا صحيحًا.'), findsOneWidget);
+    expect(session.passwordResetEmail, isNull);
+  });
+
+  testWidgets(
+    'password reset displays a safe error instead of backend detail',
+    (tester) async {
+      late GoRouter router;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            isDemoBackendProvider.overrideWithValue(false),
+            accountSessionProvider.overrideWith(
+              () => _TestAccountSession(
+                passwordResetError: const AppException(
+                  'تعذّر إتمام العملية حاليًا. يُرجى المحاولة لاحقًا.',
+                  technical: 'PostgrestError: private_table SQL failure',
+                ),
+              ),
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              router = ref.watch(routerProvider);
+              return MaterialApp.router(routerConfig: router);
+            },
+          ),
+        ),
+      );
+      router.go('/reset-password');
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField).first,
+        'owner@example.test',
+      );
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'إرسال رابط الاستعادة'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('تعذّر إتمام العملية حاليًا. يُرجى المحاولة لاحقًا.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('private_table'), findsNothing);
+      expect(find.textContaining('SQL failure'), findsNothing);
+    },
+  );
+
+  testWidgets('password reset success uses a non-enumerating message', (
+    tester,
+  ) async {
+    late GoRouter router;
+    late _TestAccountSession session;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          isDemoBackendProvider.overrideWithValue(false),
+          accountSessionProvider.overrideWith(() {
+            session = _TestAccountSession();
+            return session;
+          }),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            router = ref.watch(routerProvider);
+            return MaterialApp.router(routerConfig: router);
+          },
+        ),
+      ),
+    );
+    router.go('/reset-password');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'owner@example.test');
+    await tester.tap(find.widgetWithText(FilledButton, 'إرسال رابط الاستعادة'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('إذا كان البريد مسجلًا، ستصلك رسالة لاستعادة كلمة المرور.'),
+      findsOneWidget,
+    );
+    expect(session.passwordResetEmail, 'owner@example.test');
+  });
+
   testWidgets('registration handles required email confirmation', (
     tester,
   ) async {
@@ -416,7 +543,7 @@ void main() {
           isDemoBackendProvider.overrideWithValue(false),
           accountSessionProvider.overrideWith(
             () => _TestAccountSession(
-              signInError: const AppException('بيانات الدخول غير صحيحة.'),
+              signInError: const AppException('بيانات تسجيل الدخول غير صحيحة.'),
             ),
           ),
         ],
@@ -438,7 +565,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'تسجيل الدخول'));
     await tester.pumpAndSettle();
 
-    expect(find.text('بيانات الدخول غير صحيحة.'), findsOneWidget);
+    expect(find.text('بيانات تسجيل الدخول غير صحيحة.'), findsOneWidget);
   });
 
   testWidgets('successful login opens the owner dashboard route', (
@@ -519,12 +646,18 @@ class _AnonymousAccountSession extends AccountSessionController {
 }
 
 class _TestAccountSession extends AccountSessionController {
-  _TestAccountSession({this.verifyImmediately = true, this.signInError});
+  _TestAccountSession({
+    this.verifyImmediately = true,
+    this.signInError,
+    this.passwordResetError,
+  });
 
   final bool verifyImmediately;
   final Object? signInError;
+  final Object? passwordResetError;
   int registerCalls = 0;
   Map<String, String>? registration;
+  String? passwordResetEmail;
 
   @override
   User? build() => null;
@@ -549,6 +682,12 @@ class _TestAccountSession extends AccountSessionController {
   Future<void> signIn({required String email, required String password}) async {
     if (signInError != null) throw signInError!;
     state = _testUser;
+  }
+
+  @override
+  Future<void> sendPasswordReset(String email) async {
+    passwordResetEmail = email;
+    if (passwordResetError != null) throw passwordResetError!;
   }
 }
 

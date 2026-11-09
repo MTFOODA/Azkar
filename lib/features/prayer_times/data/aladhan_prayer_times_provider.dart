@@ -90,12 +90,18 @@ class AlAdhanPrayerTimesProvider implements PrayerTimesProvider {
       );
     }
     final rawData = decoded['data'];
-    final rawMeta = decoded['meta'];
     if (rawData is! List ||
-        rawMeta is! Map ||
+        rawData.isEmpty ||
         rawData.any((day) => day is! Map)) {
       throw const PrayerTimesDataException(
         'استجابة خدمة مواقيت الصلاة لا تتضمن التقويم والبيانات الوصفية.',
+      );
+    }
+    // Calendar endpoints put metadata inside EACH day, not at the root.
+    final rawMeta = (rawData.first as Map)['meta'];
+    if (rawMeta is! Map) {
+      throw const PrayerTimesDataException(
+        'بيانات التقويم الوصفية غير مكتملة.',
       );
     }
     final timezoneId = rawMeta['timezone'];
@@ -110,6 +116,22 @@ class AlAdhanPrayerTimesProvider implements PrayerTimesProvider {
       );
     }
     final zone = PrayerTimeZones.location(timezoneId);
+    for (final rawDay in rawData) {
+      final meta = (rawDay as Map)['meta'];
+      final method = meta is Map ? meta['method'] : null;
+      final expectedSchool = asrMethod == AsrCalculationMethod.hanafi
+          ? 'HANAFI'
+          : 'STANDARD';
+      if (meta is! Map ||
+          meta['timezone'] != timezoneId ||
+          method is! Map ||
+          readPrayerJsonInt(method['id']) != calculationMethod.id ||
+          meta['school'] != expectedSchool) {
+        throw const PrayerTimesDataException(
+          'إعدادات أحد أيام التقويم لا تطابق طريقة الحساب المطلوبة.',
+        );
+      }
+    }
     final days =
         rawData
             .map(
@@ -182,6 +204,18 @@ class AlAdhanPrayerTimesProvider implements PrayerTimesProvider {
         minute,
       );
     }
-    return PrayerDay(localDate: localDate, times: times);
+    final rawHijri = date is Map ? date['hijri'] : null;
+    PrayerHijriDate? hijri;
+    if (rawHijri is Map) {
+      final rawHijriMonth = rawHijri['month'];
+      hijri = PrayerHijriDate(
+        day: readPrayerJsonInt(rawHijri['day']),
+        month: rawHijriMonth is Map
+            ? readPrayerJsonInt(rawHijriMonth['number'])
+            : -1,
+        year: readPrayerJsonInt(rawHijri['year']),
+      );
+    }
+    return PrayerDay(localDate: localDate, times: times, hijri: hijri);
   }
 }

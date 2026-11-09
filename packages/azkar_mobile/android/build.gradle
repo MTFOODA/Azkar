@@ -1,0 +1,12 @@
+plugins { id 'com.android.library' }
+group = 'com.azkar.mobile'
+version = '1.0.0'
+android {
+    namespace = 'com.azkar.mobile'
+    compileSdk = 36
+    defaultConfig { minSdk = 24 }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}

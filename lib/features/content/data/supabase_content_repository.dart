@@ -234,12 +234,12 @@ AppException translatePostgrestError(PostgrestException error) {
   }
   if (message.contains('check constraint') || error.code == '23514') {
     return AppException(
-      'بيانات غير صالحة: ${error.details ?? error.message}',
+      'بعض البيانات المدخلة غير صالحة. راجعها ثم أعد المحاولة.',
       technical: error.message,
     );
   }
   return AppException(
-    'تعذّر إتمام العملية على قاعدة البيانات. يرجى المحاولة لاحقًا.',
+    'تعذّر إتمام العملية حاليًا. يُرجى المحاولة لاحقًا.',
     technical: error.message,
   );
 }

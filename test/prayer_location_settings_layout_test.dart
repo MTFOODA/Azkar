@@ -155,6 +155,8 @@ class _PreferencesStore implements ReminderPreferencesLocalStore {
 
 class _LocationStore implements LocalPrayerScheduleLocationStore {
   @override
+  bool get allowManualLocation => false;
+  @override
   String? Function()? get currentUserIdProvider => null;
 
   @override

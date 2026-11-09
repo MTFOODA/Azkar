@@ -124,7 +124,7 @@ class PrayerLocation {
       city: trimmedCity,
       country: trimmedCountry,
       countryCode: _normalizeCountryCode(countryCode),
-      timezoneId: timezoneId?.trim(),
+      timezoneId: _normalizeTimezone(timezoneId),
     );
   }
 
@@ -147,7 +147,7 @@ class PrayerLocation {
       countryCode: _normalizeCountryCode(countryCode),
       latitude: latitude,
       longitude: longitude,
-      timezoneId: timezoneId?.trim(),
+      timezoneId: _normalizeTimezone(timezoneId),
     );
   }
 
@@ -189,6 +189,11 @@ class PrayerLocation {
     PrayerTimeZones.location(timezoneId.trim());
   }
 
+  static String? _normalizeTimezone(String? value) {
+    final normalized = value?.trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
+  }
+
   static String? _normalizeCountryCode(String? countryCode) {
     final normalized = countryCode?.trim().toUpperCase();
     return normalized == null || normalized.isEmpty ? null : normalized;
@@ -217,10 +222,37 @@ class PrayerMonth {
   bool containsDate(DateTime date) => date.year == year && date.month == month;
 }
 
+class PrayerHijriDate {
+  PrayerHijriDate({
+    required this.day,
+    required this.month,
+    required this.year,
+  }) {
+    if (day < 1 ||
+        day > 30 ||
+        month < 1 ||
+        month > 12 ||
+        year < 1 ||
+        year > 9999) {
+      throw const PrayerTimesDataException('التاريخ الهجري المستلم غير صالح.');
+    }
+  }
+  final int day;
+  final int month;
+  final int year;
+  Map<String, Object?> toJson() => {'day': day, 'month': month, 'year': year};
+  factory PrayerHijriDate.fromJson(Map json) => PrayerHijriDate(
+    day: _readInt(json['day']),
+    month: _readInt(json['month']),
+    year: _readInt(json['year']),
+  );
+}
+
 class PrayerDay {
   PrayerDay({
     required DateTime localDate,
     required Map<PrayerName, timezone.TZDateTime> times,
+    this.hijri,
   }) : localDate = DateTime.utc(localDate.year, localDate.month, localDate.day),
        times = UnmodifiableMapView<PrayerName, timezone.TZDateTime>(
          Map<PrayerName, timezone.TZDateTime>.of(times),
@@ -244,6 +276,7 @@ class PrayerDay {
 
   final DateTime localDate;
   final Map<PrayerName, timezone.TZDateTime> times;
+  final PrayerHijriDate? hijri;
 
   timezone.TZDateTime timeFor(PrayerName name) => times[name]!;
 
@@ -251,6 +284,7 @@ class PrayerDay {
     'year': localDate.year,
     'month': localDate.month,
     'day': localDate.day,
+    if (hijri != null) 'hijri': hijri!.toJson(),
     'times': <String, String>{
       for (final entry in times.entries)
         entry.key.id: _formatWallTime(entry.value),
@@ -293,7 +327,13 @@ class PrayerDay {
       );
     }
     try {
-      return PrayerDay(localDate: date, times: times);
+      return PrayerDay(
+        localDate: date,
+        times: times,
+        hijri: json['hijri'] is Map
+            ? PrayerHijriDate.fromJson(json['hijri'] as Map)
+            : null,
+      );
     } on PrayerTimesDataException catch (error) {
       throw PrayerTimesCacheException(error.message, cause: error);
     }
@@ -435,6 +475,9 @@ class PrayerTimeZones {
 
   static timezone.Location location(String timezoneId) {
     initialize();
+    // UTC is a built-in location; some trimmed IANA databases don't register
+    // the legacy "UTC" alias among named zones.
+    if (timezoneId == 'UTC') return timezone.UTC;
     try {
       return timezone.getLocation(timezoneId);
     } on Object catch (error) {

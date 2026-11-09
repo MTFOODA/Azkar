@@ -8,6 +8,10 @@ import 'package:timezone/timezone.dart' as timezone;
 
 import '../../../core/design/app_palette.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/utils/app_exception.dart';
+import '../../../core/utils/app_logger.dart';
+import '../../../core/widgets/route_back_button.dart';
+import '../../sharing/public_scaffold.dart';
 import '../../prayer_times/domain/prayer_time_errors.dart';
 import '../../prayer_times/domain/prayer_time_models.dart';
 import '../../prayer_tracking/domain/prayer_completion_state_machine.dart';
@@ -21,19 +25,26 @@ class PrayerDashboardPage extends ConsumerStatefulWidget {
       _PrayerDashboardPageState();
 }
 
-class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
+class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage>
+    with WidgetsBindingObserver {
   _PrayerDashboardData? _data;
   Object? _error;
   bool _loading = true;
+  bool _fetching = false;
   Timer? _clockTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_load());
     _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!mounted) return;
       final data = _data;
+      if (data == null && !_loading) {
+        unawaited(_load());
+        return;
+      }
       if (data != null) {
         final localNow = timezone.TZDateTime.from(
           DateTime.now(),
@@ -58,11 +69,30 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _clockTimer?.cancel();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_refreshForLocation());
+  }
+
+  Future<void> _refreshForLocation() async {
+    final user = ref.read(accountSessionProvider)?.id;
+    if (user != null) {
+      try {
+        await ref.read(automaticPrayerLocationServiceProvider).refresh(user);
+      } on Object catch (error) {
+        AppLogger.warning('Prayer location refresh is unavailable.', error);
+      }
+    }
+    if (mounted) await _load();
+  }
+
   Future<void> _load() async {
+    if (!mounted || _fetching) return;
     final userId = ref.read(accountSessionProvider)?.id;
     if (userId == null) {
       if (mounted) {
@@ -73,6 +103,7 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
       }
       return;
     }
+    _fetching = true;
     setState(() {
       _loading = true;
       _error = null;
@@ -147,13 +178,21 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
         );
         _loading = false;
       });
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning('Prayer dashboard load failed', error, stackTrace);
       if (!mounted) return;
       setState(() {
         _error = error;
         _loading = false;
       });
+    } finally {
+      _fetching = false;
     }
+  }
+
+  Future<void> _openSettings(String route) async {
+    await context.push<void>(route);
+    if (mounted) await _load();
   }
 
   _PrayerTime? _upcomingPrayer(PrayerDay day, timezone.TZDateTime now) {
@@ -192,8 +231,9 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
           .read(tasbeehOutboxCoordinatorProvider)
           .reconcilePending(data.userId);
       await _load();
-    } on Object catch (error) {
-      _showMessage('تعذّر تحديث حالة الصلاة: $error');
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning('Updating prayer completion failed', error, stackTrace);
+      _showMessage(friendlyMessage(error));
     }
   }
 
@@ -208,8 +248,13 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
             completed: false,
           );
       await _load();
-    } on Object catch (error) {
-      _showMessage('تعذّر تصحيح حالة الصلاة: $error');
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Correcting prayer completion failed',
+        error,
+        stackTrace,
+      );
+      _showMessage(friendlyMessage(error));
     }
   }
 
@@ -226,8 +271,9 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
             action: PrayerCompletionAction.notYetPrayed,
           );
       await _load();
-    } on Object catch (error) {
-      _showMessage('تعذّر تحديث التذكير: $error');
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning('Updating prayer reminder failed', error, stackTrace);
+      _showMessage(friendlyMessage(error));
     }
   }
 
@@ -241,20 +287,37 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const RouteBackButton(),
         title: const Text('مواقيت الصلاة'),
         actions: [
-          IconButton(
-            tooltip: 'إعدادات التذكير',
-            onPressed: () => context.push('/worship/reminders'),
-            icon: const Icon(Icons.notifications_outlined),
+          Builder(
+            builder: (context) => IconButton(
+              tooltip: 'القائمة',
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              icon: const Icon(Icons.menu),
+            ),
           ),
-          IconButton(
-            tooltip: 'إعدادات الموقع',
-            onPressed: () => context.push('/worship/location'),
-            icon: const Icon(Icons.location_on_outlined),
+          PopupMenuButton<String>(
+            tooltip: 'إعدادات الصلاة',
+            onSelected: _openSettings,
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: '/worship/reminders',
+                child: Text('إعدادات التذكير'),
+              ),
+              PopupMenuItem(
+                value: '/worship/location',
+                child: Text('الموقع والتوقيت'),
+              ),
+              PopupMenuItem(
+                value: '/worship/widget',
+                child: Text('ويدجت الشاشة الرئيسية'),
+              ),
+            ],
           ),
         ],
       ),
+      drawer: const PublicNavigationDrawer(),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -269,7 +332,7 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
                 ? _ErrorState(error: _error!, onRetry: _load)
                 : _data == null
                 ? _NoLocationState(
-                    onSelect: () => context.push('/worship/location'),
+                    onSelect: () => _openSettings('/worship/location'),
                   )
                 : RefreshIndicator(
                     onRefresh: _load,
@@ -324,9 +387,14 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage> {
                         ),
                         const SizedBox(height: AppPalette.spaceMd),
                         FilledButton.icon(
-                          onPressed: () => context.push('/worship/reminders'),
+                          onPressed: () => _openSettings('/worship/reminders'),
                           icon: const Icon(Icons.tune),
                           label: const Text('إعدادات الصلاة والتذكير'),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => context.push('/worship/widget'),
+                          icon: const Icon(Icons.widgets_outlined),
+                          label: const Text('ويدجت الشاشة الرئيسية'),
                         ),
                       ],
                     ),
@@ -564,7 +632,7 @@ class _NoLocationState extends StatelessWidget {
           const Icon(Icons.location_searching, size: 48),
           const SizedBox(height: AppPalette.spaceMd),
           const Text(
-            'اختر مدينتك لعرض مواقيت الصلاة.',
+            'فعّل الموقع الحالي لعرض مواقيت الصلاة في مكانك.',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppPalette.spaceMd),
@@ -591,7 +659,7 @@ class _ErrorState extends StatelessWidget {
           const Icon(Icons.error_outline, size: 48),
           const SizedBox(height: AppPalette.spaceMd),
           Text(
-            'تعذّر تحميل مواقيت الصلاة.\n$error',
+            'تعذّر تحميل مواقيت الصلاة.\n${friendlyMessage(error)}',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppPalette.spaceMd),

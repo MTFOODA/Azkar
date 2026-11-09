@@ -1,6 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Handles a direct/deep-link route with no earlier page, while leaving normal
+/// navigator pops and Android/iOS back gestures to Flutter.
+class AppBackNavigation extends StatelessWidget {
+  const AppBackNavigation({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => BackButtonListener(
+    onBackButtonPressed: () async {
+      final router = GoRouter.of(context);
+      if (router.canPop()) return false;
+      final location = router.routeInformationProvider.value.uri.path;
+      if (location == '/' || location == '/onboarding') return false;
+      if (!await confirmUnsavedChanges(context)) return true;
+      router.go(routeBackFallback(location));
+      return true;
+    },
+    child: child,
+  );
+}
+
 class RouteBackButton extends StatelessWidget {
   const RouteBackButton({super.key, this.fallbackLocation, this.iconSize});
 
@@ -9,7 +29,9 @@ class RouteBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = GoRouterState.of(context).matchedLocation;
+    final location =
+        GoRouter.maybeOf(context)?.routeInformationProvider.value.uri.path ??
+        '/';
     return IconButton(
       key: const ValueKey('route-back-button'),
       tooltip: 'رجوع',
@@ -32,7 +54,9 @@ Future<void> navigateBack(
   required String fallbackLocation,
 }) async {
   final didHandle = await Navigator.of(context).maybePop();
-  if (!didHandle && context.mounted) context.go(fallbackLocation);
+  if (!didHandle && context.mounted) {
+    GoRouter.maybeOf(context)?.go(fallbackLocation);
+  }
 }
 
 String routeBackFallback(String location) {
@@ -74,6 +98,7 @@ String routeBackFallback(String location) {
   }
   if (location.startsWith('/admin/')) return '/admin/dashboard';
   if (location.startsWith('/dashboard/')) return '/dashboard';
+  if (location.startsWith('/worship/')) return '/worship';
   if (location == '/login') return '/';
   return '/';
 }
@@ -176,5 +201,11 @@ Future<void> navigateToLocation(
 }) async {
   if (!await confirmUnsavedChanges(context) || !context.mounted) return;
   if (closeDrawer) Scaffold.maybeOf(context)?.closeDrawer();
-  if (context.mounted) context.go(location);
+  if (context.mounted) {
+    if (location == '/') {
+      context.go(location);
+    } else if (GoRouterState.of(context).uri.toString() != location) {
+      context.push(location);
+    }
+  }
 }

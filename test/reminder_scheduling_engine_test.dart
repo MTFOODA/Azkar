@@ -24,6 +24,37 @@ import 'package:timezone/timezone.dart' as timezone;
 void main() {
   setUpAll(PrayerTimeZones.initialize);
 
+  test('background maintenance renews reminders without foreground completion storage', () async {
+    final fixture = await _Fixture.create(
+      backgroundMode: true,
+      clock: DateTime.utc(2026, 1, 8, 2),
+    );
+    addTearDown(fixture.close);
+    await fixture.save(
+      ReminderPreferences(
+        prayerTimeNotificationsEnabled: true,
+        prayerRemindersEnabled: true,
+        morningAzkarEnabled: true,
+      ),
+    );
+    final report = await fixture.engine.reconcile('account-a');
+    final keys = (await fixture.notifications.registeredSchedules('account-a'))
+        .keys;
+    expect(report.scheduledCount, greaterThan(0));
+    expect(
+      keys.every((key) => key.startsWith('reminder-background:v1:')),
+      isTrue,
+    );
+    expect(keys.any((key) => key.contains('prayer-followup:')), isTrue);
+    expect(fixture.platform.permissionRequests, 0);
+    expect(
+      fixture.platform.scheduled.values.every(
+        (item) => item.scheduledAt.isAfter(fixture.clock),
+      ),
+      isTrue,
+    );
+  });
+
   test(
     'plans daily, Friday, and specific-day reminders over a bounded horizon',
     () async {
@@ -534,6 +565,7 @@ class _Fixture {
     DateTime? clock,
     DateTime? providerFetchedAt,
     bool providerFails = false,
+    bool backgroundMode = false,
   }) async {
     final now = clock ?? DateTime.utc(2026, 1, 1, 4);
     final database = await openNewInMemoryDatabase();
@@ -571,6 +603,7 @@ class _Fixture {
     );
     final cache = _FakePrayerCache();
     final engine = LocalReminderSchedulingEngine(
+      backgroundMode: backgroundMode,
       preferencesStore: preferences,
       locationStore: locationStore,
       prayerTimesService: PrayerTimesService(provider: provider, cache: cache),

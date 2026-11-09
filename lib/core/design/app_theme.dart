@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 
 import '../typography/arabic_font_loader.dart';
 import '../typography/arabic_fonts.dart';
@@ -87,6 +88,13 @@ class AppTheme {
       canvasColor: background,
       textTheme: textTheme,
       primaryTextTheme: textTheme,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       iconTheme: IconThemeData(color: text.withValues(alpha: 0.85)),
       dividerTheme: DividerThemeData(
         color: outline.withValues(alpha: 0.7),

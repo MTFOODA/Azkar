@@ -32,6 +32,9 @@ import '../../features/memorial/data/memorial_page_repository.dart';
 import '../../features/memorial/data/supabase_memorial_page_repository.dart';
 import '../../features/memorial/domain/memorial_page.dart';
 import '../../features/mobile_platform/domain/mobile_runtime.dart';
+import '../../features/home_widget/data/prayer_home_widget_service.dart';
+import '../../features/home_widget/data/remembrance_widget_service.dart';
+import '../../features/home_widget/data/remembrance_widget_preferences.dart';
 import '../../features/onboarding/data/onboarding_completion_store.dart';
 import '../../features/notifications/data/flutter_local_notification_platform.dart';
 import '../../features/notifications/data/local_notification_service.dart';
@@ -40,6 +43,8 @@ import '../../features/prayer_times/data/aladhan_prayer_times_provider.dart';
 import '../../features/prayer_times/data/local_prayer_calendar_cache.dart';
 import '../../features/prayer_times/data/prayer_times_provider.dart';
 import '../../features/prayer_times/data/prayer_times_service.dart';
+import '../../features/prayer_times/data/automatic_prayer_location_service.dart';
+import '../../features/reminders/data/background_reminder_service.dart';
 import '../../features/prayer_tracking/data/local_prayer_completion_store.dart';
 import '../../features/prayer_tracking/data/local_prayer_completion_reminder_scheduler.dart';
 import '../../features/prayer_tracking/data/prayer_completion_notification_coordinator.dart';
@@ -184,6 +189,7 @@ final localPrayerScheduleLocationStoreProvider =
     Provider<LocalPrayerScheduleLocationStore>((ref) {
       return LocalPrayerScheduleLocationStore(
         currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+        allowManualLocation: false,
       );
     });
 
@@ -198,8 +204,62 @@ final localReminderSchedulingEngineProvider =
           prayerCompletionStateMachineProvider,
         ),
         currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+        refreshHomeWidget: ref.watch(prayerHomeWidgetServiceProvider).refresh,
+        persistBackgroundSnapshot: ref
+            .watch(backgroundReminderServiceProvider)
+            .save,
       );
     });
+
+final backgroundReminderServiceProvider = Provider<BackgroundReminderService>((
+  ref,
+) {
+  final service = BackgroundReminderService(
+    runtime: ref.watch(mobileRuntimeProvider),
+    currentUserId: () => ref.read(accountSessionProvider)?.id,
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+final automaticPrayerLocationServiceProvider =
+    Provider<AutomaticPrayerLocationService>(
+      (ref) => AutomaticPrayerLocationService(
+        ref.watch(localPrayerScheduleLocationStoreProvider),
+        () => ref.read(accountSessionProvider)?.id,
+      ),
+    );
+
+final prayerHomeWidgetServiceProvider = Provider<PrayerHomeWidgetService>((
+  ref,
+) {
+  return PrayerHomeWidgetService(
+    preferencesStore: ref.watch(reminderPreferencesLocalStoreProvider),
+    locationStore: ref.watch(localPrayerScheduleLocationStoreProvider),
+    prayerTimesService: ref.watch(prayerTimesServiceProvider),
+    currentUserIdProvider: () => ref.read(accountSessionProvider)?.id,
+    runtime: ref.watch(mobileRuntimeProvider),
+  );
+});
+
+final remembranceWidgetServiceProvider = Provider<RemembranceWidgetService>(
+  (ref) => RemembranceWidgetService(
+    runtime: ref.watch(mobileRuntimeProvider),
+    currentUserId: () => ref.read(accountSessionProvider)?.id,
+    globalRepository: ref.watch(contentRepositoryProvider),
+    pageRepository: (id) => ref.read(pageContentRepositoryProvider(id)),
+    memorialRepository: ref.watch(memorialPageRepositoryProvider),
+    preferencesStore: ref.watch(remembranceWidgetPreferencesStoreProvider),
+  ),
+  dependencies: [contentRepositoryProvider, pageContentRepositoryProvider],
+);
+
+final remembranceWidgetPreferencesStoreProvider =
+    Provider<RemembranceWidgetPreferencesStore>(
+      (ref) => RemembranceWidgetPreferencesStore(
+        currentUserId: () => ref.read(accountSessionProvider)?.id,
+      ),
+    );
 
 class _OfflineReminderPreferencesRemoteStore
     implements ReminderPreferencesRemoteStore {

@@ -65,6 +65,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.work:work-runtime:2.11.2")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 

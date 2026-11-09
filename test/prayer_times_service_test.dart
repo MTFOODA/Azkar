@@ -10,6 +10,57 @@ import 'package:timezone/timezone.dart' as timezone;
 void main() {
   setUpAll(PrayerTimeZones.initialize);
 
+  test('built-in UTC works for test notifications on native runtimes', () {
+    final instant = DateTime.utc(2026, 11, 8, 12);
+    final utc = PrayerTimeZones.localDateTime(instant, 'UTC');
+    expect(utc.toUtc(), instant);
+    expect(utc.timeZoneOffset, Duration.zero);
+  });
+
+  test(
+    'a cache write failure does not discard successful live prayer times',
+    () async {
+      final month = PrayerMonth(2026, 11);
+      final provider = _MutableProvider(
+        _calendar(
+          month,
+          PrayerCalculationMethod.egyptianGeneralAuthority,
+          AsrCalculationMethod.standard,
+          'Africa/Cairo',
+        ),
+      );
+      final service = PrayerTimesService(
+        provider: provider,
+        cache: _UnwritableCache(),
+      );
+      final calendar = await service.fetchMonthlyCalendar(
+        location: PrayerLocation.manualCity(city: 'Cairo', country: 'Egypt'),
+        month: month,
+      );
+      expect(calendar.days, hasLength(30));
+      expect(calendar.isFromCache, isFalse);
+    },
+  );
+
+  test('an empty optional time zone is treated as automatic detection', () {
+    expect(
+      PrayerLocation.manualCity(
+        city: 'Cairo',
+        country: 'Egypt',
+        timezoneId: ' ',
+      ).timezoneId,
+      isNull,
+    );
+    expect(
+      PrayerLocation.coordinates(
+        latitude: 30,
+        longitude: 31,
+        timezoneId: '',
+      ).timezoneId,
+      isNull,
+    );
+  });
+
   test(
     'uses Egypt method 5 by default and allows another calculation method',
     () async {
@@ -309,6 +360,14 @@ class _MutableProvider implements PrayerTimesProvider {
     if (calendar case final PrayerCalendar available) return available;
     throw StateError('Test provider has no calendar.');
   }
+}
+
+class _UnwritableCache implements PrayerCalendarCache {
+  @override
+  Future<PrayerCalendar?> read(String cacheKey) async => null;
+  @override
+  Future<void> write(String cacheKey, PrayerCalendar calendar) async =>
+      throw const PrayerTimesCacheException('Storage is full');
 }
 
 PrayerCalendar _calendar(

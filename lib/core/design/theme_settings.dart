@@ -12,8 +12,8 @@ import 'card_shape.dart';
 class ThemeSettings {
   const ThemeSettings({
     this.primaryColor = '#064E3B',
-    this.secondaryColor = '#D4AF37',
-    this.backgroundColor = '#F8F5EC',
+    this.secondaryColor = '#6B7280',
+    this.backgroundColor = '#F3F4F6',
     this.surfaceColor = '#FFFFFF',
     this.defaultCardColor = '#FFFFFF',
     this.defaultTextColor = '#243B35',
@@ -37,11 +37,15 @@ class ThemeSettings {
   Color get primary =>
       HexColor.parse(primaryColor, fallback: AppPalette.lightPrimary);
 
-  Color get secondary =>
-      HexColor.parse(secondaryColor, fallback: AppPalette.lightSecondary);
+  Color get secondary => HexColor.parse(
+    _neutralizeLegacyColor(secondaryColor),
+    fallback: AppPalette.lightSecondary,
+  );
 
-  Color get background =>
-      HexColor.parse(backgroundColor, fallback: AppPalette.lightBackground);
+  Color get background => HexColor.parse(
+    _neutralizeLegacyColor(backgroundColor),
+    fallback: AppPalette.lightBackground,
+  );
 
   Color get surface =>
       HexColor.parse(surfaceColor, fallback: AppPalette.lightSurface);
@@ -164,3 +168,9 @@ class ThemeSettings {
     return text;
   }
 }
+
+String _neutralizeLegacyColor(String value) => switch (value.toUpperCase()) {
+  '#D4AF37' || '#C9A227' || '#B08D57' || '#E0C068' || '#C3A462' => '#6B7280',
+  '#F8F5EC' || '#FDFBF5' || '#F2EFE6' => '#F3F4F6',
+  _ => value,
+};
