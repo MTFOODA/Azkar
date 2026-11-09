@@ -52,11 +52,6 @@ class SharingService {
       memorialPhrase,
       if (dedication.isNotEmpty) dedication,
       switch (page.deceasedGender) {
-        'female' => 'اللهم اغفر لها وارحمها',
-        'male' => 'اللهم اغفر له وارحمه',
-        _ => 'اللهم اغفر للفقيد وارحمه',
-      },
-      switch (page.deceasedGender) {
         'male' => 'نسألكم الدعاء له بالرحمة والمغفرة.',
         'female' => 'نسألكم الدعاء لها بالرحمة والمغفرة.',
         _ => 'نسألكم الدعاء بالرحمة والمغفرة.',

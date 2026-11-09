@@ -37,10 +37,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(platform.permissionRequests, 0);
-    expect(
-      find.text('لن نطلب الإذن تلقائياً عند تشغيل التطبيق.'),
-      findsOneWidget,
-    );
+    expect(find.text('الإذن غير مفعّل'), findsOneWidget);
+    expect(find.text('تفعيل الإشعارات'), findsOneWidget);
     expect(find.text('السماح بالإشعارات'), findsOneWidget);
 
     await tester.tap(find.text('السماح بالإشعارات'));

@@ -910,11 +910,7 @@ class _NotificationPermissionPageState
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'تمت جدولة تنبيه بعد 10 ثوانٍ؛ قد يؤخره النظام إذا كانت المنبّهات الدقيقة غير مفعّلة.',
-            ),
-          ),
+          const SnackBar(content: Text('سيصلك إشعار تجريبي بعد نحو 10 ثوانٍ.')),
         );
       }
     } on Object catch (error, stackTrace) {
@@ -951,21 +947,23 @@ class _NotificationPermissionPageState
             ),
             const SizedBox(height: AppPalette.spaceMd),
             Text(
-              'تذكيرات تختارها بنفسك',
+              'تفعيل الإشعارات',
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppPalette.spaceMd),
             const Text(
-              'نستخدم الإشعارات لإظهار مواقيت الصلاة، متابعة الصلاة، أذكار '
-              'الصباح والمساء، التذكيرات المخصصة، وسورة الكهف. يمكنك تشغيل '
-              'كل نوع أو إيقافه من إعدادات التذكير في أي وقت.',
+              'اسمح بالإشعارات لتصلك تذكيرات الصلاة والأذكار.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppPalette.spaceMd),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.privacy_tip_outlined),
+                leading: Icon(
+                  _permission == NotificationPermissionState.granted
+                      ? Icons.check_circle_outline
+                      : Icons.notifications_outlined,
+                ),
                 title: Text(switch (_permission) {
                   NotificationPermissionState.granted => 'الإذن مفعّل',
                   NotificationPermissionState.denied => 'الإذن غير مفعّل',
@@ -973,10 +971,6 @@ class _NotificationPermissionPageState
                     'الإشعارات غير مدعومة على هذا النظام',
                   null => 'جارٍ التحقق من الإذن',
                 }),
-                subtitle: Text(
-                  _permissionError ??
-                      'لن نطلب الإذن تلقائياً عند تشغيل التطبيق.',
-                ),
               ),
             ),
             const SizedBox(height: AppPalette.spaceMd),
@@ -995,13 +989,13 @@ class _NotificationPermissionPageState
                     label: const Text('فتح إعدادات الجهاز'),
                   ),
                 ],
-              )
-            else if (_permission != NotificationPermissionState.granted &&
-                _permission != NotificationPermissionState.unsupported)
-              FilledButton.icon(
-                onPressed: _busy ? null : _request,
-                icon: const Icon(Icons.notifications_active_outlined),
-                label: Text(_busy ? 'جارٍ الطلب…' : 'السماح بالإشعارات'),
+              ),
+            if (_permissionError != null)
+              Text(_permissionError!, textAlign: TextAlign.center),
+            if (_permission == null && _permissionError != null)
+              TextButton(
+                onPressed: _readPermission,
+                child: const Text('إعادة المحاولة'),
               ),
             const SizedBox(height: AppPalette.spaceSm),
             if (_permission == NotificationPermissionState.granted) ...[
@@ -1010,11 +1004,8 @@ class _NotificationPermissionPageState
                   child: ListTile(
                     title: Text(
                       _exactAlarmsGranted!
-                          ? 'المنبّهات الدقيقة مفعّلة'
-                          : 'السماح بتنبيهات الصلاة الدقيقة',
-                    ),
-                    subtitle: const Text(
-                      'لإظهار التنبيه عند موعد الصلاة. بدون هذا الإذن قد يؤخر أندرويد التذكير.',
+                          ? 'تنبيهات الصلاة في موعدها مفعّلة'
+                          : 'تفعيل تنبيهات الصلاة في موعدها',
                     ),
                     trailing: _exactAlarmsGranted!
                         ? const Icon(Icons.check_circle_outline)
@@ -1029,15 +1020,7 @@ class _NotificationPermissionPageState
                 icon: const Icon(Icons.notifications_outlined),
                 label: const Text('اختبار الإشعارات'),
               ),
-              const Text(
-                'إذن الإشعارات يظل مفعّلاً؛ يتم تحديث جدول التذكيرات تلقائياً في الخلفية حسب سماح النظام.',
-                textAlign: TextAlign.center,
-              ),
             ],
-            OutlinedButton(
-              onPressed: () => context.pop(),
-              child: const Text('العودة إلى الإعدادات'),
-            ),
           ],
         ),
       ),

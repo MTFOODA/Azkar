@@ -13,6 +13,9 @@ class AppBackNavigation extends StatelessWidget {
       if (router.canPop()) return false;
       final location = router.routeInformationProvider.value.uri.path;
       if (location == '/' || location == '/onboarding') return false;
+      // A shared memorial is a public entry point. Let the platform leave the
+      // app/browser page rather than redirecting its visitor to an account home.
+      if (RegExp(r'^/m/[^/]+/?$').hasMatch(location)) return false;
       if (!await confirmUnsavedChanges(context)) return true;
       router.go(routeBackFallback(location));
       return true;

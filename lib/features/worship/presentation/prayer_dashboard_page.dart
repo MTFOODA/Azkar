@@ -11,6 +11,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/app_exception.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/widgets/route_back_button.dart';
+import '../../home_widget/presentation/prayer_widget_actions.dart';
 import '../../sharing/public_scaffold.dart';
 import '../../prayer_times/domain/prayer_time_errors.dart';
 import '../../prayer_times/domain/prayer_time_models.dart';
@@ -309,10 +310,6 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage>
                 value: '/worship/location',
                 child: Text('الموقع والتوقيت'),
               ),
-              PopupMenuItem(
-                value: '/worship/widget',
-                child: Text('ويدجت الشاشة الرئيسية'),
-              ),
             ],
           ),
         ],
@@ -391,11 +388,8 @@ class _PrayerDashboardPageState extends ConsumerState<PrayerDashboardPage>
                           icon: const Icon(Icons.tune),
                           label: const Text('إعدادات الصلاة والتذكير'),
                         ),
-                        TextButton.icon(
-                          onPressed: () => context.push('/worship/widget'),
-                          icon: const Icon(Icons.widgets_outlined),
-                          label: const Text('ويدجت الشاشة الرئيسية'),
-                        ),
+                        const SizedBox(height: AppPalette.spaceMd),
+                        const PrayerWidgetActions(),
                       ],
                     ),
                   ),

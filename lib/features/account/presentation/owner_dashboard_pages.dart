@@ -21,6 +21,7 @@ import '../../content/widgets/content_card.dart';
 import '../../memorial/domain/memorial_page.dart';
 import '../../memorial/domain/page_slug.dart';
 import '../../memorial/presentation/memorial_gender_segmented_control.dart';
+import '../../memorial/presentation/memorial_identity_card.dart';
 import '../../memorial/presentation/memorial_section_navigation.dart';
 import '../../home/data/bismillah_loader.dart';
 import '../../home/domain/homepage_entry.dart';
@@ -840,12 +841,6 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
   @override
   Widget build(BuildContext context) {
     final cards = ref.watch(publicMemorialLayoutProvider(page.id));
-    final deceasedName = switch (page.deceasedGender) {
-      'male' => _withHonorific('المرحوم', page),
-      'female' => _withHonorific('المرحومة', page),
-      _ => _publicDeceasedName(page),
-    };
-    final dedicationMessage = _publicDedicationMessage(page.dedicationMessage);
     return SingleChildScrollView(
       child: PageContent(
         child: Column(
@@ -854,10 +849,9 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
             const SizedBox(height: AppPalette.spaceLg),
             const AzkarBrandLockup(markSize: 64),
             const SizedBox(height: AppPalette.spaceMd),
-            _MemorialIdentityCard(
+            MemorialIdentityCard(
               key: const ValueKey('first-memorial-card'),
-              deceasedName: deceasedName,
-              dedicationMessage: dedicationMessage,
+              page: page,
             ),
             const SizedBox(height: AppPalette.spaceMd),
             if (!widget.ownerPreview || page.isPublished)
@@ -958,10 +952,9 @@ class _MemorialPageContentState extends ConsumerState<_MemorialPageContent> {
                           ),
                         ),
                       ),
-                    _MemorialIdentityCard(
+                    MemorialIdentityCard(
                       key: const ValueKey('bottom-memorial-card'),
-                      deceasedName: deceasedName,
-                      dedicationMessage: dedicationMessage,
+                      page: page,
                     ),
                   ],
                 );
@@ -1029,67 +1022,4 @@ List<_MemorialSection> _buildMemorialSections(List<HomeCard> cards) {
     for (final entry in cardsByType.entries)
       _MemorialSection(entry.key, List<HomeCard>.unmodifiable(entry.value)),
   ];
-}
-
-class _MemorialIdentityCard extends StatelessWidget {
-  const _MemorialIdentityCard({
-    super.key,
-    required this.deceasedName,
-    required this.dedicationMessage,
-  });
-
-  final String deceasedName;
-  final String dedicationMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppPalette.radiusMd),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppPalette.spaceLg),
-        child: Column(
-          children: [
-            Text(
-              deceasedName,
-              style: theme.textTheme.headlineMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppPalette.spaceSm),
-            Text(
-              dedicationMessage,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-String _publicDeceasedName(MemorialPage page) {
-  final name = page.deceasedName?.trim() ?? '';
-  if (name.isNotEmpty) return name;
-  return page.deceasedGender == 'female'
-      ? 'اسم الفقيدة غير محدد'
-      : 'اسم الفقيد غير محدد';
-}
-
-/// Adds the honorific for display only, never twice and never to a placeholder.
-String _withHonorific(String honorific, MemorialPage page) {
-  final name = page.deceasedName?.trim() ?? '';
-  if (name.isEmpty || name.startsWith('المرحوم')) {
-    return _publicDeceasedName(page);
-  }
-  return '$honorific $name';
-}
-
-String _publicDedicationMessage(String? value) {
-  final message = value?.trim() ?? '';
-  return message.isEmpty ? 'رسالة الإهداء لم تُضف بعد.' : message;
 }

@@ -4,6 +4,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
+  testWidgets(
+    'platform back on a direct shared memorial never routes to the account home',
+    (tester) async {
+      final router = GoRouter(
+        initialLocation: '/m/example',
+        routes: [
+          ShellRoute(
+            builder: (context, state, child) => AppBackNavigation(child: child),
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const Scaffold(body: Text('Home')),
+              ),
+              GoRoute(
+                path: '/m/:slug',
+                builder: (_, _) => const Scaffold(body: Text('Memorial')),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(router.routeInformationProvider.value.uri.path, '/m/example');
+      expect(find.text('Home'), findsNothing);
+    },
+  );
+
   test('worship back targets retain the worship navigation context', () {
     expect(routeBackFallback('/worship/location'), '/worship');
     expect(routeBackFallback('/worship/notifications'), '/worship');
