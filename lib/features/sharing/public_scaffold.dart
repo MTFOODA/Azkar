@@ -12,7 +12,6 @@ import '../../core/widgets/route_back_button.dart';
 import '../content/domain/content_type.dart';
 import '../memorial/presentation/memorial_section_navigation.dart';
 import '../notifications/domain/local_notification.dart';
-import 'sharing_service.dart';
 import 'share_widgets.dart';
 
 /// The public website chrome: responsive navigation, theme switch and sharing.
@@ -147,6 +146,8 @@ class PublicNavigationDrawer extends ConsumerWidget {
     final categories = memorialSlug == null
         ? const <ContentType>[]
         : MemorialSectionNavigation.visibleTypes(memorialSlug);
+    final showAccountTools =
+        (account != null || adminSession != null) && !isMemorialPage;
     return Drawer(
       width: adaptiveDrawerWidth(context),
       child: SafeArea(
@@ -159,31 +160,34 @@ class PublicNavigationDrawer extends ConsumerWidget {
               onTap: () => _go(context, memorialPath ?? '/'),
             ),
             const Divider(),
-            ListTile(
-              key: const ValueKey('navigation-prayer-times'),
-              leading: const Icon(Icons.mosque_outlined),
-              title: const Text('مواقيت الصلاة'),
-              onTap: () => _go(context, '/worship'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.widgets_outlined),
-              title: const Text('ويدجت الشاشة الرئيسية'),
-              onTap: () => _go(context, '/worship/widget'),
-            ),
-            ListTile(
-              key: const ValueKey('navigation-notifications'),
-              leading: const Icon(Icons.notifications_outlined),
-              title: const Text('الإشعارات'),
-              onTap: () => _openNotifications(context, ref),
-            ),
+            if (showAccountTools) ...[
+              ListTile(
+                key: const ValueKey('navigation-prayer-times'),
+                leading: const Icon(Icons.mosque_outlined),
+                title: const Text('مواقيت الصلاة'),
+                onTap: () => _go(context, '/worship'),
+              ),
+              ListTile(
+                key: const ValueKey('navigation-home-widgets'),
+                leading: const Icon(Icons.widgets_outlined),
+                title: const Text('ويدجت الشاشة الرئيسية'),
+                onTap: () => _go(context, '/worship/widget'),
+              ),
+              ListTile(
+                key: const ValueKey('navigation-notifications'),
+                leading: const Icon(Icons.notifications_outlined),
+                title: const Text('الإشعارات'),
+                onTap: () => _openNotifications(context, ref),
+              ),
+            ],
             for (final type in categories)
               ListTile(
                 leading: Icon(type.icon),
                 title: Text(type.pluralLabelAr),
                 onTap: () => _selectCategory(context, type, memorialSlug),
               ),
-            const Divider(),
-            if (adminSession != null || account != null) ...[
+            if (categories.isNotEmpty || showAccountTools) const Divider(),
+            if (showAccountTools) ...[
               ListTile(
                 leading: const Icon(Icons.dashboard_outlined),
                 title: const Text('لوحة التحكم'),
@@ -202,17 +206,7 @@ class PublicNavigationDrawer extends ConsumerWidget {
                 },
               ),
             ],
-            const Divider(),
-            ListTile(
-              key: const ValueKey('android-apk-download'),
-              leading: const Icon(Icons.android),
-              title: Text(
-                _isEnglish(context)
-                    ? 'Download AZKAR for Android'
-                    : 'تحميل تطبيق أذكار للأندرويد',
-              ),
-              onTap: () => _downloadAndroidApk(context),
-            ),
+            if (showAccountTools) const Divider(),
             ListTile(
               key: const ValueKey('about-developer'),
               leading: const Icon(Icons.info_outline_rounded),
@@ -265,32 +259,6 @@ class PublicNavigationDrawer extends ConsumerWidget {
         );
       }
     }
-  }
-
-  Future<void> _downloadAndroidApk(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final isEnglish = _isEnglish(context);
-    final uri = AppConfig.androidApkDownloadUri;
-    Navigator.of(context).maybePop();
-    if (uri == null) {
-      messenger.showSnackBar(_downloadSnackBar(isEnglish, unavailable: true));
-      return;
-    }
-    final opened = await SharingService.openExternal(uri.toString());
-    if (!opened && messenger.mounted) {
-      messenger.showSnackBar(_downloadSnackBar(isEnglish));
-    }
-  }
-
-  SnackBar _downloadSnackBar(bool isEnglish, {bool unavailable = false}) {
-    final message = isEnglish
-        ? unavailable
-              ? 'The Android release download is not available yet.'
-              : 'Unable to open the Android download link.'
-        : unavailable
-        ? 'رابط تحميل نسخة أندرويد غير متاح حالياً.'
-        : 'تعذّر فتح رابط تحميل أندرويد.';
-    return SnackBar(content: Text(message));
   }
 
   void _go(BuildContext context, String location) {

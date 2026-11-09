@@ -1,0 +1,11 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/remembrance_viewport" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:layoutDirection="rtl" android:clipChildren="true" android:background="@android:color/transparent">
+    <ListView android:id="@+id/remembrance_stack" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:padding="0dp" android:divider="@null" android:dividerHeight="0dp"
+        android:scrollbars="none" android:listSelector="@android:color/transparent"
+        android:cacheColorHint="@android:color/transparent" android:overScrollMode="never" />
+    <TextView android:id="@+id/remembrance_empty" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:padding="20dp" android:gravity="center" android:background="@drawable/widget_background"
+        android:text="اختر النصوص من إعدادات ويدجت الأذكار" android:textSize="16sp" android:textColor="#F3F4F6" />
+</FrameLayout>

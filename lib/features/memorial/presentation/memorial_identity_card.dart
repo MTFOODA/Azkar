@@ -11,20 +11,7 @@ class MemorialIdentityCard extends StatelessWidget {
 
   final MemorialPage page;
 
-  String get _name {
-    final name = page.deceasedName?.trim() ?? '';
-    if (name.isEmpty) {
-      return page.deceasedGender == 'female'
-          ? 'اسم الفقيدة غير محدد'
-          : 'اسم الفقيد غير محدد';
-    }
-    if (name.startsWith('المرحوم')) return name;
-    return switch (page.deceasedGender) {
-      'male' => 'المرحوم $name',
-      'female' => 'المرحومة $name',
-      _ => name,
-    };
-  }
+  String get _name => page.displayDeceasedName;
 
   @override
   Widget build(BuildContext context) {

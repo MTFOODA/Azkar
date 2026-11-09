@@ -82,7 +82,12 @@ class PrayerWidgetProvider : AppWidgetProvider() {
         }
 
         private fun render(context: Context, id: Int): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.prayer_widget_responsive)
+            val views = RemoteViews(context.packageName, R.layout.prayer_widget_artistic)
+            val size = RemembranceCardRenderer.widgetSize(context, id)
+            views.setImageViewBitmap(R.id.prayer_widget_surface, RemembranceCardRenderer.surface(context, size))
+            val density = context.resources.displayMetrics.density
+            val inset = (RemembranceCardRenderer.horizontalPadding(size) * density).toInt()
+            views.setViewPadding(R.id.prayer_widget_content, inset, (4 * density).toInt(), inset, (4 * density).toInt())
             val open = Intent(context, MainActivity::class.java).apply {
                 action = OPEN_PRAYER
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
