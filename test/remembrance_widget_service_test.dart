@@ -127,7 +127,6 @@ void main() {
           targetPlatform: TargetPlatform.android,
         ),
         currentUserId: () => 'owner',
-        globalRepository: repo,
         pageRepository: (_) => repo,
         memorialRepository: _Memorial(),
         preferencesStore: settings,
@@ -190,7 +189,6 @@ void main() {
           targetPlatform: TargetPlatform.android,
         ),
         currentUserId: () => 'owner',
-        globalRepository: repo,
         pageRepository: (_) => repo,
         memorialRepository: _Memorial(),
       ).refresh('owner');

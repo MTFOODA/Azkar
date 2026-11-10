@@ -26,6 +26,25 @@ class SupabaseContentRepository implements ContentRepository {
 
   ThemeSettings get _theme => _themeProvider();
 
+  /// An explicit public card link may resolve a published record from any page.
+  /// Collection/admin queries remain scoped; parent-page visibility is enforced
+  /// by RLS just as it is for the public memorial link.
+  Future<ContentItem?> fetchSharedPublished(ContentType type, String id) async {
+    try {
+      final row = await _client
+          .from(type.table)
+          .select()
+          .eq('id', id)
+          .eq('is_published', true)
+          .maybeSingle();
+      return row == null
+          ? null
+          : ContentMapper.fromRow(type, row, theme: _theme);
+    } on PostgrestException catch (error) {
+      throw translatePostgrestError(error);
+    }
+  }
+
   @override
   Future<List<ContentItem>> fetchPublished(ContentType type) async {
     final rows = await _select(type, publishedOnly: true);
@@ -42,7 +61,9 @@ class SupabaseContentRepository implements ContentRepository {
   Future<ContentItem?> fetchById(ContentType type, String id) async {
     try {
       var query = _client.from(type.table).select().eq('id', id);
-      if (_pageId != null) query = query.eq('page_id', _pageId);
+      query = _pageId == null
+          ? query.isFilter('page_id', null)
+          : query.eq('page_id', _pageId);
       final row = await query.maybeSingle();
       if (row == null) return null;
       return ContentMapper.fromRow(type, row, theme: _theme);
@@ -61,7 +82,9 @@ class SupabaseContentRepository implements ContentRepository {
             .from(item.type.table)
             .update(item.toRow())
             .eq('id', item.id);
-        if (_pageId != null) query = query.eq('page_id', _pageId);
+        query = _pageId == null
+            ? query.isFilter('page_id', null)
+            : query.eq('page_id', _pageId);
         final updated = await query.select().single();
         return ContentMapper.fromRow(item.type, updated, theme: _theme);
       }
@@ -84,7 +107,9 @@ class SupabaseContentRepository implements ContentRepository {
   Future<void> delete(ContentType type, String id) async {
     try {
       var query = _client.from(type.table).delete().eq('id', id);
-      if (_pageId != null) query = query.eq('page_id', _pageId);
+      query = _pageId == null
+          ? query.isFilter('page_id', null)
+          : query.eq('page_id', _pageId);
       await query;
     } on PostgrestException catch (error, stackTrace) {
       AppLogger.error('delete failed for ${type.table}', error, stackTrace);
@@ -99,7 +124,9 @@ class SupabaseContentRepository implements ContentRepository {
           .from(type.table)
           .update(<String, dynamic>{'is_published': published})
           .eq('id', id);
-      if (_pageId != null) query = query.eq('page_id', _pageId);
+      query = _pageId == null
+          ? query.isFilter('page_id', null)
+          : query.eq('page_id', _pageId);
       await query;
     } on PostgrestException catch (error, stackTrace) {
       AppLogger.error(
@@ -119,7 +146,9 @@ class SupabaseContentRepository implements ContentRepository {
             .from(type.table)
             .update(<String, dynamic>{'display_order': index})
             .eq('id', orderedIds[index]);
-        if (_pageId != null) query = query.eq('page_id', _pageId);
+        query = _pageId == null
+            ? query.isFilter('page_id', null)
+            : query.eq('page_id', _pageId);
         await query;
       }
     } on PostgrestException catch (error, stackTrace) {
@@ -148,7 +177,9 @@ class SupabaseContentRepository implements ContentRepository {
     for (final type in ContentType.values) {
       try {
         var query = _client.from(type.table).select('is_published');
-        if (_pageId != null) query = query.eq('page_id', _pageId);
+        query = _pageId == null
+            ? query.isFilter('page_id', null)
+            : query.eq('page_id', _pageId);
         final rows = await query;
         var published = 0;
         var drafts = 0;
@@ -195,7 +226,9 @@ class SupabaseContentRepository implements ContentRepository {
   }) async {
     try {
       var query = _client.from(type.table).select();
-      if (_pageId != null) query = query.eq('page_id', _pageId);
+      query = _pageId == null
+          ? query.isFilter('page_id', null)
+          : query.eq('page_id', _pageId);
       if (publishedOnly) {
         query = query.eq('is_published', true);
       }

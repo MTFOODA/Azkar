@@ -2,7 +2,7 @@ name: azkar
 description: "AZKAR | أذكار — صدقة جارية: a web-first Islamic content platform."
 publish_to: 'none'
 
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ^3.13.5
@@ -57,6 +57,7 @@ flutter:
   assets:
     - assets/branding/
     - assets/data/
+    - assets/data/quick_content_library/
     - assets/fonts/amiri/
     - assets/fonts/cairo/
     - assets/fonts/tajawal/

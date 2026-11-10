@@ -19,6 +19,20 @@ public class AzkarMobilePlugin: NSObject, FlutterPlugin {
         return
       }
       switch call.method {
+      case "selectRemembranceAccount":
+        let account = call.arguments as? String
+        if let account = account,
+           account.range(of: "^[a-f0-9]{24}$", options: .regularExpression) == nil {
+          result(FlutterError(code: "invalid_account", message: "Invalid widget account.", details: nil))
+          return
+        }
+        if account == nil || account != defaults.string(forKey: "remembranceAccount") {
+          defaults.removeObject(forKey: "remembrance")
+          defaults.removeObject(forKey: "remembranceIndex")
+          defaults.set(account, forKey: "remembranceAccount")
+          WidgetCenter.shared.reloadTimelines(ofKind: "AzkarRemembranceWidget")
+        }
+        result(nil)
       case "setBackgroundGeneration":
         defaults.set(call.arguments as? String, forKey: "backgroundGeneration")
         result(nil)
@@ -49,11 +63,19 @@ public class AzkarMobilePlugin: NSObject, FlutterPlugin {
         defaults.set(calendar, forKey: "calendar")
         WidgetCenter.shared.reloadTimelines(ofKind: "AzkarPrayerWidget")
         result(nil)
+      case "clearPrayer":
+        defaults.removeObject(forKey: "backgroundGeneration")
+        defaults.removeObject(forKey: "calendar")
+        defaults.removeObject(forKey: "selection")
+        WidgetCenter.shared.reloadTimelines(ofKind: "AzkarPrayerWidget")
+        result(nil)
       case "clear":
         defaults.removeObject(forKey: "backgroundGeneration")
         defaults.removeObject(forKey: "calendar")
         defaults.removeObject(forKey: "selection")
         defaults.removeObject(forKey: "remembrance")
+        defaults.removeObject(forKey: "remembranceAccount")
+        defaults.removeObject(forKey: "remembranceIndex")
         WidgetCenter.shared.reloadTimelines(ofKind: "AzkarRemembranceWidget")
         WidgetCenter.shared.reloadTimelines(ofKind: "AzkarPrayerWidget")
         result(nil)
@@ -62,6 +84,12 @@ public class AzkarMobilePlugin: NSObject, FlutterPlugin {
           result(FlutterError(code: "invalid_content", message: "Invalid widget content.", details: nil))
           return
         }
+        guard let data = content.data(using: .utf8),
+              let decoded = try? JSONSerialization.jsonObject(with: data),
+              let payload = decoded as? [String: Any],
+              let account = defaults.string(forKey: "remembranceAccount"),
+              payload["version"] as? Int == 2,
+              payload["accountFingerprint"] as? String == account else { result(nil); return }
         defaults.set(content, forKey: "remembrance")
         WidgetCenter.shared.reloadTimelines(ofKind: "AzkarRemembranceWidget")
         result(nil)

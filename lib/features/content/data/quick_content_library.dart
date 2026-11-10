@@ -1,19 +1,29 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
+import '../../../core/utils/arabic_text_utils.dart';
 import '../domain/content_item.dart';
 import '../domain/content_type.dart';
 import '../../quran/domain/quran_dataset.dart';
 
 class QuickContentPreset {
-  const QuickContentPreset(this.data);
+  QuickContentPreset(this.data);
   final Map<String, dynamic> data;
   String get id => data['id'] as String;
   String get title => data['title'] as String;
   ContentType get type => ContentTypeX.fromId(data['type'] as String)!;
   String get source => data['source'] as String? ?? 'المصحف المعتمد في التطبيق';
-  String get searchText => '$title $source ${data['text'] ?? ''}';
+  late final List<String> categories = List.unmodifiable(
+    (data['categories'] as List? ?? const ['مختارات أساسية'])
+        .whereType<String>(),
+  );
+  String get searchText =>
+      '$title $source ${data['text'] ?? ''} ${data['narrator'] ?? ''} ${categories.join(' ')}';
+  late final String normalizedSearchText = ArabicTextUtils.comparisonKey(
+    searchText,
+  );
 
   ContentItem createDraft({QuranDataset? dataset}) {
     final surah = data['surah'] as int?;
@@ -41,9 +51,11 @@ class QuickContentPreset {
       source: type == ContentType.quran
           ? 'القرآن الكريم — ${dataset!.surah(surah!)!.name}'
           : source,
-      description: data['excerpt'] == true
-          ? 'مقتطف من الحديث؛ المرجع: ${data['url']}'
-          : null,
+      description:
+          data['description'] as String? ??
+          (data['excerpt'] == true
+              ? 'مقتطف من الحديث؛ المرجع: ${data['url']}'
+              : null),
       narrator: data['narrator'] as String?,
       hadithNumber: data['number'] as String?,
       authenticity: HadithAuthenticityX.fromId(data['authenticity'] as String?),
@@ -70,25 +82,56 @@ class QuickContentLibrary {
 
   static Future<List<QuickContentPreset>> forType(ContentType type) async {
     if (!supports(type)) return const [];
-    final items = await load();
-    return List.unmodifiable(items.where((item) => item.type == type));
+    return _byType[type] ??= _loadType(type)
+        .catchError((Object error, StackTrace stack) {
+          _byType.remove(type);
+          Error.throwWithStackTrace(error, stack);
+        });
   }
 
-  static List<QuickContentPreset>? _items;
-  static Future<List<QuickContentPreset>>? _pending;
-  static Future<List<QuickContentPreset>> load() {
-    if (_items != null) return Future.value(_items);
-    return _pending ??= _load().whenComplete(() => _pending = null);
+  static final _byType = <ContentType, Future<List<QuickContentPreset>>>{};
+  static Future<List<QuickContentPreset>>? _base;
+
+  static Future<List<QuickContentPreset>> load() async => List.unmodifiable(
+    (await Future.wait(supportedTypes.map(forType))).expand((items) => items),
+  );
+
+  static Future<List<QuickContentPreset>> _read(String path) async {
+    final source = await rootBundle.loadString(path);
+    // Parse and build the search index away from the Android UI thread.
+    return compute(_parseQuickPresets, source);
   }
 
-  static Future<List<QuickContentPreset>> _load() async {
-    final json = jsonDecode(
-      await rootBundle.loadString('assets/data/quick_content_presets.json'),
-    ) as Map;
-    return _items = List.unmodifiable(
-      (json['items'] as List).map(
-        (item) => QuickContentPreset(Map<String, dynamic>.from(item as Map)),
+  static Future<List<QuickContentPreset>> _loadType(ContentType type) async {
+    final base = await (_base ??= _read(
+      'assets/data/quick_content_presets.json',
+    ));
+    final extra = switch (type) {
+      ContentType.azkar || ContentType.dua || ContentType.hadith => await _read(
+        'assets/data/quick_content_library/${type.id}.json',
       ),
-    );
+      _ => const <QuickContentPreset>[],
+    };
+    return List.unmodifiable([
+      ...base.where((preset) => preset.type == type),
+      ...extra.where((preset) => preset.type == type),
+    ]);
   }
+}
+
+List<QuickContentPreset> _parseQuickPresets(String source) {
+  final document = jsonDecode(source) as Map;
+  return (document['items'] as List)
+      .map((item) {
+        final preset = QuickContentPreset(
+          Map<String, dynamic>.from(item as Map),
+        );
+        if (preset.normalizedSearchText.isEmpty) {
+          throw const FormatException(
+            'A quick-content preset has no searchable text.',
+          );
+        }
+        return preset;
+      })
+      .toList(growable: false);
 }

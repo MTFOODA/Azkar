@@ -23,8 +23,11 @@ videos, and other remembrance content.
 - Tasbeeh counters stored locally on the visitor's device/browser.
 - Authenticated worship dashboard with AlAdhan prayer times, completion tracking,
   reminder preferences, automatic device location, and a personal Tasbeeh counter.
-- Editable quick-add library with 55 Azkar, Tasbeeh, Duas, Hadith and Quran presets,
-  scoped to the content category being edited.
+- Offline quick-add library with 3,819 editable presets: 130 Azkar, 141 Duas,
+  3,537 Hadith, 6 Tasbeeh and 5 verified Quran choices, scoped to the edited
+  category with chapter filters and Arabic search. Publisher citations, grades,
+  import counts and checksums are recorded in `assets/data/quick_content_library/sources.json`;
+  regenerate through `python tools/import_quick_content.py`.
 - Native first-launch onboarding; the Web root and public/deep-link routes do
   not require or display the onboarding flow.
 - Sharing and copy-link actions using the configured public site URL.
@@ -98,10 +101,14 @@ content filters; the older `/worship/widget/content` URL redirects there.
 The main drawer's notification action checks the current system permission and
 shows an already-enabled message when appropriate, without requesting it again.
 Android's vertical collection advances every seven seconds while the device permits
-it and supports manual scrolling. Full-height artistic cards use the same asymmetric
+it and supports one-card manual swipes; automatic transitions always move upward. Full-height artistic cards use the same asymmetric
 outline, star pattern and palette as the in-app dedication card, without overlapping
 rear cards. The prayer widget uses that same surface renderer. Available content
-loops automatically; users can select categories and individual items.
+loops automatically; users can select categories and individual items. Only the
+active account's own published pages feed this widget. Account-tagged native
+snapshots, per-account catalogs and session guards reject stale or mixed data.
+Legacy global collection queries explicitly restrict `page_id` to null; public
+shared-card links use a separate published-record lookup protected by RLS.
 Memorial cards put the deceased's name on its own line in Aref Ruqaa and display
 only the user's dedication text, without an additional repeated prayer.
 iOS uses timeline rotation and interactive buttons on iOS 17+. Both clear
@@ -188,9 +195,8 @@ The production workflow is prepared at
 4.156.0, runs analysis and tests, compiles Flutter Web into `build/web`, checks
 the compiled output, and deploys the existing Worker with SPA fallback after
 approval through the protected GitHub `production` environment. Pull requests
-run analysis and tests; only `main` can deploy. The published APK download remains
-the v1.0.2 release; native widget changes in the source do not update an existing
-APK release automatically.
+run analysis and tests; only `main` can deploy. The Android download targets the signed v1.0.3 release. Native widget changes
+require a new APK release; web deployments alone do not update installed apps.
 
 Production Supabase settings are injected at build time from GitHub environment
 secrets; Cloudflare runtime variables do not configure Flutter's compiled

@@ -104,9 +104,30 @@ internal object RemembranceCardRenderer {
         return bitmap
     }
 
-    fun dedication(context: Context, name: String, text: String, size: SizeF, count: Int): Bitmap? = try {
-        val width = (size.width - horizontalPadding(size) * 2).toInt().coerceAtLeast(40)
-        val height = (size.height - verticalPadding(size) * 2).toInt().coerceAtLeast(30)
+    // This rectangle lies inside every curved corner. Its opaque background
+    // covers rear StackView frames; the artistic outer surface is drawn once.
+    fun pagerInsetX(size: SizeF) = max(horizontalPadding(size), size.width * .11f)
+    fun pagerInsetY(size: SizeF) = max(verticalPadding(size), size.height * .11f)
+
+    fun pagerSurface(context: Context, size: SizeF): Bitmap {
+        val source = surface(context, size)
+        val key = "pager|${size.width}|${size.height}|${source.width}|${source.height}"
+        surfaces.get(key)?.let { return it }
+        val x = (source.width * pagerInsetX(size) / size.width).toInt()
+        val y = (source.height * pagerInsetY(size) / size.height).toInt()
+        val result = Bitmap.createBitmap(source.width - x * 2, source.height - y * 2, Bitmap.Config.ARGB_8888)
+        result.density = Bitmap.DENSITY_NONE
+        Canvas(result).apply {
+            drawColor(SURFACE)
+            drawBitmap(source, -x.toFloat(), -y.toFloat(), null)
+        }
+        surfaces.put(key, result)
+        return result
+    }
+
+    fun dedication(context: Context, name: String, text: String, size: SizeF, count: Int, contentSize: SizeF? = null): Bitmap? = try {
+        val width = (contentSize?.width ?: (size.width - horizontalPadding(size) * 2)).toInt().coerceAtLeast(40)
+        val height = (contentSize?.height ?: (size.height - verticalPadding(size) * 2)).toInt().coerceAtLeast(30)
         val scale = scale(context, width.toFloat(), height.toFloat(), .5f, count, 16 * 1024 * 1024)
         val m = context.resources.displayMetrics
         val fontScale = m.scaledDensity / m.density

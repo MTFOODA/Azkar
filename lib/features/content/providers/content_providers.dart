@@ -5,6 +5,7 @@ import '../../../core/typography/arabic_font_loader.dart';
 import '../../content/domain/content_item.dart';
 import '../../content/domain/content_type.dart';
 import '../../home/domain/homepage_entry.dart';
+import '../data/supabase_content_repository.dart';
 
 /// The homepage is resolved entirely from the administrator-managed layout.
 final homeLayoutProvider = FutureProvider<List<HomeCard>>((ref) async {
@@ -36,5 +37,12 @@ final sharedContentProvider =
       ref,
       key,
     ) async {
+      final client = ref.watch(supabaseClientProvider);
+      if (client != null) {
+        return SupabaseContentRepository(
+          client: client,
+          themeProvider: () => ref.read(themeSettingsProvider),
+        ).fetchSharedPublished(key.type, key.id);
+      }
       return ref.watch(contentRepositoryProvider).fetchById(key.type, key.id);
-    }, dependencies: [contentRepositoryProvider]);
+    }, dependencies: [contentRepositoryProvider, themeSettingsProvider]);
