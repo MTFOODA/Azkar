@@ -246,12 +246,11 @@ final remembranceWidgetServiceProvider = Provider<RemembranceWidgetService>(
   (ref) => RemembranceWidgetService(
     runtime: ref.watch(mobileRuntimeProvider),
     currentUserId: () => ref.read(accountSessionProvider)?.id,
-    globalRepository: ref.watch(contentRepositoryProvider),
     pageRepository: (id) => ref.read(pageContentRepositoryProvider(id)),
     memorialRepository: ref.watch(memorialPageRepositoryProvider),
     preferencesStore: ref.watch(remembranceWidgetPreferencesStoreProvider),
   ),
-  dependencies: [contentRepositoryProvider, pageContentRepositoryProvider],
+  dependencies: [pageContentRepositoryProvider],
 );
 
 final remembranceWidgetPreferencesStoreProvider =

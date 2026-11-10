@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "retrievedAtUtc": "2026-11-10T01:31:03.774873+00:00",
+  "sources": [
+    {
+      "name": "HadeethEnc official Arabic API",
+      "url": "https://hadeethenc.com/api/v1/",
+      "indexed": 3574,
+      "skipped": {
+        "unverified-grade": 32,
+        "missing-citation": 1
+      },
+      "unavailableIds": []
+    },
+    {
+      "name": "Hisn Al-Muslim Arabic publisher API",
+      "url": "https://www.hisnmuslim.com/api/ar/",
+      "chapters": 132,
+      "skipped": {
+        "quran-or-empty": 16
+      }
+    }
+  ],
+  "policy": "Classical Arabic texts and citations only. Hadith source grade must be sahih/hasan. No modern explanations. Quran presets remain in the verified base dataset.",
+  "files": {
+    "azkar": {
+      "items": 112,
+      "bytes": 82263,
+      "sha256": "e0eaa29700d49f41ee3e53488746412d6bc9ed98666223de32730a0fc599cb86"
+    },
+    "dua": {
+      "items": 125,
+      "bytes": 81799,
+      "sha256": "3a98e27ff5938f925cfa569fa4c462500024c8886c61533d919dd08988ab5827"
+    },
+    "hadith": {
+      "items": 3527,
+      "bytes": 7637774,
+      "sha256": "bd1042320511c1da5ee563f8ceb44479f243df5757031736519f23bd094d61b0"
+    }
+  },
+  "totalWithBase": 3819
+}

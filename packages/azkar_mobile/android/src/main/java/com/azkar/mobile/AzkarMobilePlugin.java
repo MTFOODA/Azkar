@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import java.util.Map;
+import org.json.JSONObject;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -42,6 +43,18 @@ public final class AzkarMobilePlugin implements FlutterPlugin, MethodChannel.Met
 
     @Override public void onMethodCall(MethodCall call, MethodChannel.Result result) {
         switch (call.method) {
+            case "selectRemembranceAccount": {
+                String account = (String) call.arguments;
+                if (account != null && !account.matches("[a-f0-9]{24}")) {
+                    result.error("invalid_account", "Invalid widget account.", null); return;
+                }
+                String previous = remembrance.getString("active_account", null);
+                if (account == null || !account.equals(previous)) {
+                    remembrance.edit().clear().putString("active_account", account).apply();
+                    refresh(true);
+                }
+                result.success(null); return;
+            }
             case "selectLocation": {
                 String selection = (String) call.arguments;
                 if (selection == null) { result.error("invalid_selection", "Location is required.", null); return; }
@@ -70,10 +83,25 @@ public final class AzkarMobilePlugin implements FlutterPlugin, MethodChannel.Met
                     result.error("invalid_payload", "Invalid widget data.", null); return;
                 }
                 boolean content = call.method.equals("updateRemembrance");
+                if (content) {
+                    try {
+                        JSONObject json = new JSONObject(payload);
+                        String account = remembrance.getString("active_account", null);
+                        if (account == null || json.optInt("version") != 2 ||
+                            !account.equals(json.optString("accountFingerprint"))) {
+                            result.success(null); return;
+                        }
+                    } catch (Exception error) {
+                        result.error("invalid_payload", "Invalid widget data.", null); return;
+                    }
+                }
                 (content ? remembrance : prayer).edit().putString(content ? "content" : "calendar", payload).apply();
                 refresh(content);
                 result.success(null); return;
             }
+            case "clearPrayer":
+                prayer.edit().clear().apply(); state.edit().clear().apply();
+                refresh(false); result.success(null); return;
             case "clear":
                 prayer.edit().clear().apply(); remembrance.edit().clear().apply(); state.edit().clear().apply();
                 refresh(false); refresh(true); result.success(null); return;

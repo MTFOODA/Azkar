@@ -1,0 +1,2 @@
+# Preserve the generated library bytes used by its recorded SHA-256 checksums.
+assets/data/quick_content_library/*.json text eol=lf

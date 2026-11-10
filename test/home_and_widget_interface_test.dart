@@ -115,7 +115,7 @@ void main() {
     expect(find.text('ويدجت الشاشة الرئيسية'), findsOneWidget);
     expect(find.text('إضافة ويدجت الأذكار والإهداء'), findsOneWidget);
     expect(find.text('المحتوى الظاهر في الويدجت'), findsOneWidget);
-    expect(find.byType(FilterChip), findsNWidgets(5));
+    expect(find.byType(FilterChip), findsNWidgets(6));
     expect(find.byType(SwitchListTile), findsOneWidget);
     expect(find.text('إضافة إلى الشاشة الرئيسية'), findsNothing);
 

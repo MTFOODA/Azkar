@@ -74,7 +74,7 @@ jobs:
           AZKAR_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.AZKAR_SUPABASE_PUBLISHABLE_KEY }}
           # Owner-approved release; the authenticated RLS checks (26/26) passed.
           AZKAR_AUTH_SCHEMA_VERIFIED: 'true'
-          AZKAR_ANDROID_APK_URL: https://github.com/MTFOODA/Azkar/releases/download/v1.0.2/AZKAR-v1.0.2-android.apk
+          AZKAR_ANDROID_APK_URL: https://github.com/MTFOODA/Azkar/releases/download/v1.0.3/AZKAR-v1.0.3-android.apk
         run: ./scripts/write_production_config.ps1
 
       - name: Build and validate Flutter Web

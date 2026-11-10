@@ -67,6 +67,7 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
       WidgetsBinding.instance.ensureVisualUpdate();
     });
     final account = ref.read(accountSessionProvider);
+    unawaited(_selectRemembranceAccount(account?.id));
     notificationService.setActiveAccount(account?.id);
     if (notificationService.isSupported) {
       unawaited(_initializeNotifications(notificationService));
@@ -157,6 +158,7 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
 
   void _accountChanged(User? previous, User? next) {
     if (previous?.id == next?.id) return;
+    unawaited(_selectRemembranceAccount(next?.id));
     unawaited(_positionSubscription?.cancel());
     _positionSubscription = null;
     unawaited(_clearHomeWidget());
@@ -198,10 +200,29 @@ class _AzkarAppState extends ConsumerState<AzkarApp>
     }
   }
 
+  Future<void> _selectRemembranceAccount(String? userId) async {
+    try {
+      await ref.read(remembranceWidgetServiceProvider).selectAccount(userId);
+      if (mounted &&
+          userId != null &&
+          ref.read(accountSessionProvider)?.id == userId) {
+        await ref.read(remembranceWidgetServiceProvider).refresh(userId);
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Could not select the home-widget account.',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
   Future<void> _clearHomeWidget() async {
     try {
-      await ref.read(backgroundReminderServiceProvider).clear();
-      await ref.read(prayerHomeWidgetServiceProvider).clear();
+      await Future.wait([
+        ref.read(backgroundReminderServiceProvider).clear(),
+        ref.read(prayerHomeWidgetServiceProvider).clear(),
+      ]);
     } on Object catch (error, stackTrace) {
       AppLogger.warning('Could not clear the home widget.', error, stackTrace);
     }

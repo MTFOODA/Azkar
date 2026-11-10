@@ -14,6 +14,7 @@ class QuickContentPicker extends StatefulWidget {
 class _QuickContentPickerState extends State<QuickContentPicker> {
   late Future<List<QuickContentPreset>> _loader;
   String _search = '';
+  String? _category;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _QuickContentPickerState extends State<QuickContentPicker> {
     if (oldWidget.type != widget.type) {
       _loader = QuickContentLibrary.forType(widget.type);
       _search = '';
+      _category = null;
     }
   }
 
@@ -83,35 +85,90 @@ class _QuickContentPickerState extends State<QuickContentPicker> {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
+                  final categories =
+                      snapshot.data!
+                          .expand((item) => item.categories)
+                          .toSet()
+                          .toList()
+                        ..sort();
                   final items = snapshot.data!
                       .where(
                         (item) =>
                             item.type == widget.type &&
+                            (_category == null ||
+                                item.categories.contains(_category)) &&
                             (_search.isEmpty ||
-                                ArabicTextUtils.comparisonKey(item.searchText)
-                                    .contains(_search)),
+                                item.normalizedSearchText.contains(_search)),
                       )
                       .toList();
-                  if (items.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'لا توجد نتائج. جرّب كلمة أخرى أو أضف نصك بنفسك.',
+                  final list = items.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'لا توجد نتائج. جرّب كلمة أخرى أو أضف نصك بنفسك.',
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: controller,
+                          itemCount: items.length,
+                          separatorBuilder: (_, index) => const Divider(),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return ListTile(
+                              key: ValueKey(
+                                'quick-preset-${item.type.id}-${item.id}',
+                              ),
+                              title: Text(
+                                item.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(item.source, maxLines: 2),
+                              trailing: const Icon(Icons.add_circle_outline),
+                              onTap: () => Navigator.pop(context, item),
+                            );
+                          },
+                        );
+                  return Column(
+                    children: [
+                      if (categories.length > 1) ...[
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(
+                            'quick-content-category-${widget.type.id}',
+                          ),
+                          initialValue: _category ?? '',
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'الباب'),
+                          items: [
+                            const DropdownMenuItem(
+                              value: '',
+                              child: Text('كل الأبواب'),
+                            ),
+                            for (final category in categories)
+                              DropdownMenuItem(
+                                value: category,
+                                child: Text(
+                                  category,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                          onChanged: (value) => setState(
+                            () => _category = value == '' ? null : value,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          '${items.length} اختيار متاح',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ),
-                    );
-                  }
-                  return ListView.separated(
-                    controller: controller,
-                    itemCount: items.length,
-                    separatorBuilder: (_, index) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return ListTile(
-                        title: Text(item.title),
-                        subtitle: Text(item.source, maxLines: 2),
-                        trailing: const Icon(Icons.add_circle_outline),
-                        onTap: () => Navigator.pop(context, item),
-                      );
-                    },
+                      const SizedBox(height: 8),
+                      Expanded(child: list),
+                    ],
                   );
                 },
               ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 
 import 'remembrance_widget_preferences.dart';
@@ -11,10 +12,9 @@ import '../../memorial/data/memorial_page_repository.dart';
 import '../../mobile_platform/domain/mobile_runtime.dart';
 
 class RemembranceWidgetService {
-  const RemembranceWidgetService({
+  RemembranceWidgetService({
     required this.runtime,
     required this.currentUserId,
-    required this.globalRepository,
     required this.pageRepository,
     required this.memorialRepository,
     this.preferencesStore,
@@ -22,29 +22,53 @@ class RemembranceWidgetService {
   });
   final MobileRuntime runtime;
   final String? Function() currentUserId;
-  final ContentRepository globalRepository;
   final ContentRepository Function(String) pageRepository;
   final MemorialPageRepository memorialRepository;
   final MethodChannel channel;
   final RemembranceWidgetPreferencesStore? preferencesStore;
+  int _sessionVersion = 0;
+
+  static String accountFingerprint(String userId) =>
+      sha256.convert(utf8.encode(userId)).toString().substring(0, 24);
+
+  /// Clear the displayed snapshot immediately when the signed-in account changes.
+  Future<void> selectAccount(String? userId) {
+    _sessionVersion++;
+    if (!runtime.isNativeMobile || currentUserId() != userId) {
+      return Future.value();
+    }
+    return channel.invokeMethod<void>(
+      'selectRemembranceAccount',
+      userId == null ? null : accountFingerprint(userId),
+    );
+  }
+
+  bool _isActive(String userId, int version) =>
+      currentUserId() == userId && version == _sessionVersion;
 
   Future<List<Map<String, Object?>>> loadAvailable(String userId) async {
+    final version = _sessionVersion;
     if (currentUserId() != userId) return [];
     try {
-      return await _collect(userId);
+      return await _collect(userId, version);
     } catch (_) {
-      if (currentUserId() != userId) return [];
+      if (!_isActive(userId, version)) return [];
       final cached = await preferencesStore?.readCatalog(userId) ?? [];
+      if (!_isActive(userId, version)) return [];
       if (cached.isNotEmpty) return cached;
       rethrow;
     }
   }
 
-  Future<List<Map<String, Object?>>> _collect(String userId) async {
+  Future<List<Map<String, Object?>>> _collect(
+    String userId,
+    int version,
+  ) async {
     final cards = <Map<String, Object?>>[];
     Future<void> addContent(
       ContentRepository repository,
       String route, {
+      required String pageId,
       String? deceasedName,
       DedicationRecipient? recipient,
     }) async {
@@ -55,6 +79,7 @@ class RemembranceWidgetService {
           ContentType.dedication,
           ContentType.hadith,
           ContentType.quran,
+          ContentType.tasbeeh,
         ])
           repository.fetchPublished(type),
       ]);
@@ -66,18 +91,18 @@ class RemembranceWidgetService {
               route,
               deceasedName: deceasedName,
               recipient: recipient,
-            ),
+            ).map((card) => {...card, 'ownerUserId': userId, 'pageId': pageId}),
           );
         }
       }
     }
 
-    await addContent(globalRepository, '/');
     final pages = await memorialRepository.fetchOwnedPages();
-    for (final page
-        in pages
-            .where((page) => page.isPublished && page.ownerUserId == userId)
-            .take(10)) {
+    if (!_isActive(userId, version)) return [];
+    for (final page in pages.where(
+      (page) => page.isPublished && page.ownerUserId == userId,
+    )) {
+      if (!_isActive(userId, version)) return [];
       final name = page.deceasedName?.trim() ?? '';
       final recipient = page.deceasedGender == 'female'
           ? DedicationRecipient.female
@@ -85,6 +110,8 @@ class RemembranceWidgetService {
       final route = '/m/${page.slug}';
       if (name.isNotEmpty) {
         cards.add({
+          'ownerUserId': userId,
+          'pageId': page.id,
           'id': 'memorial:${page.id}',
           'groupId': 'memorial:${page.id}',
           'kind': 'dedication',
@@ -99,54 +126,49 @@ class RemembranceWidgetService {
       await addContent(
         pageRepository(page.id),
         route,
+        pageId: page.id,
         deceasedName: name,
         recipient: recipient,
       );
     }
-    if (cards.isEmpty) {
-      cards.addAll([
-        {
-          'id': 'default-dhikr',
-          'groupId': 'default-dhikr',
-          'kind': 'azkar',
-          'title': 'ذكر الله',
-          'text': 'سبحان الله، والحمد لله، ولا إله إلا الله، والله أكبر.',
-          'route': '/azkar',
-        },
-        {
-          'id': 'default-dua',
-          'groupId': 'default-dua',
-          'kind': 'dua',
-          'title': 'دعاء للمتوفّين',
-          'text': 'اللهم اغفر لموتانا وموتى المسلمين وارحمهم، واجعل قبورهم روضة من رياض الجنة.',
-          'route': '/dua',
-        },
-      ]);
-    }
-    if (currentUserId() != userId) return [];
+    if (!_isActive(userId, version)) return [];
     final unique = <String, Map<String, Object?>>{};
     for (final card in cards) {
       unique.putIfAbsent(card['id'] as String, () => card);
     }
-    final available = unique.values.take(200).toList();
+    final available = unique.values.toList();
     await preferencesStore?.saveCatalog(userId, available);
-    return available;
+    return _isActive(userId, version) ? available : [];
   }
 
   Future<void> refresh(String userId) async {
     if (!runtime.isNativeMobile || currentUserId() != userId) return;
+    final version = _sessionVersion;
+    await channel.invokeMethod<void>(
+      'selectRemembranceAccount',
+      accountFingerprint(userId),
+    );
+    if (!_isActive(userId, version)) return;
     final available = await loadAvailable(userId);
-    if (currentUserId() != userId) return;
+    if (!_isActive(userId, version)) return;
     final settings =
         await preferencesStore?.read(userId) ??
         const RemembranceWidgetPreferences();
-    if (currentUserId() != userId) return;
+    if (!_isActive(userId, version)) return;
     await channel.invokeMethod<void>(
       'updateRemembrance',
       jsonEncode({
-        'version': 1,
+        'version': 2,
+        'accountFingerprint': accountFingerprint(userId),
         'rotationSeconds': 7,
-        'cards': available.where(settings.includes).toList(),
+        'cards': [
+          for (final card in available.where(settings.includes).take(200))
+            Map.fromEntries(
+              card.entries.where(
+                (entry) => entry.key != 'ownerUserId' && entry.key != 'pageId',
+              ),
+            ),
+        ],
       }),
     );
   }

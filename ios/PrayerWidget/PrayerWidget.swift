@@ -190,26 +190,41 @@ struct RemembranceCard: Decodable {
   let text: String
   let route: String
 }
-private struct RemembrancePayload: Decodable { let cards: [RemembranceCard] }
-struct RemembranceEntry: TimelineEntry { let date: Date; let card: RemembranceCard? }
+private struct RemembrancePayload: Decodable {
+  let version: Int
+  let accountFingerprint: String
+  let cards: [RemembranceCard]
+}
+struct RemembranceEntry: TimelineEntry {
+  let date: Date
+  let card: RemembranceCard?
+  var accountFingerprint: String? = nil
+}
 struct RemembranceTimeline: TimelineProvider {
   func placeholder(in context: Context) -> RemembranceEntry { RemembranceEntry(date: Date(), card: nil) }
-  private func cards() -> [RemembranceCard] {
-    guard let raw = UserDefaults(suiteName: "group.com.azkar.azkar")?.string(forKey: "remembrance"),
+  private func payload() -> RemembrancePayload? {
+    guard let defaults = UserDefaults(suiteName: "group.com.azkar.azkar"),
+          let account = defaults.string(forKey: "remembranceAccount"),
+          let raw = defaults.string(forKey: "remembrance"),
           let data = raw.data(using: .utf8),
-          let payload = try? JSONDecoder().decode(RemembrancePayload.self, from: data) else { return [] }
-    return payload.cards
+          let payload = try? JSONDecoder().decode(RemembrancePayload.self, from: data),
+          payload.version == 2, payload.accountFingerprint == account else { return nil }
+    return payload
   }
   func getSnapshot(in context: Context, completion: @escaping (RemembranceEntry) -> Void) {
-    completion(RemembranceEntry(date: Date(), card: cards().first))
+    let snapshot = payload()
+    completion(RemembranceEntry(date: Date(), card: snapshot?.cards.first,
+      accountFingerprint: snapshot?.accountFingerprint))
   }
   func getTimeline(in context: Context, completion: @escaping (Timeline<RemembranceEntry>) -> Void) {
-    let items = cards()
+    let snapshot = payload()
+    let items = snapshot?.cards ?? []
     let now = Date()
     let offset = UserDefaults(suiteName: "group.com.azkar.azkar")?.integer(forKey: "remembranceIndex") ?? 0
     let entries = (0..<12).map { step in
       RemembranceEntry(date: now.addingTimeInterval(Double(step * 300)),
-        card: items.isEmpty ? nil : items[((offset + step) % items.count + items.count) % items.count])
+        card: items.isEmpty ? nil : items[((offset + step) % items.count + items.count) % items.count],
+        accountFingerprint: snapshot?.accountFingerprint)
     }
     completion(Timeline(entries: entries, policy: .after(now.addingTimeInterval(3600))))
   }
@@ -217,18 +232,23 @@ struct RemembranceTimeline: TimelineProvider {
 
 struct RemembranceWidgetView: View {
   let entry: RemembranceEntry
+  private var card: RemembranceCard? {
+    guard let account = entry.accountFingerprint,
+          UserDefaults(suiteName: "group.com.azkar.azkar")?.string(forKey: "remembranceAccount") == account else { return nil }
+    return entry.card
+  }
   private var content: some View {
     VStack(spacing: 8) {
       HStack {
-        Text(entry.card?.title ?? "أذكار • دعاء وإهداء").font(.caption).foregroundColor(widgetGold)
+        Text(card?.title ?? "أذكار • دعاء وإهداء").font(.caption).foregroundColor(widgetGold)
         Spacer()
       }
-      Text(entry.card?.text ?? "افتح أذكار لتحديث الأذكار والإهداءات المنشورة")
+      Text(card?.text ?? "افتح أذكار لتحديث الأذكار والإهداءات المنشورة")
         .font(.body).minimumScaleFactor(0.6).multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .foregroundColor(.white).environment(\.layoutDirection, .rightToLeft)
-    .widgetURL(URL(string: "azkar://app\(entry.card?.route ?? "/")"))
+    .widgetURL(URL(string: "azkar://app\(card?.route ?? "/")"))
   }
   var body: some View {
     if #available(iOS 17.0, *) { content.containerBackground(widgetGreen, for: .widget) }

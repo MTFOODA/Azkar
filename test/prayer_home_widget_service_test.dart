@@ -134,7 +134,7 @@ void main() {
       await pending;
       await clearing;
       expect(calls.where((call) => call.method == 'update'), isEmpty);
-      expect(calls.last.method, 'clear');
+      expect(calls.last.method, 'clearPrayer');
       expect(provider.requests, hasLength(1));
     },
   );
@@ -179,7 +179,7 @@ void main() {
     await expectLater(service.refresh('user-a'), throwsException);
     expect(calls.map((call) => call.method), ['selectLocation']);
     await service.clear();
-    expect(calls.last.method, 'clear');
+    expect(calls.last.method, 'clearPrayer');
   });
 
   test('web never invokes the native widget channel', () async {

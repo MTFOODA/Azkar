@@ -5,6 +5,10 @@ import 'package:azkar/features/content/widgets/quick_content_picker.dart';
 import 'package:azkar/features/quran/data/quran_dataset_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
+import 'package:crypto/crypto.dart';
+
+import 'dart:convert';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -64,10 +68,15 @@ void main() {
       );
       await tester.enterText(find.byType(TextField), 'سورة الفاتحة');
       await tester.pumpAndSettle();
-      expect(
-        find.byType(ListTile),
-        type == ContentType.quran ? findsOneWidget : findsNothing,
-      );
+      if (type == ContentType.quran) {
+        expect(find.byType(ListTile), findsOneWidget);
+      }
+      for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) {
+        expect(
+          (tile.key! as ValueKey<String>).value,
+          startsWith('quick-preset-${type.id}-'),
+        );
+      }
       await tester.enterText(find.byType(TextField), items!.first.title);
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ListTile, items.first.title).first);
@@ -100,12 +109,62 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'chapter filter narrows a large library and resets when the content type changes',
+    (tester) async {
+      final items = await tester.runAsync(
+        () => QuickContentLibrary.forType(ContentType.azkar),
+      );
+      final hadith = await tester.runAsync(
+        () => QuickContentLibrary.forType(ContentType.hadith),
+      );
+      final category = items!
+          .firstWhere(
+            (item) => item.categories.any((name) => name != 'مختارات أساسية'),
+          )
+          .categories
+          .first;
+      Widget app(ContentType type) => MaterialApp(
+        home: Scaffold(body: QuickContentPicker(type: type)),
+      );
+      await tester.pumpWidget(app(ContentType.azkar));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('quick-content-category-azkar')),
+      );
+      await tester.pumpAndSettle();
+      final option = find.text(category).last;
+      await tester.ensureVisible(option);
+      await tester.tap(option);
+      await tester.pumpAndSettle();
+      final expected = items
+          .where((item) => item.categories.contains(category))
+          .toList();
+      expect(find.text('${expected.length} اختيار متاح'), findsOneWidget);
+      final titles = expected.map((item) => item.title).toSet();
+      for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) {
+        expect(titles, contains((tile.title! as Text).data));
+      }
+      await tester.pumpWidget(app(ContentType.hadith));
+      await tester.pumpAndSettle();
+      expect(find.text('كل الأبواب'), findsOneWidget);
+      expect(find.text('${hadith!.length} اختيار متاح'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   test(
     'presets have unique IDs and create unpublished editable drafts',
     () async {
       final items = await QuickContentLibrary.load();
       final dataset = await QuranDatasetRepository().dataset();
-      expect(items, hasLength(55));
+      final manifest = jsonDecode(
+        await rootBundle.loadString(
+          'assets/data/quick_content_library/sources.json',
+        ),
+      ) as Map;
+      expect(items, hasLength(manifest['totalWithBase'] as int));
+      expect(items.length, greaterThan(3000));
       expect(items.map((item) => item.id).toSet(), hasLength(items.length));
       for (final preset in items) {
         final draft = preset.createDraft(dataset: dataset);
@@ -114,13 +173,39 @@ void main() {
         expect(draft.arabicText, isNotEmpty);
         expect(draft.source, isNotEmpty);
         if (preset.type == ContentType.hadith) {
-          expect(draft.authenticity, HadithAuthenticity.sahih);
-          expect(draft.narrator, isNotEmpty);
+          expect(draft.authenticity.isVerified, isTrue);
           expect(draft.hadithNumber, isNotEmpty);
         }
       }
     },
   );
+
+  test('expanded assets match their recorded counts and checksums', () async {
+    final manifest = jsonDecode(
+      await rootBundle.loadString(
+        'assets/data/quick_content_library/sources.json',
+      ),
+    ) as Map;
+    final files = manifest['files'] as Map;
+    for (final kind in ['azkar', 'dua', 'hadith']) {
+      final data = await rootBundle.load(
+        'assets/data/quick_content_library/$kind.json',
+      );
+      final bytes = data.buffer.asUint8List(
+        data.offsetInBytes,
+        data.lengthInBytes,
+      );
+      final content = jsonDecode(utf8.decode(bytes)) as Map;
+      final records = content['items'] as List;
+      expect(records, hasLength((files[kind] as Map)['items'] as int));
+      expect(sha256.convert(bytes).toString(), (files[kind] as Map)['sha256']);
+      for (final record in records.cast<Map>()) {
+        expect(record['type'], kind);
+        expect(record['text'], isNot(contains('\uFFFD')));
+        expect(Uri.parse(record['url'] as String).scheme, 'https');
+      }
+    }
+  });
 
   test(
     'all five Quran choices match the bundled verified verse ranges',

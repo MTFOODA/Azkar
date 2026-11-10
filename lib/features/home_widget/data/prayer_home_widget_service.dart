@@ -35,7 +35,7 @@ class PrayerHomeWidgetService {
   bool get isSupported => runtime.isNativeMobile;
 
   Future<void> clear() => _enqueue(() async {
-    if (isSupported) await channel.invokeMethod<void>('clear');
+    if (isSupported) await channel.invokeMethod<void>('clearPrayer');
   });
 
   Future<void> refresh(String userId) => _enqueue(() async {
@@ -49,7 +49,7 @@ class PrayerHomeWidgetService {
     );
     if (currentUserIdProvider() != userId) return;
     if (location == null) {
-      await channel.invokeMethod<void>('clear');
+      await channel.invokeMethod<void>('clearPrayer');
       return;
     }
     // Clear the previous selection first so an offline location change cannot

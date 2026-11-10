@@ -220,6 +220,7 @@ class _RemembranceWidgetSettingsPageState
                             ContentType.dua,
                             ContentType.hadith,
                             ContentType.quran,
+                            ContentType.tasbeeh,
                             ContentType.dedication,
                           ])
                             FilterChip(
@@ -273,6 +274,13 @@ class _RemembranceWidgetSettingsPageState
                           label: const Text('إعادة المحاولة'),
                         ),
                       ],
+                      if (!_loading && _error == null && _cards.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Text(
+                            'لا يوجد محتوى منشور في صفحاتك بعد. أضف النصوص إلى صفحتك وانشرها لتظهر هنا.',
+                          ),
+                        ),
                       for (final card in _cards)
                         SwitchListTile(
                           title: Text(card['title'] as String),
